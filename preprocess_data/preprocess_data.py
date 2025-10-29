@@ -29,7 +29,7 @@ def preprocess(
             s = next(f)
         previous_time = -1
         for idx, line in enumerate(f):
-            e = line.strip().split(",")
+            e = line.strip().split(sep)
             # user_id
             u = int(e[0])
             # item_id
@@ -41,7 +41,11 @@ def preprocess(
             assert ts >= previous_time
             previous_time = ts
             # interactive sign
-            sign = 1 if unsigned else int(e[3]) // abs(int(e[3]))
+            sign = (
+                1
+                if unsigned
+                else (0 if int(e[3]) == 0 else int(e[3]) // abs(int(e[3])))
+            )
             # state_label
             label = (
                 0.0
@@ -102,7 +106,12 @@ def reindex(df: pd.DataFrame, bipartite: bool = True):
 
 
 def preprocess_data(
-    dataset_name: str, bipartite: bool = True, node_feat_dim: int = 172
+    dataset_name: str,
+    bipartite: bool = True,
+    node_feat_dim: int = 172,
+    unsigned: bool = False,
+    skip_first_line: bool = True,
+    sep: str = ",",
 ):
     """
     preprocess the data
@@ -121,7 +130,7 @@ def preprocess_data(
         dataset_name, dataset_name
     )
 
-    df, edge_feats = preprocess(PATH)
+    df, edge_feats = preprocess(PATH, unsigned, skip_first_line, sep)
     new_df = reindex(df, bipartite)
 
     # edge feature for zero index, which is not used (since edge id starts from 1)
@@ -204,13 +213,15 @@ class PreprocessArgs(BaseModel):
         "UNtrade",
         "UNvote",
         "Contacts",
+        "WikiVote",
     ] = Field(default="wikipedia", description="Dataset name")
-    node_feat_dim:int = Field(172,description="Number of node raw features")
-    unsigned:bool=Field(False,description="Unsigned Graph")
+    node_feat_dim: int = Field(172, description="Number of node raw features")
+    unsigned: bool = Field(False, description="Unsigned Graph")
 
 
-
-parser= pydantic_argparse.ArgumentParser(model=PreprocessArgs,description="Interface for preprocessing datasets")
+parser = pydantic_argparse.ArgumentParser(
+    model=PreprocessArgs, description="Interface for preprocessing datasets"
+)
 args = parser.parse_typed_args()
 print(type(args))
 
@@ -234,6 +245,14 @@ else:
             dataset_name=args.dataset_name,
             bipartite=True,
             node_feat_dim=args.node_feat_dim,
+            unsigned=True,
+        )
+    elif args.dataset_name in ["WikiVote"]:
+        preprocess_data(
+            dataset_name=args.dataset_name,
+            bipartite=False,
+            node_feat_dim=args.node_feat_dim,
+            unsigned=False,
         )
     else:
         preprocess_data(
