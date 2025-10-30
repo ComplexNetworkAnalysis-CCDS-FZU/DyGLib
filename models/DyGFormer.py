@@ -154,7 +154,7 @@ class DyGFormer(nn.Module):
             src_padded_nodes_neighbor_ids,
             src_padded_nodes_edge_ids,
             src_padded_nodes_neighbor_times,
-            src_padded_nodes_neighbor_sign
+            src_padded_nodes_neighbor_sign,
         ) = self.pad_sequences(
             node_ids=src_node_ids,
             node_interact_times=node_interact_times,
@@ -174,7 +174,7 @@ class DyGFormer(nn.Module):
             dst_padded_nodes_neighbor_ids,
             dst_padded_nodes_edge_ids,
             dst_padded_nodes_neighbor_times,
-            dst_padded_nodes_neighbor_sign
+            dst_padded_nodes_neighbor_sign,
         ) = self.pad_sequences(
             node_ids=dst_node_ids,
             node_interact_times=node_interact_times,
@@ -197,7 +197,7 @@ class DyGFormer(nn.Module):
             dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
             node_interact_sign=node_interact_sign,
             src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
-            dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign
+            dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
         )
 
         # get the features of the sequence of source and destination nodes
@@ -465,7 +465,7 @@ class DyGFormer(nn.Module):
             padded_nodes_neighbor_ids,
             padded_nodes_edge_ids,
             padded_nodes_neighbor_times,
-            padded_nodes_neighbor_sign
+            padded_nodes_neighbor_sign,
         )
 
     def get_features(
@@ -620,35 +620,76 @@ class NeighborCooccurrenceEncoder(nn.Module):
             ),
         )
 
+    def sign_neighbor_count(self, node_neighbor_ids, node_neighbor_sign):
+        all_ids, inverse_indexes = np.unique(node_neighbor_ids, return_inverse=True)
+
+        pos_sample = node_neighbor_ids[node_neighbor_sign == 1]
+        neg_sample = node_neighbor_ids[node_neighbor_sign == -1]
+
+        pos_id, pos_count = np.unique(pos_sample, return_counts=True)
+        neg_id, neg_count = np.unique(neg_sample, return_counts=True)
+
+        pos_map = dict(zip(pos_id, pos_count))
+        neg_map = dict(zip(neg_id, neg_count))
+
+        pos_vec = np.array([pos_map.get(i, 0) for i in all_ids])
+        neg_vec = np.array([neg_map.get(i, 0) for i in all_ids])
+
+        pos_node_neighbor_counts = pos_vec[inverse_indexes]
+        neg_node_neighbor_counts = neg_vec[inverse_indexes]
+        signed_mapping_dict = dict(zip(all_ids, zip(pos_vec, neg_vec)))
+
+        return pos_node_neighbor_counts, neg_node_neighbor_counts, signed_mapping_dict
+
     def count_nodes_appearances(
         self,
         src_padded_nodes_neighbor_ids: np.ndarray,
         dst_padded_nodes_neighbor_ids: np.ndarray,
         node_interact_sign: np.ndarray,
-        src_padded_nodes_neighbor_sign:np.ndarray,
-        dst_padded_nodes_neighbor_sign:np.ndarray,
+        src_padded_nodes_neighbor_sign: np.ndarray,
+        dst_padded_nodes_neighbor_sign: np.ndarray,
     ):
         """
         count the appearances of nodes in the sequences of source and destination nodes
+        改进计数方法
         :param src_padded_nodes_neighbor_ids: ndarray, shape (batch_size, src_max_seq_length)
         :param dst_padded_nodes_neighbor_ids:: ndarray, shape (batch_size, dst_max_seq_length)
         :return:
         """
         # two lists to store the appearances of source and destination nodes
         src_padded_nodes_appearances, dst_padded_nodes_appearances = [], []
+        # 对每个节点对（单个批次的每个节点）
         # src_padded_node_neighbor_ids, ndarray, shape (src_max_seq_length, )
         # dst_padded_node_neighbor_ids, ndarray, shape (dst_max_seq_length, )
-        for src_padded_node_neighbor_ids, dst_padded_node_neighbor_ids in zip(
-            src_padded_nodes_neighbor_ids, dst_padded_nodes_neighbor_ids
+        for (
+            src_padded_node_neighbor_ids,
+            dst_padded_node_neighbor_ids,
+            node_sign,
+            src_padded_node_neighbor_sign,
+            dst_padded_node_neighbor_sign,
+        ) in zip(
+            src_padded_nodes_neighbor_ids,
+            dst_padded_nodes_neighbor_ids,
+            node_interact_sign,
+            src_padded_nodes_neighbor_sign,
+            dst_padded_nodes_neighbor_sign,
         ):
+
+            ctrl_col = None
+            if node_sign == 1:
+                ctrl_col = 0
+            elif node_sign == -1:
+                ctrl_col = 1
 
             # src_unique_keys, ndarray, shape (num_src_unique_keys, )
             # src_inverse_indices, ndarray, shape (src_max_seq_length, )
             # src_counts, ndarray, shape (num_src_unique_keys, )
             # we can use src_unique_keys[src_inverse_indices] to reconstruct the original input, and use src_counts[src_inverse_indices] to get counts of the original input
+            # 去重邻居数量，反向索引，各个节点计数
             src_unique_keys, src_inverse_indices, src_counts = np.unique(
                 src_padded_node_neighbor_ids, return_inverse=True, return_counts=True
             )
+            # 将各个邻居的计数还原到邻居的位置上
             # Tensor, shape (src_max_seq_length, )
             src_padded_node_neighbor_counts_in_src = (
                 torch.from_numpy(src_counts[src_inverse_indices])
@@ -656,7 +697,17 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 .to(self.device)
             )
             # dictionary, store the mapping relation from unique neighbor id to its appearances for the source node
+            # 邻居到邻居出现次数的映射
             src_mapping_dict = dict(zip(src_unique_keys, src_counts))
+
+            # src历史邻居符号编码
+            (
+                src_padded_pos_node_neighbor_signed_counts,
+                src_padded_neg_node_neighbor_signed_counts,
+                src_sign_mapping_dict,
+            ) = self.sign_neighbor_count(
+                src_padded_node_neighbor_ids, src_padded_node_neighbor_sign
+            )
 
             # dst_unique_keys, ndarray, shape (num_dst_unique_keys, )
             # dst_inverse_indices, ndarray, shape (dst_max_seq_length, )
@@ -674,20 +725,133 @@ class NeighborCooccurrenceEncoder(nn.Module):
             # dictionary, store the mapping relation from unique neighbor id to its appearances for the destination node
             dst_mapping_dict = dict(zip(dst_unique_keys, dst_counts))
 
+            # dst 历史邻居符号编码
+            (
+                dst_padded_pos_node_neighbor_signed_counts,
+                dst_padded_neg_node_neighbor_signed_counts,
+                dst_sign_mapping_dict,
+            ) = self.sign_neighbor_count(
+                dst_padded_node_neighbor_ids, dst_padded_node_neighbor_sign
+            )
+
+            # 更新src_padded_pos_node_neighbor_signed_counts， 基于交互的符号，将dst的计数也拿来
+            if ctrl_col is None:
+                src_pos_adds = 0
+            else:
+                src_pos_adds = np.array(
+                    [
+                        dst_sign_mapping_dict.get(i, (0, 0))[ctrl_col]
+                        for i in src_padded_node_neighbor_ids
+                    ]
+                )
+            src_padded_pos_node_neighbor_signed_counts += src_pos_adds
+            src_padded_pos_node_neighbor_signed_counts_in_src = (
+                torch.from_numpy(src_padded_pos_node_neighbor_signed_counts)
+                .float()
+                .to(self.device)
+            )
+
+            # 更新src_padded_neg_node_neighbor_signed_counts， 基于交互编码的符号，将dst的计数也拿过来
+            if ctrl_col is None:
+                src_neg_adds = 0
+            else:
+                src_neg_adds = np.array(
+                    [
+                        dst_sign_mapping_dict.get(i, (0, 0))[1 - ctrl_col]
+                        for i in src_padded_node_neighbor_ids
+                    ]
+                )
+            src_padded_neg_node_neighbor_signed_counts += src_neg_adds
+            src_padded_neg_node_neighbor_signed_counts_in_src = (
+                torch.from_numpy(src_padded_neg_node_neighbor_signed_counts)
+                .float()
+                .to(self.device)
+            )
+
+            # 更新dst_padded_pos_node_neighbor_signed_counts基于交互的符号，将src的计数拿过来
+            if ctrl_col is None:
+                dst_pos_adds = 0
+            else:
+                dst_pos_adds = np.array(
+                    [
+                        src_sign_mapping_dict.get(i, (0, 0))[ctrl_col]
+                        for i in dst_padded_node_neighbor_ids
+                    ]
+                )
+            dst_padded_pos_node_neighbor_signed_counts += dst_pos_adds
+            dst_padded_pos_node_neighbor_signed_counts_in_dst = (
+                torch.from_numpy(dst_padded_pos_node_neighbor_signed_counts)
+                .float()
+                .to(self.device)
+            )
+
+            # 更新dst_padded_pos_node_neighbor_signed_counts基于交互的符号，将src的计数拿过来
+            if ctrl_col is None:
+                dst_neg_adds = 0
+            else:
+                dst_neg_adds = np.array(
+                    [
+                        src_sign_mapping_dict.get(i, (0, 0))[1 - ctrl_col]
+                        for i in dst_padded_node_neighbor_ids
+                    ]
+                )
+            dst_padded_neg_node_neighbor_signed_counts += dst_neg_adds
+            dst_padded_neg_node_neighbor_signed_counts_in_dst = (
+                torch.from_numpy(dst_padded_neg_node_neighbor_signed_counts)
+                .float()
+                .to(self.device)
+            )
+
             # we need to use copy() to avoid the modification of src_padded_node_neighbor_ids
             # Tensor, shape (src_max_seq_length, )
+            # src 节点的历史邻居在dst里面的出现
             src_padded_node_neighbor_counts_in_dst = (
                 torch.from_numpy(src_padded_node_neighbor_ids.copy())
                 .apply_(lambda neighbor_id: dst_mapping_dict.get(neighbor_id, 0.0))
                 .float()
                 .to(self.device)
             )
+
+            src_padded_pos_node_neighbor_signed_counts_in_dst = (
+                torch.from_numpy(src_padded_node_neighbor_ids.copy())
+                .apply_(
+                    lambda nid: (
+                        dst_sign_mapping_dict.get(nid, (0.0, 0.0))[0] + 0
+                        if ctrl_col is None
+                        else src_sign_mapping_dict.get(nid, (0.0, 0.0))[ctrl_col]
+                    )
+                )
+                .float()
+                .to(self.device)
+            )
+
+            src_padded_neg_node_neighbor_signed_counts_in_dst = (
+                torch.from_numpy(src_padded_node_neighbor_ids.copy())
+                .apply_(
+                    lambda nid: (
+                        dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1] + 0
+                        if ctrl_col is None
+                        else src_sign_mapping_dict.get(nid, (0.0, 0.0))[1- ctrl_col]
+                    )
+                )
+                .float()
+                .to(self.device)
+            )
+
             # Tensor, shape (src_max_seq_length, 2)
             src_padded_nodes_appearances.append(
                 torch.stack(
                     [
                         src_padded_node_neighbor_counts_in_src,
+                        # src positive node neighbor counts
+                        src_padded_pos_node_neighbor_signed_counts_in_src,
+                        # src negative node neighbor counts
+                        src_padded_neg_node_neighbor_signed_counts_in_src,
                         src_padded_node_neighbor_counts_in_dst,
+                        # src pos node neg counts in dst
+                        src_padded_pos_node_neighbor_signed_counts_in_dst,
+                        # src pos node neg counts in dst
+                        src_padded_neg_node_neighbor_signed_counts_in_dst
                     ],
                     dim=1,
                 )
@@ -701,12 +865,43 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 .float()
                 .to(self.device)
             )
+
+            dst_padded_pos_node_neighbor_signed_counts_in_src = (
+                torch.from_numpy(dst_padded_node_neighbor_ids.copy())
+                .apply_(
+                    lambda nid: (
+                        src_sign_mapping_dict.get(nid, (0.0, 0.0))[0] + 0
+                        if ctrl_col is None
+                        else dst_sign_mapping_dict.get(nid, (0.0, 0.0))[ctrl_col]
+                    )
+                )
+                .float()
+                .to(self.device)
+            )
+
+            dst_padded_neg_node_neighbor_signed_counts_in_src = (
+                torch.from_numpy(dst_padded_node_neighbor_ids.copy())
+                .apply_(
+                    lambda nid: (
+                        src_sign_mapping_dict.get(nid, (0.0, 0.0))[1] + 0
+                        if ctrl_col is None
+                        else dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1- ctrl_col]
+                    )
+                )
+                .float()
+                .to(self.device)
+            )
+
             # Tensor, shape (dst_max_seq_length, 2)
             dst_padded_nodes_appearances.append(
                 torch.stack(
                     [
                         dst_padded_node_neighbor_counts_in_src,
+                        dst_padded_pos_node_neighbor_signed_counts_in_dst,
+                        dst_padded_neg_node_neighbor_signed_counts_in_dst,
                         dst_padded_node_neighbor_counts_in_dst,
+                        dst_padded_pos_node_neighbor_signed_counts_in_src,
+                        dst_padded_neg_node_neighbor_signed_counts_in_src
                     ],
                     dim=1,
                 )
@@ -734,8 +929,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         src_padded_nodes_neighbor_ids: np.ndarray,
         dst_padded_nodes_neighbor_ids: np.ndarray,
         node_interact_sign: np.ndarray,
-        src_padded_nodes_neighbor_sign:np.ndarray,
-        dst_padded_nodes_neighbor_sign:np.ndarray,
+        src_padded_nodes_neighbor_sign: np.ndarray,
+        dst_padded_nodes_neighbor_sign: np.ndarray,
     ):
         """
         compute the neighbor co-occurrence features of nodes in src_padded_nodes_neighbor_ids and dst_padded_nodes_neighbor_ids
@@ -751,7 +946,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
                 node_interact_sign=node_interact_sign,
                 src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
-                dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign
+                dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
             )
         )
 
