@@ -13,6 +13,7 @@ def preprocess(
     unsigned: bool = False,
     skip_first_line: bool = True,
     sep: str = ",",
+    swap_time_sign: bool = False,
 ):
     """
     read the original data file and return the DataFrame that has columns ['u', 'i', 'ts','sign', 'label', 'idx']
@@ -23,12 +24,18 @@ def preprocess(
     feat_l = []
     idx_list = []
 
+    ts_idx, sign_idx = (3, 2) if swap_time_sign else (2, 3)
+
     with open(dataset_name) as f:
         # skip the first line
         if skip_first_line:
             s = next(f)
+        lines = f.readlines()
+        lines.sort(key=lambda x: float(x.strip().split(sep)[-1]))
         previous_time = -1
-        for idx, line in enumerate(f):
+        import tqdm
+
+        for idx, line in tqdm.tqdm(enumerate(lines)):
             e = line.strip().split(sep)
             # user_id
             u = int(e[0])
@@ -36,7 +43,7 @@ def preprocess(
             i = int(e[1])
 
             # timestamp
-            ts = float(e[2])
+            ts = float(e[ts_idx])
             # check whether time in ascending order
             assert ts >= previous_time
             previous_time = ts
@@ -44,7 +51,11 @@ def preprocess(
             sign = (
                 1
                 if unsigned
-                else (0 if int(e[3]) == 0 else int(e[3]) // abs(int(e[3])))
+                else (
+                    0
+                    if int(e[sign_idx]) == 0
+                    else int(e[sign_idx]) // abs(int(e[sign_idx]))
+                )
             )
             # state_label
             label = (
@@ -54,7 +65,9 @@ def preprocess(
             )
 
             # edge features
-            feat = np.array([float(x) for x in e[4 if unsigned else 5 :]])
+            sign_feat = [] if unsigned else [float(e[sign_idx])]
+            sign_feat.extend([float(x) for x in e[4 if unsigned else 5 :]])
+            feat = np.array(sign_feat)
 
             u_list.append(u)
             i_list.append(i)
@@ -112,6 +125,7 @@ def preprocess_data(
     unsigned: bool = False,
     skip_first_line: bool = True,
     sep: str = ",",
+    swap_time_sign: bool = False,
 ):
     """
     preprocess the data
@@ -130,7 +144,9 @@ def preprocess_data(
         dataset_name, dataset_name
     )
 
-    df, edge_feats = preprocess(PATH, unsigned, skip_first_line, sep)
+    df, edge_feats = preprocess(
+        PATH, unsigned, skip_first_line, sep, swap_time_sign=swap_time_sign
+    )
     new_df = reindex(df, bipartite)
 
     # edge feature for zero index, which is not used (since edge id starts from 1)
@@ -214,6 +230,8 @@ class PreprocessArgs(BaseModel):
         "UNvote",
         "Contacts",
         "WikiVote",
+        "BitcoinAlpha",
+        "BitcoinOTC",
     ] = Field(default="wikipedia", description="Dataset name")
     node_feat_dim: int = Field(172, description="Number of node raw features")
     unsigned: bool = Field(False, description="Unsigned Graph")
@@ -253,6 +271,15 @@ else:
             bipartite=False,
             node_feat_dim=args.node_feat_dim,
             unsigned=False,
+        )
+    elif args.dataset_name in ["BitcoinAlpha", "BitcoinOTC"]:
+        preprocess_data(
+            dataset_name=args.dataset_name,
+            bipartite=False,
+            node_feat_dim=args.node_feat_dim,
+            skip_first_line=False,
+            unsigned=False,
+            swap_time_sign=True,
         )
     else:
         preprocess_data(
