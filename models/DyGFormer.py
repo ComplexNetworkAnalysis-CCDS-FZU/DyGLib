@@ -641,6 +641,16 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
         return pos_node_neighbor_counts, neg_node_neighbor_counts, signed_mapping_dict
 
+    def to_float_torch(self, arr: np.ndarray, apply: callable | None = None):
+        tensor = torch.from_numpy(arr)
+
+        if apply is not None:
+            tensor = tensor.apply_(apply)
+
+        tensor = tensor.float().to(self.device)
+
+        return tensor
+
     def count_nodes_appearances(
         self,
         src_padded_nodes_neighbor_ids: np.ndarray,
@@ -736,7 +746,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
             # 更新src_padded_pos_node_neighbor_signed_counts， 基于交互的符号，将dst的计数也拿来
             if ctrl_col is None:
-                src_pos_adds = 0
+                src_pos_adds = np.zeros(len(src_padded_node_neighbor_ids))
             else:
                 src_pos_adds = np.array(
                     [
@@ -744,16 +754,14 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         for i in src_padded_node_neighbor_ids
                     ]
                 )
-            src_padded_pos_node_neighbor_signed_counts += src_pos_adds
-            src_padded_pos_node_neighbor_signed_counts_in_src = (
-                torch.from_numpy(src_padded_pos_node_neighbor_signed_counts)
-                .float()
-                .to(self.device)
+            # src_padded_pos_node_neighbor_signed_counts += src_pos_adds
+            src_padded_pos_node_neighbor_signed_counts_in_src = self.to_float_torch(
+                src_padded_pos_node_neighbor_signed_counts
             )
 
             # 更新src_padded_neg_node_neighbor_signed_counts， 基于交互编码的符号，将dst的计数也拿过来
             if ctrl_col is None:
-                src_neg_adds = 0
+                src_neg_adds = np.zeros(len(src_padded_node_neighbor_ids))
             else:
                 src_neg_adds = np.array(
                     [
@@ -761,16 +769,14 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         for i in src_padded_node_neighbor_ids
                     ]
                 )
-            src_padded_neg_node_neighbor_signed_counts += src_neg_adds
-            src_padded_neg_node_neighbor_signed_counts_in_src = (
-                torch.from_numpy(src_padded_neg_node_neighbor_signed_counts)
-                .float()
-                .to(self.device)
+            # src_padded_neg_node_neighbor_signed_counts += src_neg_adds
+            src_padded_neg_node_neighbor_signed_counts_in_src = self.to_float_torch(
+                src_padded_neg_node_neighbor_signed_counts
             )
 
             # 更新dst_padded_pos_node_neighbor_signed_counts基于交互的符号，将src的计数拿过来
             if ctrl_col is None:
-                dst_pos_adds = 0
+                dst_pos_adds = np.zeros(len(dst_padded_node_neighbor_ids))
             else:
                 dst_pos_adds = np.array(
                     [
@@ -778,16 +784,14 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         for i in dst_padded_node_neighbor_ids
                     ]
                 )
-            dst_padded_pos_node_neighbor_signed_counts += dst_pos_adds
-            dst_padded_pos_node_neighbor_signed_counts_in_dst = (
-                torch.from_numpy(dst_padded_pos_node_neighbor_signed_counts)
-                .float()
-                .to(self.device)
+            # dst_padded_pos_node_neighbor_signed_counts += dst_pos_adds
+            dst_padded_pos_node_neighbor_signed_counts_in_dst = self.to_float_torch(
+                dst_padded_pos_node_neighbor_signed_counts
             )
 
             # 更新dst_padded_pos_node_neighbor_signed_counts基于交互的符号，将src的计数拿过来
             if ctrl_col is None:
-                dst_neg_adds = 0
+                dst_neg_adds = np.zeros(len(dst_padded_node_neighbor_ids))
             else:
                 dst_neg_adds = np.array(
                     [
@@ -795,47 +799,37 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         for i in dst_padded_node_neighbor_ids
                     ]
                 )
-            dst_padded_neg_node_neighbor_signed_counts += dst_neg_adds
-            dst_padded_neg_node_neighbor_signed_counts_in_dst = (
-                torch.from_numpy(dst_padded_neg_node_neighbor_signed_counts)
-                .float()
-                .to(self.device)
+            # dst_padded_neg_node_neighbor_signed_counts += dst_neg_adds
+            dst_padded_neg_node_neighbor_signed_counts_in_dst = self.to_float_torch(
+                dst_padded_neg_node_neighbor_signed_counts
             )
 
             # we need to use copy() to avoid the modification of src_padded_node_neighbor_ids
             # Tensor, shape (src_max_seq_length, )
             # src 节点的历史邻居在dst里面的出现
-            src_padded_node_neighbor_counts_in_dst = (
-                torch.from_numpy(src_padded_node_neighbor_ids.copy())
-                .apply_(lambda neighbor_id: dst_mapping_dict.get(neighbor_id, 0.0))
-                .float()
-                .to(self.device)
+            src_padded_node_neighbor_counts_in_dst = self.to_float_torch(
+                src_padded_node_neighbor_ids.copy(),
+                lambda neighbor_id: dst_mapping_dict.get(neighbor_id, 0.0),
             )
 
-            src_padded_pos_node_neighbor_signed_counts_in_dst = (
-                torch.from_numpy(src_padded_node_neighbor_ids.copy())
-                .apply_(
-                    lambda nid: (
-                        dst_sign_mapping_dict.get(nid, (0.0, 0.0))[0] + 0
-                        if ctrl_col is None
-                        else src_sign_mapping_dict.get(nid, (0.0, 0.0))[ctrl_col]
-                    )
-                )
-                .float()
-                .to(self.device)
+            src_padded_pos_node_neighbor_signed_counts_in_dst = self.to_float_torch(
+                src_padded_node_neighbor_ids.copy(),
+                lambda nid: (
+                    dst_sign_mapping_dict.get(nid, (0.0, 0.0))[0]
+                    # + 0
+                    # if ctrl_col is None
+                    # else src_sign_mapping_dict.get(nid, (0.0, 0.0))[ctrl_col]
+                ),
             )
 
-            src_padded_neg_node_neighbor_signed_counts_in_dst = (
-                torch.from_numpy(src_padded_node_neighbor_ids.copy())
-                .apply_(
-                    lambda nid: (
-                        dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1] + 0
-                        if ctrl_col is None
-                        else src_sign_mapping_dict.get(nid, (0.0, 0.0))[1- ctrl_col]
-                    )
-                )
-                .float()
-                .to(self.device)
+            src_padded_neg_node_neighbor_signed_counts_in_dst = self.to_float_torch(
+                src_padded_node_neighbor_ids.copy(),
+                lambda nid: (
+                    dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1]
+                    # + 0
+                    # if ctrl_col is None
+                    # else src_sign_mapping_dict.get(nid, (0.0, 0.0))[1- ctrl_col]
+                ),
             )
 
             # Tensor, shape (src_max_seq_length, 2)
@@ -851,7 +845,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         # src pos node neg counts in dst
                         src_padded_pos_node_neighbor_signed_counts_in_dst,
                         # src pos node neg counts in dst
-                        src_padded_neg_node_neighbor_signed_counts_in_dst
+                        src_padded_neg_node_neighbor_signed_counts_in_dst,
                     ],
                     dim=1,
                 )
@@ -859,37 +853,26 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
             # we need to use copy() to avoid the modification of dst_padded_node_neighbor_ids
             # Tensor, shape (dst_max_seq_length, )
-            dst_padded_node_neighbor_counts_in_src = (
-                torch.from_numpy(dst_padded_node_neighbor_ids.copy())
-                .apply_(lambda neighbor_id: src_mapping_dict.get(neighbor_id, 0.0))
-                .float()
-                .to(self.device)
+            dst_padded_node_neighbor_counts_in_src = self.to_float_torch(
+                dst_padded_node_neighbor_ids.copy(),
+                lambda neighbor_id: src_mapping_dict.get(neighbor_id, 0.0),
             )
 
-            dst_padded_pos_node_neighbor_signed_counts_in_src = (
-                torch.from_numpy(dst_padded_node_neighbor_ids.copy())
-                .apply_(
-                    lambda nid: (
-                        src_sign_mapping_dict.get(nid, (0.0, 0.0))[0] + 0
-                        if ctrl_col is None
-                        else dst_sign_mapping_dict.get(nid, (0.0, 0.0))[ctrl_col]
-                    )
-                )
-                .float()
-                .to(self.device)
+            dst_padded_pos_node_neighbor_signed_counts_in_src = self.to_float_torch(
+                dst_padded_node_neighbor_ids.copy(),
+                lambda nid: src_sign_mapping_dict.get(nid, (0.0, 0.0))[0],
+                #  + 0
+                # if ctrl_col is None
             )
 
-            dst_padded_neg_node_neighbor_signed_counts_in_src = (
-                torch.from_numpy(dst_padded_node_neighbor_ids.copy())
-                .apply_(
-                    lambda nid: (
-                        src_sign_mapping_dict.get(nid, (0.0, 0.0))[1] + 0
-                        if ctrl_col is None
-                        else dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1- ctrl_col]
-                    )
-                )
-                .float()
-                .to(self.device)
+            dst_padded_neg_node_neighbor_signed_counts_in_src = self.to_float_torch(
+                dst_padded_node_neighbor_ids.copy(),
+                lambda nid: (
+                    src_sign_mapping_dict.get(nid, (0.0, 0.0))[1]
+                    # + 0
+                    # if ctrl_col is None
+                    # else dst_sign_mapping_dict.get(nid, (0.0, 0.0))[1 - ctrl_col]
+                ),
             )
 
             # Tensor, shape (dst_max_seq_length, 2)
@@ -901,7 +884,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         dst_padded_neg_node_neighbor_signed_counts_in_dst,
                         dst_padded_node_neighbor_counts_in_dst,
                         dst_padded_pos_node_neighbor_signed_counts_in_src,
-                        dst_padded_neg_node_neighbor_signed_counts_in_src
+                        dst_padded_neg_node_neighbor_signed_counts_in_src,
                     ],
                     dim=1,
                 )
