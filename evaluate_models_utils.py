@@ -44,7 +44,7 @@ def evaluate_model_link_prediction(
     assert evaluate_neg_edge_sampler.seed is not None
     evaluate_neg_edge_sampler.reset_random_state()
 
-    if model_name in ["DyRep", "TGAT", "TGN", "CAWN", "TCL", "GraphMixer", "DyGFormer"]:
+    if model_name in ["DyRep", "TGAT", "TGN", "CAWN", "TCL", "GraphMixer", "DyGFormer","SignDygFormer"]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
 
@@ -164,7 +164,7 @@ def evaluate_model_link_prediction(
                     num_neighbors=num_neighbors,
                     time_gap=time_gap,
                 )
-            elif model_name in ["DyGFormer"]:
+            elif model_name in ["SignDyGFormer"]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -253,7 +253,7 @@ def evaluate_model_node_classification(
     :param time_gap: int, time gap for neighbors to compute node features
     :return:
     """
-    if model_name in ["DyRep", "TGAT", "TGN", "CAWN", "TCL", "GraphMixer", "DyGFormer"]:
+    if model_name in ["DyRep", "TGAT", "TGN", "CAWN", "TCL", "GraphMixer", "DyGFormer","SignDyGFormer"]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
 
@@ -317,7 +317,7 @@ def evaluate_model_node_classification(
                     num_neighbors=num_neighbors,
                     time_gap=time_gap,
                 )
-            elif model_name in ["DyGFormer"]:
+            elif model_name in ["SignDyGFormer"]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[

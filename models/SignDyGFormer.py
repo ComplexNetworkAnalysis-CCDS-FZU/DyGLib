@@ -8,7 +8,7 @@ from models.modules import TimeEncoder
 from utils.utils import NeighborSampler
 
 
-class DyGFormer(nn.Module):
+class SignDyGFormer(nn.Module):
 
     def __init__(
         self,
@@ -38,7 +38,7 @@ class DyGFormer(nn.Module):
         :param max_input_sequence_length: int, maximal length of the input sequence for each node
         :param device: str, device
         """
-        super(DyGFormer, self).__init__()
+        super(SignDyGFormer, self).__init__()
 
         self.node_raw_features = torch.from_numpy(
             node_raw_features.astype(np.float32)

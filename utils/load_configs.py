@@ -40,7 +40,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
     parser.add_argument(
         "--model_name",
         type=str,
-        default="DyGFormer",
+        default="SignDyGFormer",
         help="name of the model, note that EdgeBank is only applicable for evaluation",
         choices=[
             "JODIE",
@@ -51,7 +51,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "EdgeBank",
             "TCL",
             "GraphMixer",
-            "DyGFormer",
+            "SignDyGFormer",
         ],
     )
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")
@@ -377,7 +377,7 @@ def load_link_prediction_best_configs(args: argparse.Namespace):
             args.sample_neighbor_strategy = "uniform"
         else:
             args.sample_neighbor_strategy = "recent"
-    elif args.model_name == "DyGFormer":
+    elif args.model_name == "SignDyGFormer":
         args.num_layers = 2
         if args.dataset_name in ["reddit"]:
             args.max_input_sequence_length = 64
