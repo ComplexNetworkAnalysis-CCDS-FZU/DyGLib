@@ -437,6 +437,7 @@ if __name__ == "__main__":
                 else:
                     raise ValueError(f"Wrong value for model_name {args.model_name}!")
                 # get positive and negative probabilities, shape (batch_size, )
+                # 计算链路预测，基于正负样本计算
                 positive_probabilities = (
                     model[1](
                         input_1=batch_src_node_embeddings,
