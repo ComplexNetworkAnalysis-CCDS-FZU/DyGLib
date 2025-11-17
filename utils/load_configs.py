@@ -51,6 +51,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "EdgeBank",
             "TCL",
             "GraphMixer",
+            "DyGFormer",
             "SignDyGFormer",
         ],
     )

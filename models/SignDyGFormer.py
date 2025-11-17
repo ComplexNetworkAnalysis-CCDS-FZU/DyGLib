@@ -1,3 +1,4 @@
+import typing
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,7 +7,7 @@ from torch.nn import MultiheadAttention
 
 from models.modules import TimeEncoder
 from utils.utils import NeighborSampler
-
+from typing import Union,Callable
 
 class SignDyGFormer(nn.Module):
 
@@ -641,7 +642,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
         return pos_node_neighbor_counts, neg_node_neighbor_counts, signed_mapping_dict
 
-    def to_float_torch(self, arr: np.ndarray, apply: callable | None = None):
+    def to_float_torch(self, arr: np.ndarray, apply: Union[Callable , None] = None):
         tensor = torch.from_numpy(arr)
 
         if apply is not None:

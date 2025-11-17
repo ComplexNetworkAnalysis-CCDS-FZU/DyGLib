@@ -16,6 +16,7 @@ from models.CAWN import CAWN
 from models.TCL import TCL
 from models.GraphMixer import GraphMixer
 from models.SignDyGFormer import SignDyGFormer
+from models.DyGFormer import DyGFormer
 from models.modules import MergeLayer
 from utils.utils import (
     set_random_seed,
@@ -25,7 +26,7 @@ from utils.utils import (
 )
 from utils.utils import get_neighbor_sampler, NegativeEdgeSampler
 from evaluate_models_utils import evaluate_model_link_prediction
-from utils.metrics import get_link_prediction_metrics
+from utils.metrics import get_link_prediction_metrics, get_link_sign_prediction_metrics
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_link_prediction_args
@@ -238,6 +239,11 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 device=args.device,
             )
+        elif args.model_name == 'DyGFormer':
+            dynamic_backbone = DyGFormer(node_raw_features=node_raw_features, edge_raw_features=edge_raw_features, neighbor_sampler=train_neighbor_sampler,
+                                         time_feat_dim=args.time_feat_dim, channel_embedding_dim=args.channel_embedding_dim, patch_size=args.patch_size,
+                                         num_layers=args.num_layers, num_heads=args.num_heads, dropout=args.dropout,
+                                         max_input_sequence_length=args.max_input_sequence_length, device=args.device)
         elif args.model_name == "SignDyGFormer":
             dynamic_backbone = SignDyGFormer(
                 node_raw_features=node_raw_features,
@@ -254,11 +260,12 @@ if __name__ == "__main__":
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")
+        # 符号链路预测任务，这里变为3分类问题：链路可能情况： 0：正，1：负，2：中立连接（0）,3：无连接（其他）
         link_predictor = MergeLayer(
             input_dim1=node_raw_features.shape[1],
             input_dim2=node_raw_features.shape[1],
             hidden_dim=node_raw_features.shape[1],
-            output_dim=1,
+            output_dim=4,
         )
         model = nn.Sequential(dynamic_backbone, link_predictor)
         logger.info(f"model -> {model}")
@@ -288,7 +295,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
 
-        loss_func = nn.BCELoss()
+        loss_func = nn.CrossEntropyLoss()
 
         for epoch in range(args.num_epochs):
 
@@ -300,6 +307,7 @@ if __name__ == "__main__":
                 "CAWN",
                 "TCL",
                 "GraphMixer",
+                "DyGFormer"
                 "SignDyGFormer",
             ]:
                 # training, only use training graph
@@ -411,6 +419,18 @@ if __name__ == "__main__":
                         num_neighbors=args.num_neighbors,
                         time_gap=args.time_gap,
                     )
+                elif args.model_name in ['DyGFormer']:
+                    # get temporal embedding of source and destination nodes
+                    batch_src_node_embeddings, batch_dst_node_embeddings = \
+                        model[0].compute_src_dst_node_temporal_embeddings(src_node_ids=batch_src_node_ids,
+                                                                          dst_node_ids=batch_dst_node_ids,
+                                                                          node_interact_times=batch_node_interact_times)
+
+                    # get temporal embedding of negative source and negative destination nodes
+                    batch_neg_src_node_embeddings, batch_neg_dst_node_embeddings = \
+                        model[0].compute_src_dst_node_temporal_embeddings(src_node_ids=batch_neg_src_node_ids,
+                                                                          dst_node_ids=batch_neg_dst_node_ids,
+                                                                          node_interact_times=batch_node_interact_times)
                 elif args.model_name in ["SignDyGFormer"]:
                     # get temporal embedding of source and destination nodes
                     # two Tensors, with shape (batch_size, node_feat_dim)
@@ -425,6 +445,8 @@ if __name__ == "__main__":
 
                     # get temporal embedding of negative source and negative destination nodes
                     # two Tensors, with shape (batch_size, node_feat_dim)
+                    # 负样本的符号呢？
+                    # - 可能需要考虑平衡理论，这里先简单处理，全部为0
                     (
                         batch_neg_src_node_embeddings,
                         batch_neg_dst_node_embeddings,
@@ -432,7 +454,7 @@ if __name__ == "__main__":
                         src_node_ids=batch_neg_src_node_ids,
                         dst_node_ids=batch_neg_dst_node_ids,
                         node_interact_times=batch_node_interact_times,
-                        node_interact_sign = batch_sign
+                        node_interact_sign = np.zeros_like(batch_sign)
                     )
                 else:
                     raise ValueError(f"Wrong value for model_name {args.model_name}!")
@@ -442,29 +464,34 @@ if __name__ == "__main__":
                         input_1=batch_src_node_embeddings,
                         input_2=batch_dst_node_embeddings,
                     )
-                    .squeeze(dim=-1)
                     .sigmoid()
+                    .softmax(dim =1 )
                 )
-                negative_probabilities = (
+
+                negative_probabilities = positive_probabilities[batch_sign == -1]
+                neutral_probabilities = positive_probabilities[batch_sign == 0]
+                positive_probabilities = positive_probabilities[batch_sign == 1]
+
+
+                null_probabilities = (
                     model[1](
                         input_1=batch_neg_src_node_embeddings,
                         input_2=batch_neg_dst_node_embeddings,
                     )
-                    .squeeze(dim=-1)
                     .sigmoid()
+                    .softmax(dim =1 )
                 )
 
-                # todo sign predict 
-
                 predicts = torch.cat(
-                    [positive_probabilities, negative_probabilities], dim=0
+                    [positive_probabilities,negative_probabilities,neutral_probabilities, null_probabilities], dim=0
                 )
                 labels = torch.cat(
                     [
-                        torch.ones_like(positive_probabilities),
-                        torch.zeros_like(negative_probabilities),
+                        torch.zeros(positive_probabilities.size(0),device=positive_probabilities.device,dtype=torch.long),
+                        torch.ones(negative_probabilities.size(0),device = negative_probabilities.device,dtype=torch.long),
+                        2*torch.ones(neutral_probabilities.size(0),device = neutral_probabilities.device,dtype=torch.long),
+                        3*torch.ones(null_probabilities.size(0),device = null_probabilities.device,dtype=torch.long),
                     ],
-                    dim=0,
                 )
 
                 loss = loss_func(input=predicts, target=labels)
@@ -472,7 +499,7 @@ if __name__ == "__main__":
                 train_losses.append(loss.item())
 
                 train_metrics.append(
-                    get_link_prediction_metrics(predicts=predicts, labels=labels)
+                    get_link_sign_prediction_metrics(predicts=predicts, labels=labels)
                 )
 
                 optimizer.zero_grad()
