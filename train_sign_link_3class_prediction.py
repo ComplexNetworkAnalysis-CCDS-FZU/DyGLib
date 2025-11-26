@@ -25,8 +25,8 @@ from utils.utils import (
     create_optimizer,
 )
 from utils.utils import get_neighbor_sampler, NegativeEdgeSampler
-from evaluate_models_utils import evaluate_model_sign_link_prediction
-from utils.metrics import get_link_prediction_metrics, get_link_sign_prediction_metrics
+from evaluate_models_utils import evaluate_model_sign_link_3class_prediction
+from utils.metrics import  get_link_sign_3class_prediction_metrics
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_link_prediction_args
@@ -265,7 +265,7 @@ if __name__ == "__main__":
             input_dim1=node_raw_features.shape[1],
             input_dim2=node_raw_features.shape[1],
             hidden_dim=node_raw_features.shape[1],
-            output_dim=4,
+            output_dim=3,
         )
         model = nn.Sequential(dynamic_backbone, link_predictor)
         logger.info(f"model -> {model}")
@@ -468,9 +468,13 @@ if __name__ == "__main__":
                     .softmax(dim =1 )
                 )
 
-                negative_probabilities = positive_probabilities[batch_sign == -1]
-                neutral_probabilities = positive_probabilities[batch_sign == 0]
-                positive_probabilities = positive_probabilities[batch_sign == 1]
+                # 过滤掉中立交互的情况
+                mask =  batch_sign.squeeze() != 0 
+                positive_probabilities_filter = positive_probabilities[mask]
+                batch_sign = batch_sign[mask]
+
+                negative_probabilities = positive_probabilities_filter[batch_sign == -1]
+                positive_probabilities = positive_probabilities_filter[batch_sign == 1]
 
 
                 null_probabilities = (
@@ -483,14 +487,13 @@ if __name__ == "__main__":
                 )
 
                 predicts = torch.cat(
-                    [positive_probabilities,negative_probabilities,neutral_probabilities, null_probabilities], dim=0
+                    [positive_probabilities,negative_probabilities, null_probabilities], dim=0
                 )
                 labels = torch.cat(
                     [
                         torch.zeros(positive_probabilities.size(0),device=positive_probabilities.device,dtype=torch.long),
                         torch.ones(negative_probabilities.size(0),device = negative_probabilities.device,dtype=torch.long),
-                        2*torch.ones(neutral_probabilities.size(0),device = neutral_probabilities.device,dtype=torch.long),
-                        3*torch.ones(null_probabilities.size(0),device = null_probabilities.device,dtype=torch.long),
+                        2*torch.ones(null_probabilities.size(0),device = null_probabilities.device,dtype=torch.long),
                     ],
                 )
 
@@ -499,7 +502,7 @@ if __name__ == "__main__":
                 train_losses.append(loss.item())
 
                 train_metrics.append(
-                    get_link_sign_prediction_metrics(predicts=predicts, labels=labels)
+                    get_link_sign_3class_prediction_metrics(predicts=predicts, labels=labels)
                 )
 
                 optimizer.zero_grad()
@@ -518,7 +521,7 @@ if __name__ == "__main__":
                 # backup memory bank after training so it can be used for new validation nodes
                 train_backup_memory_bank = model[0].memory_bank.backup_memory_bank()
 
-            val_losses, val_metrics = evaluate_model_sign_link_prediction(
+            val_losses, val_metrics = evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,
                 model=model,
                 neighbor_sampler=full_neighbor_sampler,
@@ -537,7 +540,7 @@ if __name__ == "__main__":
                 # reload training memory bank for new validation nodes
                 model[0].memory_bank.reload_memory_bank(train_backup_memory_bank)
 
-            new_node_val_losses, new_node_val_metrics = evaluate_model_sign_link_prediction(
+            new_node_val_losses, new_node_val_metrics = evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,
                 model=model,
                 neighbor_sampler=full_neighbor_sampler,
@@ -574,7 +577,7 @@ if __name__ == "__main__":
 
             # perform testing once after test_interval_epochs
             if (epoch + 1) % args.test_interval_epochs == 0:
-                test_losses, test_metrics = evaluate_model_sign_link_prediction(
+                test_losses, test_metrics = evaluate_model_sign_link_3class_prediction(
                     model_name=args.model_name,
                     model=model,
                     neighbor_sampler=full_neighbor_sampler,
@@ -591,7 +594,7 @@ if __name__ == "__main__":
                     model[0].memory_bank.reload_memory_bank(val_backup_memory_bank)
 
                 new_node_test_losses, new_node_test_metrics = (
-                    evaluate_model_sign_link_prediction(
+                    evaluate_model_sign_link_3class_prediction(
                         model_name=args.model_name,
                         model=model,
                         neighbor_sampler=full_neighbor_sampler,
@@ -645,7 +648,7 @@ if __name__ == "__main__":
 
         # the saved best model of memory-based models cannot perform validation since the stored memory has been updated by validation data
         if args.model_name not in ["JODIE", "DyRep", "TGN"]:
-            val_losses, val_metrics = evaluate_model_sign_link_prediction(
+            val_losses, val_metrics = evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,
                 model=model,
                 neighbor_sampler=full_neighbor_sampler,
@@ -657,7 +660,7 @@ if __name__ == "__main__":
                 time_gap=args.time_gap,
             )
 
-            new_node_val_losses, new_node_val_metrics = evaluate_model_sign_link_prediction(
+            new_node_val_losses, new_node_val_metrics = evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,
                 model=model,
                 neighbor_sampler=full_neighbor_sampler,
@@ -673,7 +676,7 @@ if __name__ == "__main__":
             # the memory in the best model has seen the validation edges, we need to backup the memory for new testing nodes
             val_backup_memory_bank = model[0].memory_bank.backup_memory_bank()
 
-        test_losses, test_metrics = evaluate_model_sign_link_prediction(
+        test_losses, test_metrics = evaluate_model_sign_link_3class_prediction(
             model_name=args.model_name,
             model=model,
             neighbor_sampler=full_neighbor_sampler,
@@ -689,7 +692,7 @@ if __name__ == "__main__":
             # reload validation memory bank for new testing nodes
             model[0].memory_bank.reload_memory_bank(val_backup_memory_bank)
 
-        new_node_test_losses, new_node_test_metrics = evaluate_model_sign_link_prediction(
+        new_node_test_losses, new_node_test_metrics = evaluate_model_sign_link_3class_prediction(
             model_name=args.model_name,
             model=model,
             neighbor_sampler=full_neighbor_sampler,

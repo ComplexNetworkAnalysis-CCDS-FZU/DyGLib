@@ -388,29 +388,39 @@ class NeighborSampler:
         :return:
         """
         # three lists to store the first-hop neighbor ids, edge ids and interaction timestamp information, with batch_size as the list length
-        nodes_neighbor_ids_list, nodes_edge_ids_list, nodes_neighbor_times_list,nodes_neighbor_sign_list = (
-            [],
-            [],
-            [],[]
-        )
+        (
+            nodes_neighbor_ids_list,
+            nodes_edge_ids_list,
+            nodes_neighbor_times_list,
+            nodes_neighbor_sign_list,
+        ) = ([], [], [], [])
         # get the temporal neighbors at the first hop
         for idx, (node_id, node_interact_time) in enumerate(
             zip(node_ids, node_interact_times)
         ):
             # find neighbors that interacted with node_id before time node_interact_time
-            node_neighbor_ids, node_edge_ids, node_neighbor_times,node_neighbor_sign, _ = (
-                self.find_neighbors_before(
-                    node_id=node_id,
-                    interact_time=node_interact_time,
-                    return_sampled_probabilities=False,
-                )
+            (
+                node_neighbor_ids,
+                node_edge_ids,
+                node_neighbor_times,
+                node_neighbor_sign,
+                _,
+            ) = self.find_neighbors_before(
+                node_id=node_id,
+                interact_time=node_interact_time,
+                return_sampled_probabilities=False,
             )
             nodes_neighbor_ids_list.append(node_neighbor_ids)
             nodes_edge_ids_list.append(node_edge_ids)
             nodes_neighbor_times_list.append(node_neighbor_times)
             nodes_neighbor_sign_list.append(node_neighbor_sign)
 
-        return nodes_neighbor_ids_list, nodes_edge_ids_list, nodes_neighbor_times_list,nodes_neighbor_sign_list
+        return (
+            nodes_neighbor_ids_list,
+            nodes_edge_ids_list,
+            nodes_neighbor_times_list,
+            nodes_neighbor_sign_list,
+        )
 
     def reset_random_state(self):
         """
