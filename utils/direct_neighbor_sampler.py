@@ -25,6 +25,15 @@ class Neighbor:
         self.sign: int = sign
         self.ty: NeighborType = ty
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"id={self.id}, "
+            f"timestamp={self.timestamp}, "
+            f'sign=< {"+" if self.sign == 1 else "-"} >, '
+            f"type={self.ty.name}"
+        )
+
 
 class NeighborGroup:
     def __init__(self):
@@ -38,10 +47,11 @@ class NeighborGroup:
         neighbors: List[Neighbor],
         *,
         ordered_seq: bool = False,
-        filter: Optional[NeighborType] = None,
+        directed_filter: Optional[NeighborType] = None,
     ):
         filtered_neighbors = filter(
-            lambda x: True if x is None else (x.ty == filter), neighbors
+            lambda x: True if directed_filter is None else (x.ty == directed_filter),
+            neighbors,
         )
         if ordered_seq:
             sorted_neighbors = list(filtered_neighbors)
@@ -49,7 +59,7 @@ class NeighborGroup:
             sorted_neighbors = sorted(filtered_neighbors, key=lambda x: x.timestamp)
 
         self.ids.append(np.array([x.id for x in sorted_neighbors]))
-        self.nodes_edge_ids.append(np.array([x.edge_id for x in sorted_neighbors]))
+        self.edges_ids.append(np.array([x.edge_id for x in sorted_neighbors]))
         self.times.append(np.array([x.timestamp for x in sorted_neighbors]))
         self.signs.append(np.array([x.sign for x in sorted_neighbors]))
 
@@ -110,7 +120,7 @@ class DirectedNeighborSampler:
         # 检查是否节点是有序的
         n = len(adj_list)
         assert set(adj_list) == set(
-            range(1, n + 1)
+            range(0, n)
         ), f"给定的邻接表的节点编号不是严格递增的连续序列"
         # the list at the first position in adj_list is empty, hence, sorted() will return an empty list for the first position
         # its corresponding value in self.nodes_neighbor_ids, self.nodes_edge_ids, self.nodes_neighbor_times will also be empty with length 0
@@ -123,11 +133,13 @@ class DirectedNeighborSampler:
                 per_node_neighbors, ordered_seq=True
             )
             self.directed_nodes_in_neighbor.push_neighbors(
-                per_node_neighbors, filter=NeighborType.IncomeNeighbor, ordered_seq=True
+                per_node_neighbors,
+                directed_filter=NeighborType.IncomeNeighbor,
+                ordered_seq=True,
             )
             self.directed_nodes_out_neighbor.push_neighbors(
                 per_node_neighbors,
-                filter=NeighborType.OutcomeNeighbor,
+                directed_filter=NeighborType.OutcomeNeighbor,
                 ordered_seq=True,
             )
 
@@ -304,7 +316,7 @@ class DirectedNeighborSampler:
             dst_nodes_neighbor_sign_list,
         ) = ([], [], [], [])
 
-        for idx, (src_node_id, dst_node_ids, interact_time) in enumerate(
+        for idx, (src_node_id, dst_node_id, interact_time) in enumerate(
             zip(src_node_ids, dst_node_ids, node_interact_times)
         ):
             # find neighbors that interacted with node_id before time node_interact_time
@@ -327,7 +339,7 @@ class DirectedNeighborSampler:
                 dst_node_neighbor_sign,
                 _,
             ) = self.find_neighbors_before(
-                node_id=src_node_id,
+                node_id=dst_node_id,
                 interact_time=interact_time,
                 return_sampled_probabilities=False,
                 neighbor_ty=neighbor_ty,
@@ -336,50 +348,65 @@ class DirectedNeighborSampler:
             common_neighbors = common_positions_np(
                 src_node_neighbor_ids, dst_node_neighbor_ids
             )
+            if len(common_neighbors) == 0:
+                # 退回普通采样
+                src_nodes_neighbor_ids_list.append(src_node_neighbor_ids)
+                src_nodes_edge_ids_list.append(src_node_edge_ids)
+                src_nodes_neighbor_times_list.append(src_node_neighbor_times)
+                src_nodes_neighbor_sign_list.append(src_node_neighbor_sign)
 
-            common_set = set(common_neighbors.keys())
+                dst_nodes_neighbor_ids_list.append(dst_node_neighbor_ids)
+                dst_nodes_edge_ids_list.append(dst_node_edge_ids)
+                dst_nodes_neighbor_times_list.append(dst_node_neighbor_times)
+                dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign)
 
-            src_idxs = []
-            dst_idxs = []
-            for v, (src_pos, dst_pos) in common_neighbors:
-                for idx in src_pos:
-                    start = max(0, idx - look_forward)
-                    # 往前找第一个公共节点或边界
-                    for left in range(idx - 1, start - 1, -1):
-                        if left < 0 or src_node_ids[left] in common_set:
-                            start = left + 1
-                            break
-                    src_idxs.append(np.arange(start, idx, dtype=np.int32))
+            else:
+                common_set = set(common_neighbors.keys())
 
-                for idx in dst_pos:
-                    start = max(0, idx - look_forward)
+                src_idxs = []
+                dst_idxs = []
+                for v, (src_pos, dst_pos) in common_neighbors.items():
+                    for idx in src_pos:
+                        start = max(0, idx - look_forward)
+                        # 往前找第一个公共节点或边界
+                        for left in range(idx - 1, start - 1, -1):
+                            if left < 0 or src_node_neighbor_ids[left] in common_set:
+                                start = left + 1
+                                break
+                        src_idxs.append(np.arange(start, idx+1, dtype=np.int32))
+                    
+                    for idx in dst_pos:
+                        start = max(0, idx - look_forward)
 
-                    for left in range(idx - 1, start - 1, -1):
-                        if left < 0 or src_node_ids[left] in common_set:
-                            start = left + 1
-                            break
-                    dst_idxs.append(np.arange(start, idx, dtype=np.int32))
+                        for left in range(idx - 1, start - 1, -1):
+                            if left < 0 or dst_node_neighbor_ids[left] in common_set:
+                                start = left + 1
+                                break
+                        dst_idxs.append(np.arange(start, idx+1, dtype=np.int32))
 
-            src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
-            src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
-            src_nodes_neighbor_times_list.append(src_node_neighbor_times[src_idxs])
-            src_nodes_neighbor_sign_list.append(src_node_neighbor_sign[src_idxs])
+                src_idxs = np.concatenate(src_idxs) if src_idxs else np.array([], dtype=np.int64)
+                dst_idxs = np.concatenate(dst_idxs) if dst_idxs else np.array([], dtype=np.int64)
 
-            dst_nodes_neighbor_ids_list.append(dst_node_neighbor_ids[dst_idxs])
-            dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
-            dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
-            dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
+                src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
+                src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
+                src_nodes_neighbor_times_list.append(src_node_neighbor_times[src_idxs])
+                src_nodes_neighbor_sign_list.append(src_node_neighbor_sign[src_idxs])
 
-            return (
-                src_nodes_neighbor_ids_list,
-                src_nodes_edge_ids_list,
-                src_nodes_neighbor_times_list,
-                src_nodes_neighbor_sign_list,
-                dst_nodes_neighbor_ids_list,
-                dst_nodes_edge_ids_list,
-                dst_nodes_neighbor_times_list,
-                dst_nodes_neighbor_sign_list,
-            )
+                dst_nodes_neighbor_ids_list.append(dst_node_neighbor_ids[dst_idxs])
+                dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
+                dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
+                dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
+
+        return (
+            src_nodes_neighbor_ids_list,
+            src_nodes_edge_ids_list,
+            src_nodes_neighbor_times_list,
+            src_nodes_neighbor_sign_list,
+            dst_nodes_neighbor_ids_list,
+            dst_nodes_edge_ids_list,
+            dst_nodes_neighbor_times_list,
+            dst_nodes_neighbor_sign_list,
+        )
 
     def reset_random_state(self):
         """
@@ -408,7 +435,7 @@ def get_neighbor_sampler(
     # the adjacency vector stores edges for each node (source or destination), undirected
     # adj_list, list of list, where each element is a list of triple tuple (node_id, edge_id, timestamp)
     # the list at the first position in adj_list is empty
-    adj_list: Dict[int, List[Neighbor]] = {[] for _ in range(max_node_id + 1)}
+    adj_list: Dict[int, List[Neighbor]] = {idx: [] for idx in range(max_node_id + 1)}
     for (
         src_node_id,
         dst_node_id,
