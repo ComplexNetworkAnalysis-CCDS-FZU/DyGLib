@@ -116,3 +116,5 @@ processed_data/*/*
 
 saved_result
 saved_models
+
+*.json
