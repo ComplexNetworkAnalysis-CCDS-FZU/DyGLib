@@ -1,3 +1,4 @@
+import datetime
 import logging
 import time
 import sys
@@ -229,7 +230,9 @@ if __name__ == "__main__":
 
         model = convert_to_gpu(model, device=args.device)
 
-        save_model_folder = f"./saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
+        start_time = datetime.now().strftime('%Y-%m-%d-%H-%M')
+
+        save_model_folder = f"./saved_models/{args.model_name}-{start_time}/{args.dataset_name}/{args.save_model_name}/"
         shutil.rmtree(save_model_folder, ignore_errors=True)
         os.makedirs(save_model_folder, exist_ok=True)
 
@@ -591,7 +594,7 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = f"./saved_results/{args.model_name}/{args.dataset_name}"
+        save_result_folder = f"./saved_results/{args.model_name}-{start_time}/{args.dataset_name}"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
             save_result_folder, f"{args.save_model_name}.json"
