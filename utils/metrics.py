@@ -1,3 +1,5 @@
+from typing import Literal, Optional
+import numpy as np
 from sklearn.calibration import label_binarize
 import torch
 from sklearn.metrics import (
@@ -6,6 +8,48 @@ from sklearn.metrics import (
     roc_auc_score,
     accuracy_score,
 )
+
+
+def save_roc_auc_score(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    average: Literal["weighted", "micro", "macro"] = "weighted",
+    n_classes: Optional[int] = None,
+):
+    if n_classes is None:
+        n_classes = y_pred.shape[1]
+
+    # 判断类型一致
+    assert (
+        n_classes == y_pred.shape[1]
+    ), f"预测类数量[{y_pred.shape[1]}]与给定类数量[{n_classes}]不一致"
+
+    auc = []
+    weight = []
+
+    for c in range(n_classes):
+        # 分为 c 类 和非c 类
+        num_y_true = (y_true == c).as_type(np.int32)
+        if len(np.unique(num_y_true)) < 2:
+            # 只有单类，无法分类，跳过
+            continue
+        # 计算单类的AUC
+        auc.append(roc_auc_score(num_y_true, y_pred[:, c]))
+
+        # 权重统计
+        if average == "weighted":
+            weight.append((y_true == c).sum())
+        else:
+            weight.append(1.0)
+
+    if len(auc) == 0:
+        # 全都是单类，跳了
+        return np.nan
+    elif average in ["weight", "macro"]:
+        return np.average(auc, weights=weight)
+    else:
+        return roc_auc_score(y_true, y_pred, average="micro", n_classes=n_classes)
 
 
 def get_link_prediction_metrics(predicts: torch.Tensor, labels: torch.Tensor):
@@ -80,7 +124,7 @@ def get_link_sign_3class_prediction_metrics(
     average_precision = average_precision_score(
         y_true=labels_bin, y_score=predicts, average="macro"
     )
-    auc = roc_auc_score(y_true=labels_bin, y_score=predicts, average="macro", multi_class="ovr")
+    auc = save_roc_auc_score(y_true=labels_bin, y_score=predicts, average="weight")
 
     return {"AP": average_precision, "F1": f1_macro, "acc": acc, "auc": auc}
 
