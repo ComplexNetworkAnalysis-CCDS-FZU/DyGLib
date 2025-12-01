@@ -520,6 +520,14 @@ def evaluate_model_sign_link_3class_prediction(
                 evaluate_data.node_interact_sign[evaluate_data_indices],
             )
 
+            mask = batch_node_interact_sign.squeeze() != 0
+
+            batch_src_node_ids= batch_src_node_ids[mask]
+            batch_dst_node_ids = batch_dst_node_ids[mask]
+            batch_node_interact_times = batch_node_interact_times[mask]
+            batch_edge_ids = batch_edge_ids[mask]
+            batch_node_interact_sign = batch_node_interact_sign[mask]
+
             if evaluate_neg_edge_sampler.negative_sample_strategy != "random":
                 batch_neg_src_node_ids, batch_neg_dst_node_ids = (
                     evaluate_neg_edge_sampler.sample(
@@ -589,9 +597,8 @@ def evaluate_model_sign_link_3class_prediction(
             )
 
             # 过滤掉中立交互的情况
-            mask = batch_node_interact_sign.squeeze() != 0
-            positive_probabilities_filter = positive_probabilities[mask]
-            batch_node_interact_sign  = batch_node_interact_sign[mask]
+            
+            positive_probabilities_filter = positive_probabilities
 
             negative_probabilities = positive_probabilities_filter[
                 batch_node_interact_sign == -1

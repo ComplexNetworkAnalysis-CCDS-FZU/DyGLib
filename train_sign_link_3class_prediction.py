@@ -2,6 +2,7 @@ import logging
 import time
 import sys
 import os
+from sklearn.utils import compute_class_weight
 from tqdm import tqdm
 import numpy as np
 import warnings
@@ -93,6 +94,14 @@ if __name__ == "__main__":
         dst_node_ids=new_node_test_data.dst_node_ids,
         seed=3,
     )
+
+    # 计算正负边占比
+    classes = np.array([1, -1])
+    non_zero = full_data.node_interact_sign[full_data.node_interact_sign != 0]
+    weights = compute_class_weight("balanced", classes=np.unique(non_zero), y=non_zero)
+    weights = np.array([weights[0], weights[1], 1], dtype=np.float32)
+
+    print(f"positive, negative, null sample weight are {weights}")
 
     # get data loaders
     train_idx_data_loader = get_idx_data_loader(
@@ -232,13 +241,14 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
 
-        loss_func = nn.CrossEntropyLoss()
+        loss_func = nn.CrossEntropyLoss(weight=torch.tensor(weights,dtype = torch.float))
 
         for epoch in range(args.num_epochs):
 
             model.train()
             if args.model_name in [
-                "DyGFormer", "SignDyGFormer",
+                "DyGFormer",
+                "SignDyGFormer",
             ]:
                 # training, only use training graph
                 model[0].set_neighbor_sampler(train_neighbor_sampler)
@@ -261,6 +271,14 @@ if __name__ == "__main__":
                     train_data.edge_ids[train_data_indices],
                     train_data.node_interact_sign[train_data_indices],
                 )
+
+                mask = batch_sign.squeeze() != 0
+
+                batch_src_node_ids = batch_src_node_ids[mask]
+                batch_dst_node_ids = batch_dst_node_ids[mask]
+                batch_node_interact_times = batch_node_interact_times[mask]
+                batch_edge_ids = batch_edge_ids[mask]
+                batch_sign = batch_sign[mask]
 
                 _, batch_neg_dst_node_ids = train_neg_edge_sampler.sample(
                     size=len(batch_src_node_ids)
@@ -327,9 +345,7 @@ if __name__ == "__main__":
                 )
 
                 # 过滤掉中立交互的情况
-                mask = batch_sign.squeeze() != 0
-                positive_probabilities_filter = positive_probabilities[mask]
-                batch_sign = batch_sign[mask]
+                positive_probabilities_filter = positive_probabilities
 
                 negative_probabilities = positive_probabilities_filter[batch_sign == -1]
                 positive_probabilities = positive_probabilities_filter[batch_sign == 1]
@@ -448,7 +464,6 @@ if __name__ == "__main__":
                     time_gap=args.time_gap,
                 )
 
-
                 new_node_test_losses, new_node_test_metrics = (
                     evaluate_model_sign_link_3class_prediction(
                         model_name=args.model_name,
@@ -462,7 +477,6 @@ if __name__ == "__main__":
                         time_gap=args.time_gap,
                     )
                 )
-
 
                 logger.info(f"test loss: {np.mean(test_losses):.4f}")
                 for metric_name in test_metrics[0].keys():
@@ -498,9 +512,6 @@ if __name__ == "__main__":
         # evaluate the best model
         logger.info(f"get final performance on dataset {args.dataset_name}...")
 
-
-
-
         test_losses, test_metrics = evaluate_model_sign_link_3class_prediction(
             model_name=args.model_name,
             model=model,
@@ -513,17 +524,18 @@ if __name__ == "__main__":
             time_gap=args.time_gap,
         )
 
-  
-        new_node_test_losses, new_node_test_metrics = evaluate_model_sign_link_3class_prediction(
-            model_name=args.model_name,
-            model=model,
-            neighbor_sampler=full_neighbor_sampler,
-            evaluate_idx_data_loader=new_node_test_idx_data_loader,
-            evaluate_neg_edge_sampler=new_node_test_neg_edge_sampler,
-            evaluate_data=new_node_test_data,
-            loss_func=loss_func,
-            num_neighbors=args.num_neighbors,
-            time_gap=args.time_gap,
+        new_node_test_losses, new_node_test_metrics = (
+            evaluate_model_sign_link_3class_prediction(
+                model_name=args.model_name,
+                model=model,
+                neighbor_sampler=full_neighbor_sampler,
+                evaluate_idx_data_loader=new_node_test_idx_data_loader,
+                evaluate_neg_edge_sampler=new_node_test_neg_edge_sampler,
+                evaluate_data=new_node_test_data,
+                loss_func=loss_func,
+                num_neighbors=args.num_neighbors,
+                time_gap=args.time_gap,
+            )
         )
         # store the evaluation metrics at the current run
         (
