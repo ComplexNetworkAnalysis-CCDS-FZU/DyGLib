@@ -1,4 +1,6 @@
+import json
 import os
+from typing import Any, Dict, Optional
 import torch
 import torch.nn as nn
 import logging
@@ -21,12 +23,13 @@ class EarlyStopping(object):
         self.early_stop = False
         self.logger = logger
         self.save_model_path = os.path.join(save_model_folder, f"{save_model_name}.pkl")
+        self.save_model_hyper_param_path = os.path.join(save_model_folder,f"{save_model_name}.param.json")
         self.model_name = model_name
         if self.model_name in ['JODIE', 'DyRep', 'TGN']:
             # path to additionally save the nonparametric data (e.g., tensors) in memory-based models (e.g., JODIE, DyRep, TGN)
             self.save_model_nonparametric_data_path = os.path.join(save_model_folder, f"{save_model_name}_nonparametric_data.pkl")
 
-    def step(self, metrics: list, model: nn.Module):
+    def step(self, metrics: list, model: nn.Module,hyper_parm:Optional[Dict[str,Any]] = None):
         """
         execute the early stop strategy for each evaluation process
         :param metrics: list, list of metrics, each element is a tuple (str, float, boolean) -> (metric_name, metric_value, whether higher means better)
@@ -53,6 +56,7 @@ class EarlyStopping(object):
                 metric_name, metric_value = metric_tuple[0], metric_tuple[1]
                 self.best_metrics[metric_name] = metric_value
             self.save_checkpoint(model)
+            self.save_hyper_param(hyper_parm)
             self.counter = 0
         # metrics are not better at the epoch
         else:
@@ -84,3 +88,19 @@ class EarlyStopping(object):
         model.load_state_dict(torch.load(self.save_model_path, map_location=map_location))
         if self.model_name in ['JODIE', 'DyRep', 'TGN']:
             model[0].memory_bank.node_raw_messages = torch.load(self.save_model_nonparametric_data_path, map_location=map_location)
+    
+    def save_hyper_param(self,parm:Optional[Dict[str,Any]]):
+        self.logger.info(f"save model hyper param {self.save_model_hyper_param_path}")
+        if parm is None:
+            return
+        with open(self.save_model_hyper_param_path,"w",encoding="UTF-8") as file:
+            json.dump(parm,file,indent=4)
+    
+    def load_hyper_param(self):
+        self.logger.info(f"load model hyper param {self.save_model_hyper_param_path}")
+
+        if os.path.exists(self.save_model_hyper_param_path):
+            with open(self.save_model_hyper_param_path, "r",encoding="UTF-8") as file:
+                return json.load(file)
+        else:
+            return None

@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -11,10 +12,12 @@ import json
 
 from models.EdgeBank import edge_bank_link_prediction
 from utils.metrics import (
+    best_thr,
     get_link_prediction_metrics,
     get_link_sign_3class_prediction_metrics,
     get_node_classification_metrics,
     get_link_sign_prediction_metrics,
+    get_sign_prediction_metrics,
 )
 from utils.utils import set_random_seed
 from utils.utils import NegativeEdgeSampler, NeighborSampler
@@ -662,6 +665,169 @@ def evaluate_model_sign_link_3class_prediction(
 
     return evaluate_losses, evaluate_metrics
 
+
+def evaluate_model_sign_prediction(
+    model_name: str,
+    model: nn.Module,
+    neighbor_sampler: NeighborSampler,
+    evaluate_idx_data_loader: DataLoader,
+    evaluate_data: Data,
+    loss_func: nn.Module,
+    num_neighbors: int = 20,
+    time_gap: int = 2000,
+    thr:Optional[float] = None
+):
+    """
+    evaluate models on the link sign prediction task
+    :param model_name: str, name of the model
+    :param model: nn.Module, the model to be evaluated
+    :param neighbor_sampler: NeighborSampler, neighbor sampler
+    :param evaluate_idx_data_loader: DataLoader, evaluate index data loader
+    :param evaluate_neg_edge_sampler: NegativeEdgeSampler, evaluate negative edge sampler
+    :param evaluate_data: Data, data to be evaluated
+    :param loss_func: nn.Module, loss function
+    :param num_neighbors: int, number of neighbors to sample for each node
+    :param time_gap: int, time gap for neighbors to compute node features
+    :return:
+    """
+    # Ensures the random sampler uses a fixed seed for evaluation (i.e. we always sample the same negatives for validation / test set)
+
+    if model_name in [
+        "DyGFormer",
+        "SignDygFormer",
+    ]:
+        # evaluation phase use all the graph information
+        model[0].set_neighbor_sampler(neighbor_sampler)
+
+    model.eval()
+
+    with torch.no_grad():
+        # store evaluate losses and metrics
+        evaluate_losses, evaluate_metrics = [], []
+        all_predict,all_label = [],[]
+        evaluate_idx_data_loader_tqdm = tqdm(evaluate_idx_data_loader, ncols=120)
+        for batch_idx, evaluate_data_indices in enumerate(
+            evaluate_idx_data_loader_tqdm
+        ):
+            evaluate_data_indices = evaluate_data_indices.numpy()
+            (
+                batch_src_node_ids,
+                batch_dst_node_ids,
+                batch_node_interact_times,
+                batch_edge_ids,
+                batch_node_interact_sign,
+            ) = (
+                evaluate_data.src_node_ids[evaluate_data_indices],
+                evaluate_data.dst_node_ids[evaluate_data_indices],
+                evaluate_data.node_interact_times[evaluate_data_indices],
+                evaluate_data.edge_ids[evaluate_data_indices],
+                evaluate_data.node_interact_sign[evaluate_data_indices],
+            )
+
+            mask = batch_node_interact_sign.squeeze() != 0
+
+            batch_src_node_ids= batch_src_node_ids[mask]
+            batch_dst_node_ids = batch_dst_node_ids[mask]
+            batch_node_interact_times = batch_node_interact_times[mask]
+            batch_edge_ids = batch_edge_ids[mask]
+            batch_node_interact_sign = batch_node_interact_sign[mask]
+
+
+            if model_name in ["DyGFormer"]:
+                # get temporal embedding of source and destination nodes
+                batch_src_node_embeddings, batch_dst_node_embeddings = model[
+                    0
+                ].compute_src_dst_node_temporal_embeddings(
+                    src_node_ids=batch_src_node_ids,
+                    dst_node_ids=batch_dst_node_ids,
+                    node_interact_times=batch_node_interact_times,
+                )
+
+    
+            elif model_name in ["SignDyGFormer"]:
+                # get temporal embedding of source and destination nodes
+                # two Tensors, with shape (batch_size, node_feat_dim)
+                batch_src_node_embeddings, batch_dst_node_embeddings = model[
+                    0
+                ].compute_src_dst_node_temporal_embeddings(
+                    src_node_ids=batch_src_node_ids,
+                    dst_node_ids=batch_dst_node_ids,
+                    node_interact_times=batch_node_interact_times,
+                    node_interact_sign=batch_node_interact_sign,
+                )
+
+            else:
+                raise ValueError(f"Wrong value for model_name {model_name}!")
+            # get positive and negative probabilities, shape (batch_size, )
+            positive_probabilities = (
+                model[1](
+                    input_1=batch_src_node_embeddings,
+                    input_2=batch_dst_node_embeddings,
+                )
+                .squeeze(-1)
+            )
+
+            # 过滤掉中立交互的情况
+            
+            positive_probabilities_filter = positive_probabilities
+
+            negative_probabilities = positive_probabilities_filter[
+                batch_node_interact_sign == -1
+            ]
+
+            positive_probabilities = positive_probabilities_filter[
+                batch_node_interact_sign == 1
+            ]
+
+            predicts = torch.cat(
+                [
+                    positive_probabilities,
+                    negative_probabilities,
+                ],
+                dim=0,
+            )
+            labels = torch.cat(
+                [
+                    torch.zeros(
+                        positive_probabilities.size(0),
+                        device=positive_probabilities.device,
+                        dtype=torch.float,
+                    ),
+                    torch.ones(
+                        negative_probabilities.size(0),
+                        device=negative_probabilities.device,
+                        dtype=torch.float,
+                    ),
+                ],
+            )
+
+            all_predict.append(predicts.numpy())
+            all_label.append(labels.numpy)
+
+            loss = loss_func(input=predicts, target=labels)
+
+            evaluate_losses.append(loss.item())
+
+            evaluate_idx_data_loader_tqdm.set_description(
+                f"evaluate for the {batch_idx + 1}-th batch, evaluate loss: {loss.item()}"
+            )
+
+        #计算best thr
+        if thr is None:
+            val_pred = np.concatenate(all_predict)
+            val_true = np.concatenate(all_label)
+
+            thr = best_thr(val_pred,val_true)
+        
+        for (val_pred,val_true) in zip(all_predict,all_label):
+            evaluate_metrics.append(
+                get_sign_prediction_metrics(
+                    predicts=torch.tensor(val_pred), labels=torch.tensor(val_true),thr=thr
+                )
+            )
+
+
+    return evaluate_losses, evaluate_metrics,thr
 
 def evaluate_model_node_classification(
     model_name: str,
