@@ -1,4 +1,5 @@
 from typing import Optional
+from sklearn.metrics import precision_recall_curve
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -788,12 +789,12 @@ def evaluate_model_sign_prediction(
             )
             labels = torch.cat(
                 [
-                    torch.zeros(
+                    torch.ones(
                         positive_probabilities.size(0),
                         device=positive_probabilities.device,
                         dtype=torch.float,
                     ),
-                    torch.ones(
+                    torch.zeros(
                         negative_probabilities.size(0),
                         device=negative_probabilities.device,
                         dtype=torch.float,
@@ -801,10 +802,10 @@ def evaluate_model_sign_prediction(
                 ],
             )
 
-            all_predict.append(predicts.numpy())
-            all_label.append(labels.numpy)
+            all_predict.append(predicts.sigmoid().numpy())
+            all_label.append(labels.numpy())
 
-            loss = loss_func(input=predicts, target=labels)
+            loss = loss_func(predicts, labels)
 
             evaluate_losses.append(loss.item())
 
@@ -818,6 +819,24 @@ def evaluate_model_sign_prediction(
             val_true = np.concatenate(all_label)
 
             thr = best_thr(val_pred,val_true)
+            print('prob 分布', np.percentile(val_pred, [0, 1, 10, 50, 90, 99, 100]))
+            precision, recall, thrs = precision_recall_curve(val_true, val_pred)
+            print(f"precision: {precision}, recall: {recall}")
+            f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
+            best_idx  = np.argmax(f1_scores)
+            print(f'max F1 = {f1_scores[best_idx]:.3f} @ thr = {thrs[best_idx]:.3f}')
+            print(f'your thr= {thr:.3f} → F1= {f1_scores[np.searchsorted(thrs, thr)]:.3f}')
+
+            print('pos prob', val_pred[val_true==1].mean())
+            print('neg prob', val_pred[val_true==0].mean())
+
+            y_pred = (val_pred >= thr).astype(int)
+            print('测试集 pred 正例数', y_pred.sum())
+            print('测试集 true 正例数', val_true.sum())
+            print('pred 正例 / true 正例 =', y_pred.sum() / max(val_true.sum(),1))
+        
+        print(f"best thr: {thr}")
+
         
         for (val_pred,val_true) in zip(all_predict,all_label):
             evaluate_metrics.append(

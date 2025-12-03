@@ -41,7 +41,7 @@ class TimeEncoder(nn.Module):
 
 class MergeLayer(nn.Module):
 
-    def __init__(self, input_dim1: int, input_dim2: int, hidden_dim: int, output_dim: int):
+    def __init__(self, input_dim1: int, input_dim2: int, hidden_dim: int, output_dim: int,require_relu:bool = True):
         """
         Merge Layer to merge two inputs via: input_dim1 + input_dim2 -> hidden_dim -> output_dim.
         :param input_dim1: int, dimension of first input
@@ -52,8 +52,10 @@ class MergeLayer(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(input_dim1 + input_dim2, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, output_dim)
-        self.act = nn.ReLU()
+        if require_relu:
+            self.act = nn.LeakyReLU(negative_slope=0.1)
 
+        self.request_relu = require_relu
     def forward(self, input_1: torch.Tensor, input_2: torch.Tensor):
         """
         merge and project the inputs

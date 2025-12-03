@@ -12,6 +12,7 @@ import json
 import torch
 import torch.nn as nn
 
+from loss_function import FocalLoss
 from models.TGAT import TGAT
 from models.MemoryModel import MemoryModel, compute_src_dst_node_time_shifts
 from models.CAWN import CAWN
@@ -33,7 +34,7 @@ from utils.metrics import get_sign_prediction_metrics
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_link_prediction_args
-
+from torch.utils.data import WeightedRandomSampler
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
@@ -96,17 +97,31 @@ if __name__ == "__main__":
         seed=3,
     )
 
+    labels = train_data.node_interact_sign               # 0/1 数组
+    pos_count = labels.sum()
+    neg_count = len(labels) - pos_count
+    weight = torch.zeros(len(labels))
+    weight[labels == 1] = 1.0 / pos_count       # 正类权重
+    weight[labels == -1] = 1.0 / neg_count       # 负类权重
+    # → 两类“期望出现次数”相等
+
+    sampler = WeightedRandomSampler(
+    weights=weight,
+    num_samples=len(weight),   # 总共抽多少条（通常=数据集大小）
+    replacement=True           # 有放回采样
+    )
+
     # get data loaders
     train_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(train_data.src_node_ids))),
         batch_size=args.batch_size,
+        sampler=sampler,
         shuffle=False,
     )
     val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(val_data.src_node_ids))),
         batch_size=args.batch_size,
-        shuffle=False,
-    )
+        shuffle=False)
     new_node_val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(new_node_val_data.src_node_ids))),
         batch_size=args.batch_size,
@@ -242,7 +257,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
 
-        loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([pos_weight]))
+        loss_func = nn.BCEWithLogitsLoss()
 
         logger.info(f"pos node interaction rate: {pos_weight}")
 
@@ -330,12 +345,12 @@ if __name__ == "__main__":
                 )
                 labels = torch.cat(
                     [
-                        torch.zeros(
+                        torch.ones(
                             positive_probabilities.size(0),
                             device=positive_probabilities.device,
                             dtype=torch.float,
                         ),
-                        torch.ones(
+                        torch.zeros(
                             negative_probabilities.size(0),
                             device=negative_probabilities.device,
                             dtype=torch.float,
@@ -343,7 +358,7 @@ if __name__ == "__main__":
                     ],
                 )
 
-                loss = loss_func(input=predicts, target=labels)
+                loss = loss_func.forward( predicts, labels)
 
                 train_losses.append(loss.item())
 
@@ -368,6 +383,7 @@ if __name__ == "__main__":
                 loss_func=loss_func,
                 num_neighbors=args.num_neighbors,
                 time_gap=args.time_gap,
+                # best_thr=np.array([0.5],dtype=np.float32)
             )
 
             new_node_val_losses, new_node_val_metrics, _ = (
@@ -453,7 +469,7 @@ if __name__ == "__main__":
                         True,
                     )
                 )
-            early_stop = early_stopping.step(val_metric_indicator, model,hyper_parm={"thr":best_thr})
+            early_stop = early_stopping.step(val_metric_indicator, model,hyper_parm={"thr":best_thr.item()})
 
             if early_stop:
                 break
