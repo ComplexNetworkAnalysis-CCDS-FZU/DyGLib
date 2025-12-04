@@ -180,6 +180,13 @@ def get_link_prediction_args(is_evaluation: bool = False):
         help="whether to load the best configurations",
     )
 
+    parser.add_argument(
+        "--pos_weight",
+        type=float,
+        help="符号分类任务中的pos权重",
+        default=1.0
+    )
+
     try:
         args = parser.parse_args()
         args.device = (

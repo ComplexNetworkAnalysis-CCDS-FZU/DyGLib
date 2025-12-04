@@ -24,14 +24,13 @@ def save_roc_auc_score(
         else:
             n_classes = y_pred.shape[1]
 
-    #二分类短路
+    # 二分类短路
     if n_classes == 2 and y_pred.ndim == 1:
-        return roc_auc_score(y_true=y_true,y_score=y_pred)
-
+        return roc_auc_score(y_true=y_true, y_score=y_pred)
 
     # 判断类型一致
     assert (
-        n_classes == y_pred.shape[1] 
+        n_classes == y_pred.shape[1]
     ), f"预测类数量[{y_pred.shape[1]}]与给定类数量[{n_classes}]不一致"
 
     auc = []
@@ -61,13 +60,14 @@ def save_roc_auc_score(
         return roc_auc_score(y_true, y_pred, average="micro", n_classes=n_classes)
 
 
-def best_thr(predict:np.ndarray,labels:np.ndarray):
+def best_thr(predict: np.ndarray, labels: np.ndarray):
     precision, recall, thr = precision_recall_curve(labels, predict)
     f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
-    best_idx  = np.argmax(f1_scores) 
-    best_thr  = thr[best_idx]  
+    best_idx = np.argmax(f1_scores)
+    best_thr = thr[best_idx]
 
     return best_thr
+
 
 def get_link_prediction_metrics(predicts: torch.Tensor, labels: torch.Tensor):
     """
@@ -145,8 +145,9 @@ def get_link_sign_3class_prediction_metrics(
 
     return {"AP": average_precision, "F1": f1_macro, "acc": acc, "auc": auc}
 
+
 def get_sign_prediction_metrics(
-    predicts: torch.Tensor, labels: torch.Tensor,*,thr:float = 0.5
+    predicts: torch.Tensor, labels: torch.Tensor, *, thr: float = 0.5
 ):
     """
     get metrics for the link prediction task
@@ -158,8 +159,18 @@ def get_sign_prediction_metrics(
     predicts = predicts.sigmoid().cpu().detach().numpy()
     labels = labels.cpu().numpy()
 
+    y_score = (predicts >= thr).astype(int)
+    acc = accuracy_score(labels, y_pred=y_score)
 
-    y_score = (predicts >=thr).astype(int) 
+    if len(np.unique(labels)) < 2:
+        return {
+            "AP": 0.0,
+            "F1_macro": 0.0,
+            "F1_binary": 0.0,
+            "F1_weighted": 0.0,
+            "acc": acc,
+            "auc": 0.5,
+        }
 
     f1_macro = f1_score(
         y_true=labels,
@@ -168,15 +179,23 @@ def get_sign_prediction_metrics(
         average="macro",
     )
 
-    acc = accuracy_score(labels, y_pred=y_score)
+    f1_binary = f1_score(y_true=labels, y_pred=y_score, zero_division=0)
 
+    f1_wt = f1_score(y_true=labels, y_pred=y_score, average="weighted", zero_division=0)
     labels_bin = label_binarize(labels, classes=[0, 1])
     average_precision = average_precision_score(
         y_true=labels_bin, y_score=predicts, average="macro"
     )
     auc = save_roc_auc_score(y_true=labels_bin, y_pred=predicts, average="weight")
 
-    return {"AP": average_precision, "F1": f1_macro, "acc": acc, "auc": auc}
+    return {
+        "AP": average_precision,
+        "F1_macro": f1_macro,
+        "F1_binary": f1_binary,
+        "F1_weighted": f1_wt,
+        "acc": acc,
+        "auc": auc,
+    }
 
 
 def get_node_classification_metrics(predicts: torch.Tensor, labels: torch.Tensor):

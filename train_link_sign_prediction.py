@@ -105,6 +105,7 @@ if __name__ == "__main__":
     weight[labels == -1] = 1.0 / neg_count       # 负类权重
     # → 两类“期望出现次数”相等
 
+    print(f"train set pos/neg weight: {weight}, pos count: {pos_count},neg count: {neg_count}")
     sampler = WeightedRandomSampler(
     weights=weight,
     num_samples=len(weight),   # 总共抽多少条（通常=数据集大小）
@@ -257,7 +258,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
 
-        loss_func = nn.BCEWithLogitsLoss()
+        loss_func = nn.BCEWithLogitsLoss(torch.tensor([args.pos_weight]))
 
         logger.info(f"pos node interaction rate: {pos_weight}")
 
