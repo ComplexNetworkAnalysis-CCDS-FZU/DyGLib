@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 import time
 import sys
@@ -21,6 +21,7 @@ from models.SignDyGFormer import SignDyGFormer
 from models.DyGFormer import DyGFormer
 from models.modules import MergeLayer
 from utils.utils import (
+    dataset_sampler,
     set_random_seed,
     convert_to_gpu,
     get_parameter_sizes,
@@ -104,11 +105,14 @@ if __name__ == "__main__":
 
     print(f"positive, negative, null sample weight are {weights}")
 
+    sampler = dataset_sampler(train_data)
+
     # get data loaders
     train_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(train_data.src_node_ids))),
         batch_size=args.batch_size,
         shuffle=False,
+        sampler=sampler
     )
     val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(val_data.src_node_ids))),
@@ -391,7 +395,12 @@ if __name__ == "__main__":
                     ],
                 )
 
+                print(f'label hist={labels.bincount().cpu().numpy()}')
+
                 loss = loss_func(input=predicts, target=labels)
+
+                print(f'pred[:4]={predicts[:4].detach().cpu().numpy()} '
+              f'loss={loss.item():.4f}')  
 
                 train_losses.append(loss.item())
 
@@ -403,11 +412,28 @@ if __name__ == "__main__":
 
                 optimizer.zero_grad()
                 loss.backward()
+
+                g = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                print(f'grad norm={g:.4f} lr={optimizer.param_groups[0]["lr"]}') 
+
                 optimizer.step()
 
                 train_idx_data_loader_tqdm.set_description(
                     f"Epoch: {epoch + 1}, train for the {batch_idx + 1}-th batch, train loss: {loss.item()}"
                 )
+                total_norm = 0
+
+                for name, p in model.named_parameters():
+                    if p.grad is not None:
+                        param_norm = p.grad.data.norm(2).item()
+                        total_norm += param_norm ** 2
+                        if param_norm < 1e-7:
+                            print(name, param_norm)   # 谁最先变成 0
+                    total_norm = total_norm ** 0.5
+                print('total_grad_norm', total_norm)
+
+                g = model[0].neighbor_co_occurrence_encoder.neighbor_sign_effect_layer[0].weight.grad.norm().item()
+                print('sparse linear grad:', g)
 
             val_losses, val_metrics = evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,

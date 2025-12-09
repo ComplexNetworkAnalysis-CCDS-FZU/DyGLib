@@ -799,3 +799,25 @@ class NegativeEdgeSampler(object):
         :return:
         """
         self.random_state = np.random.RandomState(self.seed)
+
+
+def dataset_sampler(data: Data):
+    labels = data.node_interact_sign  # 0/1 数组
+    pos_count = labels.sum()
+    neg_count = len(labels) - pos_count
+    weight = torch.zeros(len(labels))
+    weight[labels == 1] = 1.0 / pos_count  # 正类权重
+    weight[labels == -1] = 1.0 / neg_count  # 负类权重
+    # → 两类“期望出现次数”相等
+    from torch.utils.data import WeightedRandomSampler
+
+    print(
+        f"train set pos/neg weight: {weight}, pos count: {pos_count},neg count: {neg_count}"
+    )
+    sampler = WeightedRandomSampler(
+        weights=weight,
+        num_samples=len(weight),  # 总共抽多少条（通常=数据集大小）
+        replacement=True,  # 有放回采样
+    )
+
+    return sampler

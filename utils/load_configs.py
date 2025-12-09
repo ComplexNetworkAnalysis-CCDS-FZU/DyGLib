@@ -34,6 +34,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "WikiVote",
             "BitcoinAlpha",
             "BitcoinOTC",
+            "RedditHyperlinkTitle","RedditHyperlinkTitle"
         ],
     )
     parser.add_argument("--batch_size", type=int, default=200, help="batch size")

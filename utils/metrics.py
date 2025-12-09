@@ -141,7 +141,7 @@ def get_link_sign_3class_prediction_metrics(
     average_precision = average_precision_score(
         y_true=labels_bin, y_score=predicts, average="macro"
     )
-    auc = save_roc_auc_score(y_true=labels_bin, y_score=predicts, average="weight")
+    auc = save_roc_auc_score(y_true=labels, y_pred=predicts, average="weight")
 
     return {"AP": average_precision, "F1": f1_macro, "acc": acc, "auc": auc}
 

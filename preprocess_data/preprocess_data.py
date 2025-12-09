@@ -29,9 +29,10 @@ def preprocess(
     with open(dataset_name) as f:
         # skip the first line
         if skip_first_line:
-            s = next(f)
+            s = f.readline()
         lines = f.readlines()
-        lines.sort(key=lambda x: float(x.strip().split(sep)[-1]))
+
+        lines.sort(key=lambda x: float(x.strip().split(sep)[ts_idx]))
         previous_time = -1
         import tqdm
 
@@ -60,8 +61,8 @@ def preprocess(
             # state_label
             label = (
                 0.0
-                if len(e) <= (3 if unsigned else 4)
-                else float(e[3 if unsigned else 4])
+                # if len(e) <= (3 if unsigned else 4)
+                # else float(e[3 if unsigned else 4])
             )
 
             # edge features
@@ -231,7 +232,7 @@ class PreprocessArgs(BaseModel):
         "Contacts",
         "WikiVote",
         "BitcoinAlpha",
-        "BitcoinOTC",
+        "BitcoinOTC","RedditHyperlinkTitle","RedditHyperlinkBody"
     ] = Field(default="wikipedia", description="Dataset name")
     node_feat_dim: int = Field(172, description="Number of node raw features")
     unsigned: bool = Field(False, description="Unsigned Graph")
@@ -278,6 +279,14 @@ else:
             bipartite=False,
             node_feat_dim=args.node_feat_dim,
             skip_first_line=False,
+            unsigned=False,
+            swap_time_sign=True,
+        )
+    elif args.dataset_name in ["RedditHyperlinkTitle","RedditHyperlinkBody"]:
+        preprocess_data(
+            dataset_name=args.dataset_name,
+            bipartite=False,
+            node_feat_dim=args.node_feat_dim,
             unsigned=False,
             swap_time_sign=True,
         )
