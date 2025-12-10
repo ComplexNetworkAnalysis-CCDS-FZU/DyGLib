@@ -91,6 +91,7 @@ class DirectedNeighborSampler:
         sample_neighbor_strategy: str = "uniform",
         time_scaling_factor: float = 0.0,
         seed: int = None,
+        common_neighbor_look_forward: int = 5
     ):
         """
         Neighbor sampler.
@@ -102,6 +103,7 @@ class DirectedNeighborSampler:
         """
         self.sample_neighbor_strategy = sample_neighbor_strategy
         self.seed = seed
+        self.common_neighbors_look_forward = common_neighbor_look_forward
 
         # list of each node's neighbor ids, edge ids and interaction times, which are sorted by interaction times
         # 无符号时使用的邻居，不考虑邻居符号信息
@@ -209,8 +211,11 @@ class DirectedNeighborSampler:
 
         # return index i, which satisfies list[i - 1] < v <= list[i]
         # return 0 for the first position in self.nodes_neighbor_times since the value at the first position is empty
-        i = np.searchsorted(nodes_neighbors.times[node_id], interact_time)
-
+        try:
+            i = np.searchsorted(nodes_neighbors.times[node_id], interact_time)
+        except IndexError:
+            print(f"Detect Index Error, request idx: {node_id}, max_list len: {len(nodes_neighbors.times)}")
+            raise
         (
             nodes_neighbor_ids,
             nodes_edge_ids,
@@ -295,7 +300,6 @@ class DirectedNeighborSampler:
         dst_node_ids: np.ndarray,
         node_interact_times: np.ndarray,
         *,
-        look_forward: int = 5,
         neighbor_ty: Optional[NeighborType] = None,
     ):
         """
@@ -367,7 +371,7 @@ class DirectedNeighborSampler:
                 dst_idxs = []
                 for v, (src_pos, dst_pos) in common_neighbors.items():
                     for idx in src_pos:
-                        start = max(0, idx - look_forward)
+                        start = max(0, idx - self.common_neighbors_look_forward)
                         # 往前找第一个公共节点或边界
                         for left in range(idx - 1, start - 1, -1):
                             if left < 0 or src_node_neighbor_ids[left] in common_set:
@@ -376,7 +380,7 @@ class DirectedNeighborSampler:
                         src_idxs.append(np.arange(start, idx+1, dtype=np.int32))
                     
                     for idx in dst_pos:
-                        start = max(0, idx - look_forward)
+                        start = max(0, idx - self.common_neighbors_look_forward)
 
                         for left in range(idx - 1, start - 1, -1):
                             if left < 0 or dst_node_neighbor_ids[left] in common_set:
@@ -421,6 +425,7 @@ def get_neighbor_sampler(
     sample_neighbor_strategy: str = "uniform",
     time_scaling_factor: float = 0.0,
     seed: int = None,
+    common_neighbor_look_forward:int =2
 ):
     """
     get neighbor sampler
@@ -473,4 +478,5 @@ def get_neighbor_sampler(
         sample_neighbor_strategy=sample_neighbor_strategy,
         time_scaling_factor=time_scaling_factor,
         seed=seed,
+        common_neighbor_look_forward=common_neighbor_look_forward
     )

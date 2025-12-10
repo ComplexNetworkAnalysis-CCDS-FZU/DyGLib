@@ -33,14 +33,15 @@ from evaluate_models_utils import evaluate_model_sign_prediction
 from utils.metrics import get_sign_prediction_metrics
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
-from utils.load_configs import get_link_prediction_args
+from utils.load_configs import get_link_prediction_args, get_sign_prediction_args
 from torch.utils.data import WeightedRandomSampler
+
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
     # get arguments
-    args = get_link_prediction_args(is_evaluation=False)
+    args = get_sign_prediction_args(is_evaluation=False)
 
     # get data for training, validation and testing
     (
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -72,6 +74,7 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -97,19 +100,21 @@ if __name__ == "__main__":
         seed=3,
     )
 
-    labels = train_data.node_interact_sign               # 0/1 数组
+    labels = train_data.node_interact_sign  # 0/1 数组
     pos_count = labels.sum()
     neg_count = len(labels) - pos_count
     weight = torch.zeros(len(labels))
-    weight[labels == 1] = 1.0 / pos_count       # 正类权重
-    weight[labels == -1] = 1.0 / neg_count       # 负类权重
+    weight[labels == 1] = 1.0 / pos_count  # 正类权重
+    weight[labels == -1] = 1.0 / neg_count  # 负类权重
     # → 两类“期望出现次数”相等
 
-    print(f"train set pos/neg weight: {weight}, pos count: {pos_count},neg count: {neg_count}")
+    print(
+        f"train set pos/neg weight: {weight}, pos count: {pos_count},neg count: {neg_count}"
+    )
     sampler = WeightedRandomSampler(
-    weights=weight,
-    num_samples=len(weight),   # 总共抽多少条（通常=数据集大小）
-    replacement=True           # 有放回采样
+        weights=weight,
+        num_samples=len(weight),  # 总共抽多少条（通常=数据集大小）
+        replacement=True,  # 有放回采样
     )
 
     # get data loaders
@@ -122,7 +127,8 @@ if __name__ == "__main__":
     val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(val_data.src_node_ids))),
         batch_size=args.batch_size,
-        shuffle=False)
+        shuffle=False,
+    )
     new_node_val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(new_node_val_data.src_node_ids))),
         batch_size=args.batch_size,
@@ -359,7 +365,7 @@ if __name__ == "__main__":
                     ],
                 )
 
-                loss = loss_func.forward( predicts, labels)
+                loss = loss_func.forward(predicts, labels)
 
                 train_losses.append(loss.item())
 
@@ -470,15 +476,17 @@ if __name__ == "__main__":
                         True,
                     )
                 )
-            early_stop = early_stopping.step(val_metric_indicator, model,hyper_parm={"thr":best_thr.item()})
+            early_stop = early_stopping.step(
+                val_metric_indicator, model, hyper_parm={"thr": best_thr.item()}
+            )
 
             if early_stop:
                 break
 
         # load the best model
         early_stopping.load_checkpoint(model)
-        hyper_param  = early_stopping.load_hyper_param()
-        best_thr =0.5 if hyper_param is not None else hyper_param.get("thr",0.5)
+        hyper_param = early_stopping.load_hyper_param()
+        best_thr = 0.5 if hyper_param is not None else hyper_param.get("thr", 0.5)
 
         # evaluate the best model
         logger.info(f"get final performance on dataset {args.dataset_name}...")

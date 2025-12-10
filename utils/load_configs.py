@@ -1,6 +1,90 @@
 import argparse
 import sys
+from typing import Literal
 import torch
+from pydantic.v1 import BaseModel, Field
+
+
+class SignPredictArgs(BaseModel):
+    dataset_name: Literal[
+        "WikiVote",
+        "BitcoinAlpha",
+        "BitcoinOTC",
+        "RedditHyperlinkTitle",
+        "RedditHyperlinkBody",
+    ] = Field("BitcoinAlpha", description="dataset to be used")
+
+    batch_size: int = Field(200, description="batch size")
+    model_name: Literal[
+        "DyGFormer",
+        "SignDyGFormer",
+    ] = Field("SignDyGFormer", description="name of the model")
+
+    gpu: int = Field(0, description="number of gpu to use")
+    cuda:str = Field(f"cuda:{self.gpu}" if torch.cuda.is_available() and args.gpu >= 0 else "cpu")
+
+    # 采样策略
+    num_neighbors: int = Field(20, description="每个节点采样的邻居数量")
+    sample_neighbor_strategy: Literal["uniform", "recent", "time_interval_aware"] = (
+        Field("recent", description="历史邻居采样策略")
+    )
+    time_scaling_factor: float = Field(
+        1e-6,
+        description="控制时间间隔对采样的影响，更大的值倾向于采样更近的节点，当0时就是平均采样",
+    )
+    common_neighbors_look_forward: int = Field(
+        2, description="每个共同邻居前向采样数量"
+    )
+
+    # 模型参数
+    number_heads: int = Field(2, description="注意力层中头的数量")
+    number_layer: int = Field(2, description="模型层数量")
+    seed:int = Field(2026)
+
+    # 潜空间维度
+    time_feat_dim: int = Field(100, description="时间编码的维度")
+    position_feat_dim: int = Field(172, description="位置编码的维度")
+    patch_size: int = Field(1, description="切片大小")
+    channel_embedding_dim: int = Field(
+        50, description="各个通道的嵌入维度（邻居共现等）"
+    )
+    max_input_sequence_length: int = Field(32, description="各个节点的最大输入长度")
+
+    # 模型训练参数
+    learning_rate: float = Field(0.0001)
+    dropout: float = Field(0.1)
+    num_epoch: int = Field(100)
+    optimizer: Literal["SGD", "Adam", "RMSprop"] = Field("Adam")
+
+    weight_decay: float = Field(
+        1e-4, description="L2正则化系数（权重衰减），缓解过拟合用"
+    )
+
+    patience: int = Field(20, description="早停机制的耐心度")
+
+    # 数据集划分
+    val_ratio: float = Field(0.15, description="验证集比例")
+    val_test: float = Field(0.15, description="测试集比例")
+    test_interval_epochs: int = Field(5, description="每隔多少epoch运行一次测试集")
+
+    negative_sample_strategy: Literal["random", "historical", "inductive"] = Field(
+        "random", description="负连边采样策略"
+    )
+    @property
+    def device(self):
+        return f"cuda:{self.gpu}" if torch.cuda.is_available() and self.gpu >= 0 else "cpu"
+
+def get_sign_prediction_args(is_evaluation=False):
+    import pydantic_argparse
+    parser = pydantic_argparse.ArgumentParser(SignPredictArgs)
+
+    try:
+        args = parser.parse_typed_args()
+    except:
+        parser.print_help()
+        sys.exit()
+
+    return args
 
 
 def get_link_prediction_args(is_evaluation: bool = False):
@@ -34,7 +118,8 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "WikiVote",
             "BitcoinAlpha",
             "BitcoinOTC",
-            "RedditHyperlinkTitle","RedditHyperlinkTitle"
+            "RedditHyperlinkTitle",
+            "RedditHyperlinkBody",
         ],
     )
     parser.add_argument("--batch_size", type=int, default=200, help="batch size")
@@ -182,10 +267,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
     )
 
     parser.add_argument(
-        "--pos_weight",
-        type=float,
-        help="符号分类任务中的pos权重",
-        default=1.0
+        "--pos_weight", type=float, help="符号分类任务中的pos权重", default=1.0
     )
 
     try:
