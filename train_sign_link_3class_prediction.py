@@ -12,14 +12,9 @@ import json
 import torch
 import torch.nn as nn
 
-from models.TGAT import TGAT
-from models.MemoryModel import MemoryModel, compute_src_dst_node_time_shifts
-from models.CAWN import CAWN
-from models.TCL import TCL
-from models.GraphMixer import GraphMixer
 from models.SignDyGFormer import SignDyGFormer
 from models.DyGFormer import DyGFormer
-from models.modules import MergeLayer
+from models.modules import SignNullClassifyLayer
 from utils.utils import (
     dataset_sampler,
     set_random_seed,
@@ -33,14 +28,14 @@ from evaluate_models_utils import evaluate_model_sign_link_3class_prediction
 from utils.metrics import get_link_sign_3class_prediction_metrics
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
-from utils.load_configs import get_link_prediction_args
+from utils.load_configs import get_sign_prediction_args
 
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
 
     # get arguments
-    args = get_link_prediction_args(is_evaluation=False)
+    args = get_sign_prediction_args(is_evaluation=False)
 
     # get data for training, validation and testing
     (
@@ -64,6 +59,7 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -72,6 +68,7 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -112,7 +109,7 @@ if __name__ == "__main__":
         indices_list=list(range(len(train_data.src_node_ids))),
         batch_size=args.batch_size,
         shuffle=False,
-        sampler=sampler
+        sampler=sampler,
     )
     val_idx_data_loader = get_idx_data_loader(
         indices_list=list(range(len(val_data.src_node_ids))),
@@ -212,13 +209,14 @@ if __name__ == "__main__":
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")
         # 符号链路预测任务，这里变为3分类问题：链路可能情况： 0：正，1：负，2：中立连接（0）,3：无连接（其他）
-        link_predictor = MergeLayer(
+        link_sign_predictor = SignNullClassifyLayer(
             input_dim1=node_raw_features.shape[1],
             input_dim2=node_raw_features.shape[1],
+            null_input_dim1=node_raw_features.shape[1],
+            null_input_dim2=node_raw_features.shape[1],
             hidden_dim=node_raw_features.shape[1],
-            output_dim=3,
         )
-        model = nn.Sequential(dynamic_backbone, link_predictor)
+        model = nn.Sequential(dynamic_backbone, link_sign_predictor)
         logger.info(f"model -> {model}")
         logger.info(
             f"model name: {args.model_name}, #parameters: {get_parameter_sizes(model) * 4} B, "
@@ -234,7 +232,7 @@ if __name__ == "__main__":
 
         model = convert_to_gpu(model, device=args.device)
 
-        start_time = datetime.now().strftime('%Y-%m-%d-%H-%M')
+        start_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
         save_model_folder = f"./saved_models/{args.model_name}-{start_time}/{args.dataset_name}/{args.save_model_name}/"
         shutil.rmtree(save_model_folder, ignore_errors=True)
@@ -248,7 +246,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
         )
 
-        loss_func = nn.CrossEntropyLoss(weight=torch.tensor(weights,dtype = torch.float))
+        loss_func = nn.BCEWithLogitsLoss()
 
         for epoch in range(args.num_epochs):
 
@@ -342,112 +340,92 @@ if __name__ == "__main__":
                 else:
                     raise ValueError(f"Wrong value for model_name {args.model_name}!")
                 # get positive and negative probabilities, shape (batch_size, )
-                positive_probabilities = (
-                    model[1](
-                        input_1=batch_src_node_embeddings,
-                        input_2=batch_dst_node_embeddings,
-                    )
-                    .sigmoid()
-                    .softmax(dim=1)
+                exist_predict, sign_predict = model[1](
+                    input_1=batch_src_node_embeddings,
+                    input_2=batch_dst_node_embeddings,
+                    null_input_1=batch_neg_src_node_embeddings,
+                    null_input_2=batch_neg_dst_node_embeddings,
                 )
 
-                # 过滤掉中立交互的情况
-                positive_probabilities_filter = positive_probabilities
-
-                negative_probabilities = positive_probabilities_filter[batch_sign == -1]
-                positive_probabilities = positive_probabilities_filter[batch_sign == 1]
-
-                null_probabilities = (
-                    model[1](
-                        input_1=batch_neg_src_node_embeddings,
-                        input_2=batch_neg_dst_node_embeddings,
-                    )
-                    .sigmoid()
-                    .softmax(dim=1)
-                )
-
-                predicts = torch.cat(
+                exist_label = torch.cat(
                     [
-                        positive_probabilities,
-                        negative_probabilities,
-                        null_probabilities,
-                    ],
-                    dim=0,
-                )
-                labels = torch.cat(
-                    [
-                        torch.zeros(
-                            positive_probabilities.size(0),
-                            device=positive_probabilities.device,
-                            dtype=torch.long,
-                        ),
                         torch.ones(
-                            negative_probabilities.size(0),
-                            device=negative_probabilities.device,
-                            dtype=torch.long,
-                        ),
-                        2
-                        * torch.ones(
-                            null_probabilities.size(0),
-                            device=null_probabilities.device,
-                            dtype=torch.long,
-                        ),
-                    ],
-                )
+                            batch_src_node_embeddings.size(0),
+                            device=batch_src_node_embeddings.device,
+                        ),  # 有边
+                        torch.zeros(
+                            batch_neg_src_node_embeddings.size(0),
+                            device=batch_neg_src_node_embeddings.device,
+                        ),  # null
+                    ]
+                ).unsqueeze(1)
 
-                print(f'label hist={labels.bincount().cpu().numpy()}')
+                exist_loss = loss_func(input=exist_predict, target=exist_label)
 
-                loss = loss_func(input=predicts, target=labels)
+                sign_label = torch.tensor(
+                    batch_sign > 0, device=batch_src_node_embeddings.device, dtype=float
+                ).unsqueeze(1)
 
-                print(f'pred[:4]={predicts[:4].detach().cpu().numpy()} '
-              f'loss={loss.item():.4f}')  
+                sign_loss = loss_func(input=sign_predict, target=sign_label)
+
+                loss = exist_loss + sign_loss
 
                 train_losses.append(loss.item())
 
                 train_metrics.append(
                     get_link_sign_3class_prediction_metrics(
-                        predicts=predicts, labels=labels
+                        sign_predicts=sign_predict,
+                        sign_labels=sign_label,
+                        exist_predicts=exist_predict,
+                        exist_labels=exist_label,
                     )
                 )
 
                 optimizer.zero_grad()
                 loss.backward()
 
-                g = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                print(f'grad norm={g:.4f} lr={optimizer.param_groups[0]["lr"]}') 
+                # g = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                # print(f'grad norm={g:.4f} lr={optimizer.param_groups[0]["lr"]}')
 
                 optimizer.step()
 
                 train_idx_data_loader_tqdm.set_description(
-                    f"Epoch: {epoch + 1}, train for the {batch_idx + 1}-th batch, train loss: {loss.item()}"
+                    f"Epoch: {epoch + 1}, train for the {batch_idx + 1}-th batch, train loss: [exist:{exist_loss.item():4f}, sign:{sign_loss.item():4f}]"
                 )
-                total_norm = 0
+                # total_norm = 0
 
-                for name, p in model.named_parameters():
-                    if p.grad is not None:
-                        param_norm = p.grad.data.norm(2).item()
-                        total_norm += param_norm ** 2
-                        if param_norm < 1e-7:
-                            print(name, param_norm)   # 谁最先变成 0
-                    total_norm = total_norm ** 0.5
-                print('total_grad_norm', total_norm)
+                # for name, p in model.named_parameters():
+                #     if p.grad is not None:
+                #         param_norm = p.grad.data.norm(2).item()
+                #         total_norm += param_norm**2
+                #         if param_norm < 1e-7:
+                #             print(name, param_norm)  # 谁最先变成 0
+                #     total_norm = total_norm**0.5
+                # print("total_grad_norm", total_norm)
 
-                g = model[0].neighbor_co_occurrence_encoder.neighbor_sign_effect_layer[0].weight.grad.norm().item()
-                print('sparse linear grad:', g)
+                # g = (
+                #     model[0]
+                #     .neighbor_co_occurrence_encoder.neighbor_sign_effect_layer[0]
+                #     .weight.grad.norm()
+                #     .item()
+                # )
+                # print("sparse linear grad:", g)
 
-            val_losses, val_metrics = evaluate_model_sign_link_3class_prediction(
-                model_name=args.model_name,
-                model=model,
-                neighbor_sampler=full_neighbor_sampler,
-                evaluate_idx_data_loader=val_idx_data_loader,
-                evaluate_neg_edge_sampler=val_neg_edge_sampler,
-                evaluate_data=val_data,
-                loss_func=loss_func,
-                num_neighbors=args.num_neighbors,
-                time_gap=args.time_gap,
+            val_losses, val_metrics, best_exist_thr, best_sign_thr = (
+                evaluate_model_sign_link_3class_prediction(
+                    model_name=args.model_name,
+                    model=model,
+                    neighbor_sampler=full_neighbor_sampler,
+                    evaluate_idx_data_loader=val_idx_data_loader,
+                    evaluate_neg_edge_sampler=val_neg_edge_sampler,
+                    evaluate_data=val_data,
+                    loss_func=loss_func,
+                    num_neighbors=args.num_neighbors,
+                    time_gap=args.time_gap,
+                )
             )
 
-            new_node_val_losses, new_node_val_metrics = (
+            new_node_val_losses, new_node_val_metrics, best_exist_thr, best_sign_thr = (
                 evaluate_model_sign_link_3class_prediction(
                     model_name=args.model_name,
                     model=model,
@@ -458,6 +436,8 @@ if __name__ == "__main__":
                     loss_func=loss_func,
                     num_neighbors=args.num_neighbors,
                     time_gap=args.time_gap,
+                    sign_best_thr=best_sign_thr,
+                    exist_best_thr=best_exist_thr,
                 )
             )
 
@@ -481,30 +461,39 @@ if __name__ == "__main__":
 
             # perform testing once after test_interval_epochs
             if (epoch + 1) % args.test_interval_epochs == 0:
-                test_losses, test_metrics = evaluate_model_sign_link_3class_prediction(
-                    model_name=args.model_name,
-                    model=model,
-                    neighbor_sampler=full_neighbor_sampler,
-                    evaluate_idx_data_loader=test_idx_data_loader,
-                    evaluate_neg_edge_sampler=test_neg_edge_sampler,
-                    evaluate_data=test_data,
-                    loss_func=loss_func,
-                    num_neighbors=args.num_neighbors,
-                    time_gap=args.time_gap,
-                )
-
-                new_node_test_losses, new_node_test_metrics = (
+                test_losses, test_metrics, best_exist_thr, best_sign_thr = (
                     evaluate_model_sign_link_3class_prediction(
                         model_name=args.model_name,
                         model=model,
                         neighbor_sampler=full_neighbor_sampler,
-                        evaluate_idx_data_loader=new_node_test_idx_data_loader,
-                        evaluate_neg_edge_sampler=new_node_test_neg_edge_sampler,
-                        evaluate_data=new_node_test_data,
+                        evaluate_idx_data_loader=test_idx_data_loader,
+                        evaluate_neg_edge_sampler=test_neg_edge_sampler,
+                        evaluate_data=test_data,
                         loss_func=loss_func,
                         num_neighbors=args.num_neighbors,
                         time_gap=args.time_gap,
+                        sign_best_thr=best_sign_thr,
+                        exist_best_thr=best_exist_thr,
                     )
+                )
+
+                (
+                    new_node_test_losses,
+                    new_node_test_metrics,
+                    best_exist_thr,
+                    best_sign_thr,
+                ) = evaluate_model_sign_link_3class_prediction(
+                    model_name=args.model_name,
+                    model=model,
+                    neighbor_sampler=full_neighbor_sampler,
+                    evaluate_idx_data_loader=new_node_test_idx_data_loader,
+                    evaluate_neg_edge_sampler=new_node_test_neg_edge_sampler,
+                    evaluate_data=new_node_test_data,
+                    loss_func=loss_func,
+                    num_neighbors=args.num_neighbors,
+                    time_gap=args.time_gap,
+                    sign_best_thr=best_sign_thr,
+                    exist_best_thr=best_exist_thr,
                 )
 
                 logger.info(f"test loss: {np.mean(test_losses):.4f}")
@@ -530,18 +519,33 @@ if __name__ == "__main__":
                         True,
                     )
                 )
-            early_stop = early_stopping.step(val_metric_indicator, model)
+            early_stop = early_stopping.step(
+                val_metric_indicator,
+                model,
+                hyper_parm={
+                    "best_sign_thr": best_sign_thr,
+                    "best_exist_thr": best_exist_thr,
+                },
+            )
 
             if early_stop:
                 break
 
         # load the best model
         early_stopping.load_checkpoint(model)
-
+        hyper_parm = early_stopping.load_hyper_param()
+        best_sign_thr = hyper_parm["best_sign_thr"]
+        best_exist_thr = hyper_parm["best_exist_thr"]
         # evaluate the best model
         logger.info(f"get final performance on dataset {args.dataset_name}...")
 
-        test_losses, test_metrics = evaluate_model_sign_link_3class_prediction(
+        (
+            test_losses,
+            test_metrics,
+            best_sign_thr,
+            _,
+            _,
+        ) = evaluate_model_sign_link_3class_prediction(
             model_name=args.model_name,
             model=model,
             neighbor_sampler=full_neighbor_sampler,
@@ -551,9 +555,11 @@ if __name__ == "__main__":
             loss_func=loss_func,
             num_neighbors=args.num_neighbors,
             time_gap=args.time_gap,
+            sign_best_thr=best_sign_thr,
+            exist_best_thr=best_exist_thr,
         )
 
-        new_node_test_losses, new_node_test_metrics = (
+        new_node_test_losses, new_node_test_metrics, _, _ = (
             evaluate_model_sign_link_3class_prediction(
                 model_name=args.model_name,
                 model=model,
@@ -564,6 +570,8 @@ if __name__ == "__main__":
                 loss_func=loss_func,
                 num_neighbors=args.num_neighbors,
                 time_gap=args.time_gap,
+                sign_best_thr=best_sign_thr,
+                exist_best_thr=best_exist_thr,
             )
         )
         # store the evaluation metrics at the current run
@@ -620,7 +628,9 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = f"./saved_results/{args.model_name}-{start_time}/{args.dataset_name}"
+        save_result_folder = (
+            f"./saved_results/{args.model_name}-{start_time}/{args.dataset_name}"
+        )
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
             save_result_folder, f"{args.save_model_name}.json"

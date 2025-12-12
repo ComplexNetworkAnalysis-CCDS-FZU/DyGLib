@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import torch
 import torch.nn as nn
 import logging
@@ -8,7 +8,15 @@ import logging
 
 class EarlyStopping(object):
 
-    def __init__(self, patience: int, save_model_folder: str, save_model_name: str, logger: logging.Logger, model_name: str = None):
+    def __init__(
+        self,
+        patience: int,
+        save_model_folder: str,
+        save_model_name: str,
+        logger: logging.Logger,
+        model_name: str = None,
+        metric_notice:Optional[List[str]] = None
+    ):
         """
         Early stop strategy.
         :param patience: int, max patience
@@ -23,13 +31,23 @@ class EarlyStopping(object):
         self.early_stop = False
         self.logger = logger
         self.save_model_path = os.path.join(save_model_folder, f"{save_model_name}.pkl")
-        self.save_model_hyper_param_path = os.path.join(save_model_folder,f"{save_model_name}.param.json")
+        self.save_model_hyper_param_path = os.path.join(
+            save_model_folder, f"{save_model_name}.param.json"
+        )
         self.model_name = model_name
-        if self.model_name in ['JODIE', 'DyRep', 'TGN']:
+        if self.model_name in ["JODIE", "DyRep", "TGN"]:
             # path to additionally save the nonparametric data (e.g., tensors) in memory-based models (e.g., JODIE, DyRep, TGN)
-            self.save_model_nonparametric_data_path = os.path.join(save_model_folder, f"{save_model_name}_nonparametric_data.pkl")
+            self.save_model_nonparametric_data_path = os.path.join(
+                save_model_folder, f"{save_model_name}_nonparametric_data.pkl"
+            )
+        self.metric_notice = metric_notice
 
-    def step(self, metrics: list, model: nn.Module,hyper_parm:Optional[Dict[str,Any]] = None):
+    def step(
+        self,
+        metrics: list,
+        model: nn.Module,
+        hyper_parm: Optional[Dict[str, Any]] = None,
+    ):
         """
         execute the early stop strategy for each evaluation process
         :param metrics: list, list of metrics, each element is a tuple (str, float, boolean) -> (metric_name, metric_value, whether higher means better)
@@ -38,15 +56,27 @@ class EarlyStopping(object):
         """
         metrics_compare_results = []
         for metric_tuple in metrics:
-            metric_name, metric_value, higher_better = metric_tuple[0], metric_tuple[1], metric_tuple[2]
+            metric_name, metric_value, higher_better = (
+                metric_tuple[0],
+                metric_tuple[1],
+                metric_tuple[2],
+            )
+
+            if self.metric_notice is not None:
+                if metric_name not in self.metric_notice:
+                    continue
 
             if higher_better:
-                if self.best_metrics.get(metric_name) is None or metric_value >= self.best_metrics.get(metric_name):
+                if self.best_metrics.get(
+                    metric_name
+                ) is None or metric_value >= self.best_metrics.get(metric_name):
                     metrics_compare_results.append(True)
                 else:
                     metrics_compare_results.append(False)
             else:
-                if self.best_metrics.get(metric_name) is None or metric_value <= self.best_metrics.get(metric_name):
+                if self.best_metrics.get(
+                    metric_name
+                ) is None or metric_value <= self.best_metrics.get(metric_name):
                     metrics_compare_results.append(True)
                 else:
                     metrics_compare_results.append(False)
@@ -74,8 +104,11 @@ class EarlyStopping(object):
         """
         self.logger.info(f"save model {self.save_model_path}")
         torch.save(model.state_dict(), self.save_model_path)
-        if self.model_name in ['JODIE', 'DyRep', 'TGN']:
-            torch.save(model[0].memory_bank.node_raw_messages, self.save_model_nonparametric_data_path)
+        if self.model_name in ["JODIE", "DyRep", "TGN"]:
+            torch.save(
+                model[0].memory_bank.node_raw_messages,
+                self.save_model_nonparametric_data_path,
+            )
 
     def load_checkpoint(self, model: nn.Module, map_location: str = None):
         """
@@ -85,22 +118,26 @@ class EarlyStopping(object):
         :return:
         """
         self.logger.info(f"load model {self.save_model_path}")
-        model.load_state_dict(torch.load(self.save_model_path, map_location=map_location))
-        if self.model_name in ['JODIE', 'DyRep', 'TGN']:
-            model[0].memory_bank.node_raw_messages = torch.load(self.save_model_nonparametric_data_path, map_location=map_location)
-    
-    def save_hyper_param(self,parm:Optional[Dict[str,Any]]):
+        model.load_state_dict(
+            torch.load(self.save_model_path, map_location=map_location)
+        )
+        if self.model_name in ["JODIE", "DyRep", "TGN"]:
+            model[0].memory_bank.node_raw_messages = torch.load(
+                self.save_model_nonparametric_data_path, map_location=map_location
+            )
+
+    def save_hyper_param(self, parm: Optional[Dict[str, Any]]):
         self.logger.info(f"save model hyper param {self.save_model_hyper_param_path}")
         if parm is None:
             return
-        with open(self.save_model_hyper_param_path,"w",encoding="UTF-8") as file:
-            json.dump(parm,file,indent=4)
-    
+        with open(self.save_model_hyper_param_path, "w", encoding="UTF-8") as file:
+            json.dump(parm, file, indent=4)
+
     def load_hyper_param(self):
         self.logger.info(f"load model hyper param {self.save_model_hyper_param_path}")
 
         if os.path.exists(self.save_model_hyper_param_path):
-            with open(self.save_model_hyper_param_path, "r",encoding="UTF-8") as file:
+            with open(self.save_model_hyper_param_path, "r", encoding="UTF-8") as file:
                 return json.load(file)
         else:
             return None

@@ -6,12 +6,13 @@ from sklearn.metrics import (
     average_precision_score,
     f1_score,
     precision_recall_curve,
+    recall_score,
     roc_auc_score,
     accuracy_score,
 )
 
 
-def save_roc_auc_score(
+def safe_roc_auc_score(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     *,
@@ -60,13 +61,29 @@ def save_roc_auc_score(
         return roc_auc_score(y_true, y_pred, average="micro", n_classes=n_classes)
 
 
-def best_thr(predict: np.ndarray, labels: np.ndarray):
+def best_thr(
+    predict: np.ndarray,
+    labels: np.ndarray,
+    best_recall=False,
+    min_recall: Optional[float] = None,
+):
     precision, recall, thr = precision_recall_curve(labels, predict)
-    f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
-    best_idx = np.argmax(f1_scores)
+    if best_recall:
+        if min_recall is not None:
+            valid = recall >= min_recall
+            best_idx = np.argmax(precision[valid]) if valid.any() else np.argmax(recall)
+        else:
+            best_idx = np.argmax(recall)
+    else:
+        f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
+        best_idx = np.argmax(f1_scores)
     best_thr = thr[best_idx]
 
     return best_thr
+
+
+def np_sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 
 def get_link_prediction_metrics(predicts: torch.Tensor, labels: torch.Tensor):
@@ -114,36 +131,79 @@ def get_link_sign_prediction_metrics(predicts: torch.Tensor, labels: torch.Tenso
 
 
 def get_link_sign_3class_prediction_metrics(
-    predicts: torch.Tensor, labels: torch.Tensor
+    exist_predicts: torch.Tensor,
+    exist_labels: torch.Tensor,
+    sign_predicts: torch.Tensor,
+    sign_labels: torch.Tensor,
+    best_exist_thr:float=0.5,
+    best_sign_thr:float = 0.5,
 ):
-    """
-    get metrics for the link prediction task
-    :param predicts: Tensor, shape (num_samples, )
-    :param labels: Tensor, shape (num_samples, )
-    :return:
-        dictionary of metrics {'metric_name_1': metric_1, ...}
-    """
-    predicts = predicts.cpu().detach().numpy()
-    labels = labels.cpu().numpy()
+    exist_predicts = exist_predicts.cpu().detach().numpy().ravel()
+    exist_labels = exist_labels.cpu().numpy().ravel()
+    sign_predicts = sign_predicts.cpu().detach().numpy().ravel()
+    sign_labels = sign_labels.cpu().numpy().ravel()
 
-    y_score = predicts.argmax(1)
+    prob_exist = np_sigmoid(exist_predicts)
+    prob_sign = np_sigmoid(sign_predicts)
 
-    f1_macro = f1_score(
-        y_true=labels,
-        y_pred=y_score,
-        zero_division=0,
-        average="macro",
-    )
+    # best_exist_thr = best_thr(prob_exist, exist_labels, True, 0.7)
+    # best_sign_thr = best_thr(prob_sign, sign_labels)
 
-    acc = accuracy_score(labels, y_pred=y_score)
+    pred_exist = prob_exist > best_exist_thr
+    pred_sign = prob_sign > best_sign_thr
 
-    labels_bin = label_binarize(labels, classes=[0, 1, 2])
+    n_sign_task = sign_labels.shape[0]
+    # 标签生成
+    y_true = np.empty(len(exist_labels), dtype=int)
+    y_true[:n_sign_task] = sign_labels
+    y_true[n_sign_task:] = 2
+
+    # 预测生成
+    y_pred = np.empty_like(y_true, dtype=int)
+
+    passed = pred_exist
+    passed_real = passed[:n_sign_task]
+    n_pass_real = passed_real.sum()
+
+    y_pred[:n_sign_task] = pred_sign.astype(int)
+    y_pred[n_sign_task:] = 2
+    if n_pass_real > 0:
+        # 判断有连边，用符号预测结果
+        y_pred[:n_sign_task][passed_real] = pred_sign[passed_real].astype(int)
+    # 有连边但是被判断为无连边
+    y_pred[:n_sign_task][~passed_real] = 2
+
+    prob_3 = np.zeros((len(y_true), 3))
+    prob_3[:n_sign_task, 0] = 1 - prob_sign.squeeze()  # 负边概率，prob_sign 计算
+    prob_3[:n_sign_task, 1] = prob_sign.squeeze()  # 正边概率，prob_sign计算
+    # null 概率 = 1 - exist 概率
+    prob_3[n_sign_task:, 2] = (
+        1 - prob_exist[n_sign_task:].squeeze()
+    )  # 无连边概率 prob_exist 计算
+
+    labels_bin = label_binarize(y_true, classes=[0, 1, 2])
+
+    # 计算指标
+    # 二分类指标
+    sign_f1_binary = f1_score(sign_labels, pred_sign, average="binary")
+    exist_recall = recall_score(exist_labels, pred_exist)
+    # 3分类指标
+    f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    acc = accuracy_score(y_true, y_pred)
+
     average_precision = average_precision_score(
-        y_true=labels_bin, y_score=predicts, average="macro"
+        y_true=labels_bin, y_score=prob_3, average="macro"
     )
-    auc = save_roc_auc_score(y_true=labels, y_pred=predicts, average="weight")
+    auc = safe_roc_auc_score(y_true=y_true, y_pred=prob_3, average="macro")
 
-    return {"AP": average_precision, "F1": f1_macro, "acc": acc, "auc": auc}
+    return {
+        "exist_recall": exist_recall,
+        "sign_f1": sign_f1_binary,
+        "ap": average_precision,
+        "f1": f1_macro,
+        "acc": acc,
+        "auc": auc,
+    }
 
 
 def get_sign_prediction_metrics(
@@ -164,10 +224,10 @@ def get_sign_prediction_metrics(
 
     if len(np.unique(labels)) < 2:
         return {
-            "AP": 0.0,
-            "F1_macro": 0.0,
-            "F1_binary": 0.0,
-            "F1_weighted": 0.0,
+            "ap": 0.0,
+            "f1_macro": 0.0,
+            "f1_binary": 0.0,
+            "f1_weighted": 0.0,
             "acc": acc,
             "auc": 0.5,
         }
@@ -186,13 +246,13 @@ def get_sign_prediction_metrics(
     average_precision = average_precision_score(
         y_true=labels_bin, y_score=predicts, average="macro"
     )
-    auc = save_roc_auc_score(y_true=labels_bin, y_pred=predicts, average="weight")
+    auc = safe_roc_auc_score(y_true=labels_bin, y_pred=predicts, average="weight")
 
     return {
-        "AP": average_precision,
-        "F1_macro": f1_macro,
-        "F1_binary": f1_binary,
-        "F1_weighted": f1_wt,
+        "ap": average_precision,
+        "f1_macro": f1_macro,
+        "f1_binary": f1_binary,
+        "f1_weighted": f1_wt,
         "acc": acc,
         "auc": auc,
     }

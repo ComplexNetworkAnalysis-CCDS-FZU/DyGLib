@@ -1,8 +1,12 @@
 import argparse
 import sys
-from typing import Literal
+from typing import List, Literal, Optional
 import torch
 from pydantic.v1 import BaseModel, Field
+
+EarlyStopLiteral = Literal[
+    "exist_recall", "sign_f1", "ap", "f1_macro", "f1_binary", "acc", "auc"
+]
 
 
 class SignPredictArgs(BaseModel):
@@ -21,7 +25,6 @@ class SignPredictArgs(BaseModel):
     ] = Field("SignDyGFormer", description="name of the model")
 
     gpu: int = Field(0, description="number of gpu to use")
-    cuda:str = Field(f"cuda:{self.gpu}" if torch.cuda.is_available() and args.gpu >= 0 else "cpu")
 
     # 采样策略
     num_neighbors: int = Field(20, description="每个节点采样的邻居数量")
@@ -37,9 +40,9 @@ class SignPredictArgs(BaseModel):
     )
 
     # 模型参数
-    number_heads: int = Field(2, description="注意力层中头的数量")
-    number_layer: int = Field(2, description="模型层数量")
-    seed:int = Field(2026)
+    num_heads: int = Field(2, description="注意力层中头的数量")
+    num_layers: int = Field(2, description="模型层数量")
+    seed: int = Field(2026)
 
     # 潜空间维度
     time_feat_dim: int = Field(100, description="时间编码的维度")
@@ -53,7 +56,8 @@ class SignPredictArgs(BaseModel):
     # 模型训练参数
     learning_rate: float = Field(0.0001)
     dropout: float = Field(0.1)
-    num_epoch: int = Field(100)
+    num_epochs: int = Field(100)
+    num_runs: int = Field(4)
     optimizer: Literal["SGD", "Adam", "RMSprop"] = Field("Adam")
 
     weight_decay: float = Field(
@@ -61,21 +65,36 @@ class SignPredictArgs(BaseModel):
     )
 
     patience: int = Field(20, description="早停机制的耐心度")
+    early_stop_notice: Optional[List[EarlyStopLiteral]] = Field(
+        None, description="早停模块关注的指标，不提供即关注全部指标"
+    )
+
+    time_gap: int = Field(
+        2000,
+        description="time gap for neighbors to compute node features",
+    )
 
     # 数据集划分
     val_ratio: float = Field(0.15, description="验证集比例")
-    val_test: float = Field(0.15, description="测试集比例")
+    test_ratio: float = Field(0.15, description="测试集比例")
     test_interval_epochs: int = Field(5, description="每隔多少epoch运行一次测试集")
 
     negative_sample_strategy: Literal["random", "historical", "inductive"] = Field(
         "random", description="负连边采样策略"
     )
+
+    save_model_name: str = Field("")
+
     @property
     def device(self):
-        return f"cuda:{self.gpu}" if torch.cuda.is_available() and self.gpu >= 0 else "cpu"
+        return (
+            f"cuda:{self.gpu}" if torch.cuda.is_available() and self.gpu >= 0 else "cpu"
+        )
+
 
 def get_sign_prediction_args(is_evaluation=False):
     import pydantic_argparse
+
     parser = pydantic_argparse.ArgumentParser(SignPredictArgs)
 
     try:

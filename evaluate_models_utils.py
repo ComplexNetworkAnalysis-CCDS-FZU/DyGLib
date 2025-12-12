@@ -475,6 +475,8 @@ def evaluate_model_sign_link_3class_prediction(
     loss_func: nn.Module,
     num_neighbors: int = 20,
     time_gap: int = 2000,
+    exist_best_thr: Optional[float] = None,
+    sign_best_thr: Optional[float] = None,
 ):
     """
     evaluate models on the link sign prediction task
@@ -505,6 +507,7 @@ def evaluate_model_sign_link_3class_prediction(
     with torch.no_grad():
         # store evaluate losses and metrics
         evaluate_losses, evaluate_metrics = [], []
+        all_predict, all_label = [], []
         evaluate_idx_data_loader_tqdm = tqdm(evaluate_idx_data_loader, ncols=120)
         for batch_idx, evaluate_data_indices in enumerate(
             evaluate_idx_data_loader_tqdm
@@ -526,7 +529,7 @@ def evaluate_model_sign_link_3class_prediction(
 
             mask = batch_node_interact_sign.squeeze() != 0
 
-            batch_src_node_ids= batch_src_node_ids[mask]
+            batch_src_node_ids = batch_src_node_ids[mask]
             batch_dst_node_ids = batch_dst_node_ids[mask]
             batch_node_interact_times = batch_node_interact_times[mask]
             batch_edge_ids = batch_edge_ids[mask]
@@ -591,80 +594,75 @@ def evaluate_model_sign_link_3class_prediction(
             else:
                 raise ValueError(f"Wrong value for model_name {model_name}!")
             # get positive and negative probabilities, shape (batch_size, )
-            positive_probabilities = (
-                model[1](
-                    input_1=batch_src_node_embeddings,
-                    input_2=batch_dst_node_embeddings,
-                )
-                .sigmoid()
-                .softmax(dim=1)
+
+            exist_predict, sign_predict = model[1](
+                input_1=batch_src_node_embeddings,
+                input_2=batch_dst_node_embeddings,
+                null_input_1=batch_neg_src_node_embeddings,
+                null_input_2=batch_neg_dst_node_embeddings,
             )
 
-            # 过滤掉中立交互的情况
-            
-            positive_probabilities_filter = positive_probabilities
-
-            negative_probabilities = positive_probabilities_filter[
-                batch_node_interact_sign == -1
-            ]
-
-            positive_probabilities = positive_probabilities_filter[
-                batch_node_interact_sign == 1
-            ]
-
-            null_probabilities = (
-                model[1](
-                    input_1=batch_neg_src_node_embeddings,
-                    input_2=batch_neg_dst_node_embeddings,
-                )
-                .sigmoid()
-                .softmax(dim=1)
-            )
-
-            predicts = torch.cat(
+            exist_label = torch.cat(
                 [
-                    positive_probabilities,
-                    negative_probabilities,
-                    null_probabilities,
-                ],
-                dim=0,
-            )
-            labels = torch.cat(
-                [
-                    torch.zeros(
-                        positive_probabilities.size(0),
-                        device=positive_probabilities.device,
-                        dtype=torch.long,
-                    ),
                     torch.ones(
-                        negative_probabilities.size(0),
-                        device=negative_probabilities.device,
-                        dtype=torch.long,
-                    ),
-                    2
-                    * torch.ones(
-                        null_probabilities.size(0),
-                        device=null_probabilities.device,
-                        dtype=torch.long,
-                    ),
-                ],
-            )
+                        batch_src_node_embeddings.size(0),
+                        device=batch_src_node_embeddings.device,
+                    ),  # 有边
+                    torch.zeros(
+                        batch_neg_src_node_embeddings.size(0),
+                        device=batch_neg_src_node_embeddings.device,
+                    ),  # null
+                ]
+            ).unsqueeze(1)
 
-            loss = loss_func(input=predicts, target=labels)
+            exist_loss = loss_func(input=exist_predict, target=exist_label)
+
+            sign_label = torch.tensor(
+                batch_node_interact_sign > 0,
+                device=batch_src_node_embeddings.device,
+                dtype=float,
+            ).unsqueeze(1)
+
+            sign_loss = loss_func(input=sign_predict, target=sign_label)
+
+            loss = exist_loss + sign_loss
 
             evaluate_losses.append(loss.item())
 
-            evaluate_metrics.append(
-                get_link_sign_3class_prediction_metrics(
-                    predicts=predicts, labels=labels
-                )
-            )
+            all_predict.append((torch.sigmoid(exist_predict), torch.sigmoid(sign_predict)))
+            all_label.append((exist_label, sign_label))
 
             evaluate_idx_data_loader_tqdm.set_description(
                 f"evaluate for the {batch_idx + 1}-th batch, evaluate loss: {loss.item()}"
             )
 
-    return evaluate_losses, evaluate_metrics
+        if sign_best_thr is None or exist_best_thr is None:
+            exist_prob = (
+                torch.cat([v[0] for v in all_predict]).squeeze(-1).cpu().numpy()
+            )  # [N_val]
+            exist_label = torch.cat([v[0] for v in all_label]).squeeze(-1).cpu().numpy()
+            sign_prob = (
+                torch.cat([v[1] for v in all_predict]).squeeze(-1).cpu().numpy()
+            )  # [N_real]
+            sign_label = torch.cat([v[1] for v in all_label]).squeeze(-1).cpu().numpy()
+
+            exist_best_thr = float(best_thr(exist_prob, exist_label, True, 0.7))
+            sign_best_thr = float(best_thr(sign_prob, sign_label))
+
+        for (exist_predict, sign_predict), (exist_label, sign_label) in zip(
+            all_predict, all_label
+        ):
+
+            evaluate_metrics.append(
+                get_link_sign_3class_prediction_metrics(
+                    sign_predicts=sign_predict,
+                    sign_labels=sign_label,
+                    exist_predicts=exist_predict,
+                    exist_labels=exist_label,
+                )
+            )
+
+    return evaluate_losses, evaluate_metrics, exist_best_thr, sign_best_thr
 
 
 def evaluate_model_sign_prediction(
@@ -676,7 +674,7 @@ def evaluate_model_sign_prediction(
     loss_func: nn.Module,
     num_neighbors: int = 20,
     time_gap: int = 2000,
-    thr:Optional[float] = None
+    thr: Optional[float] = None,
 ):
     """
     evaluate models on the link sign prediction task
@@ -705,7 +703,7 @@ def evaluate_model_sign_prediction(
     with torch.no_grad():
         # store evaluate losses and metrics
         evaluate_losses, evaluate_metrics = [], []
-        all_predict,all_label = [],[]
+        all_predict, all_label = [], []
         evaluate_idx_data_loader_tqdm = tqdm(evaluate_idx_data_loader, ncols=120)
         for batch_idx, evaluate_data_indices in enumerate(
             evaluate_idx_data_loader_tqdm
@@ -727,12 +725,11 @@ def evaluate_model_sign_prediction(
 
             mask = batch_node_interact_sign.squeeze() != 0
 
-            batch_src_node_ids= batch_src_node_ids[mask]
+            batch_src_node_ids = batch_src_node_ids[mask]
             batch_dst_node_ids = batch_dst_node_ids[mask]
             batch_node_interact_times = batch_node_interact_times[mask]
             batch_edge_ids = batch_edge_ids[mask]
             batch_node_interact_sign = batch_node_interact_sign[mask]
-
 
             if model_name in ["DyGFormer"]:
                 # get temporal embedding of source and destination nodes
@@ -744,7 +741,6 @@ def evaluate_model_sign_prediction(
                     node_interact_times=batch_node_interact_times,
                 )
 
-    
             elif model_name in ["SignDyGFormer"]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
@@ -760,16 +756,13 @@ def evaluate_model_sign_prediction(
             else:
                 raise ValueError(f"Wrong value for model_name {model_name}!")
             # get positive and negative probabilities, shape (batch_size, )
-            positive_probabilities = (
-                model[1](
-                    input_1=batch_src_node_embeddings,
-                    input_2=batch_dst_node_embeddings,
-                )
-                .squeeze(-1)
-            )
+            positive_probabilities = model[1](
+                input_1=batch_src_node_embeddings,
+                input_2=batch_dst_node_embeddings,
+            ).squeeze(-1)
 
             # 过滤掉中立交互的情况
-            
+
             positive_probabilities_filter = positive_probabilities
 
             negative_probabilities = positive_probabilities_filter[
@@ -813,40 +806,43 @@ def evaluate_model_sign_prediction(
                 f"evaluate for the {batch_idx + 1}-th batch, evaluate loss: {loss.item()}"
             )
 
-        #计算best thr
+        # 计算best thr
         if thr is None:
             val_pred = np.concatenate(all_predict)
             val_true = np.concatenate(all_label)
 
-            thr = best_thr(val_pred,val_true)
-            print('prob 分布', np.percentile(val_pred, [0, 1, 10, 50, 90, 99, 100]))
+            thr = best_thr(val_pred, val_true)
+            print("prob 分布", np.percentile(val_pred, [0, 1, 10, 50, 90, 99, 100]))
             precision, recall, thrs = precision_recall_curve(val_true, val_pred)
             print(f"precision: {precision}, recall: {recall}")
             f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
-            best_idx  = np.argmax(f1_scores)
-            print(f'max F1 = {f1_scores[best_idx]:.3f} @ thr = {thrs[best_idx]:.3f}')
-            print(f'your thr= {thr:.3f} → F1= {f1_scores[np.searchsorted(thrs, thr)]:.3f}')
+            best_idx = np.argmax(f1_scores)
+            print(f"max F1 = {f1_scores[best_idx]:.3f} @ thr = {thrs[best_idx]:.3f}")
+            print(
+                f"your thr= {thr:.3f} → F1= {f1_scores[np.searchsorted(thrs, thr)]:.3f}"
+            )
 
-            print('pos prob', val_pred[val_true==1].mean())
-            print('neg prob', val_pred[val_true==0].mean())
+            print("pos prob", val_pred[val_true == 1].mean())
+            print("neg prob", val_pred[val_true == 0].mean())
 
             y_pred = (val_pred >= thr).astype(int)
-            print('测试集 pred 正例数', y_pred.sum())
-            print('测试集 true 正例数', val_true.sum())
-            print('pred 正例 / true 正例 =', y_pred.sum() / max(val_true.sum(),1))
-        
+            print("测试集 pred 正例数", y_pred.sum())
+            print("测试集 true 正例数", val_true.sum())
+            print("pred 正例 / true 正例 =", y_pred.sum() / max(val_true.sum(), 1))
+
         print(f"best thr: {thr}")
 
-        
-        for (val_pred,val_true) in zip(all_predict,all_label):
+        for val_pred, val_true in zip(all_predict, all_label):
             evaluate_metrics.append(
                 get_sign_prediction_metrics(
-                    predicts=torch.tensor(val_pred), labels=torch.tensor(val_true),thr=thr
+                    predicts=torch.tensor(val_pred),
+                    labels=torch.tensor(val_true),
+                    thr=thr,
                 )
             )
 
+    return evaluate_losses, evaluate_metrics, thr
 
-    return evaluate_losses, evaluate_metrics,thr
 
 def evaluate_model_node_classification(
     model_name: str,
