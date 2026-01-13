@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Dict, List, Optional, OrderedDict, Tuple
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from utils.DataLoader import Data
 
@@ -63,6 +64,9 @@ class NeighborGroup:
         self.times.append(np.array([x.timestamp for x in sorted_neighbors]))
         self.signs.append(np.array([x.sign for x in sorted_neighbors]))
 
+    def __len__(self):
+        return len(self.ids)
+
 
 def common_positions_np(a, b):
     """
@@ -91,7 +95,7 @@ class DirectedNeighborSampler:
         sample_neighbor_strategy: str = "uniform",
         time_scaling_factor: float = 0.0,
         seed: int = None,
-        common_neighbor_look_forward: int = 5
+        common_neighbor_look_forward: int = 5,
     ):
         """
         Neighbor sampler.
@@ -126,7 +130,10 @@ class DirectedNeighborSampler:
         ), f"给定的邻接表的节点编号不是严格递增的连续序列"
         # the list at the first position in adj_list is empty, hence, sorted() will return an empty list for the first position
         # its corresponding value in self.nodes_neighbor_ids, self.nodes_edge_ids, self.nodes_neighbor_times will also be empty with length 0
-        for node_idx, per_node_neighbors in sorted(adj_list.items()):
+        previous_node_idx = -1
+        for node_idx, per_node_neighbors in tqdm(
+            sorted(adj_list.items()), desc="loading node neighbors"
+        ):
             # per_node_neighbors is a list of tuples (neighbor_id, edge_id, timestamp)
             # sort the list based on timestamps, sorted() function is stable
             # Note that sort the list based on edge id is also correct, as the original data file ensures the interactions are chronological
@@ -144,6 +151,7 @@ class DirectedNeighborSampler:
                 directed_filter=NeighborType.OutcomeNeighbor,
                 ordered_seq=True,
             )
+            previous_node_idx = node_idx
 
             # additional for time interval aware sampling strategy (proposed in CAWN paper)
             if self.sample_neighbor_strategy == "time_interval_aware":
@@ -152,7 +160,14 @@ class DirectedNeighborSampler:
                         np.array([x.timestamp for x in sorted_neighbors])
                     )
                 )
+        print(f"Max node idx: {previous_node_idx}")
 
+        assert (
+            previous_node_idx + 1
+            == len(self.undirected_nodes_neighbor)
+            == len(self.directed_nodes_in_neighbor)
+            == len(self.directed_nodes_out_neighbor)
+        ), ""
         if self.seed is not None:
             self.random_state = np.random.RandomState(self.seed)
 
@@ -208,13 +223,18 @@ class DirectedNeighborSampler:
         :return: neighbors, edge_ids, timestamps,sign and sampled_probabilities (if return_sampled_probabilities is True) with shape (historical_nodes_num, )
         """
         nodes_neighbors = self.nodes_neighbors_selector(neighbor_ty)
+        assert node_id <= len(
+            nodes_neighbors
+        ), f"节点ID[{node_id}]大于历史交互邻居记录节点ID[{len(nodes_neighbor_ids)-1}]"
 
         # return index i, which satisfies list[i - 1] < v <= list[i]
         # return 0 for the first position in self.nodes_neighbor_times since the value at the first position is empty
         try:
             i = np.searchsorted(nodes_neighbors.times[node_id], interact_time)
         except IndexError:
-            print(f"Detect Index Error, request idx: {node_id}, max_list len: {len(nodes_neighbors.times)}")
+            print(
+                f"Detect Index Error, request idx: {node_id}, max_list len: {len(nodes_neighbors.times)}"
+            )
             raise
         (
             nodes_neighbor_ids,
@@ -377,8 +397,8 @@ class DirectedNeighborSampler:
                             if left < 0 or src_node_neighbor_ids[left] in common_set:
                                 start = left + 1
                                 break
-                        src_idxs.append(np.arange(start, idx+1, dtype=np.int32))
-                    
+                        src_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
+
                     for idx in dst_pos:
                         start = max(0, idx - self.common_neighbors_look_forward)
 
@@ -386,10 +406,18 @@ class DirectedNeighborSampler:
                             if left < 0 or dst_node_neighbor_ids[left] in common_set:
                                 start = left + 1
                                 break
-                        dst_idxs.append(np.arange(start, idx+1, dtype=np.int32))
+                        dst_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
 
-                src_idxs = np.concatenate(src_idxs) if src_idxs else np.array([], dtype=np.int64)
-                dst_idxs = np.concatenate(dst_idxs) if dst_idxs else np.array([], dtype=np.int64)
+                src_idxs = (
+                    np.concatenate(src_idxs)
+                    if src_idxs
+                    else np.array([], dtype=np.int64)
+                )
+                dst_idxs = (
+                    np.concatenate(dst_idxs)
+                    if dst_idxs
+                    else np.array([], dtype=np.int64)
+                )
 
                 src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
                 src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
@@ -425,7 +453,7 @@ def get_neighbor_sampler(
     sample_neighbor_strategy: str = "uniform",
     time_scaling_factor: float = 0.0,
     seed: int = None,
-    common_neighbor_look_forward:int =2
+    common_neighbor_look_forward: int = 2,
 ):
     """
     get neighbor sampler
@@ -478,5 +506,5 @@ def get_neighbor_sampler(
         sample_neighbor_strategy=sample_neighbor_strategy,
         time_scaling_factor=time_scaling_factor,
         seed=seed,
-        common_neighbor_look_forward=common_neighbor_look_forward
+        common_neighbor_look_forward=common_neighbor_look_forward,
     )

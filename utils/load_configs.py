@@ -4,6 +4,9 @@ from typing import List, Literal, Optional
 import torch
 from pydantic.v1 import BaseModel, Field
 
+from models.DyGFormer import DyGFormer
+from models.SignDyGFormer import SignDyGFormer
+
 EarlyStopLiteral = Literal[
     "exist_recall", "sign_f1", "ap", "f1_macro", "f1_binary", "acc", "auc"
 ]
@@ -38,6 +41,7 @@ class SignPredictArgs(BaseModel):
     common_neighbors_look_forward: int = Field(
         2, description="每个共同邻居前向采样数量"
     )
+    pos_weight: float = Field(1.0, description="符号分类任务中的pos权重")
 
     # 模型参数
     num_heads: int = Field(2, description="注意力层中头的数量")
@@ -84,6 +88,8 @@ class SignPredictArgs(BaseModel):
     )
 
     save_model_name: str = Field("")
+
+    tail_num: Optional[int] = Field(None, description="部分数据集比例")
 
     @property
     def device(self):
@@ -145,7 +151,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
     parser.add_argument(
         "--model_name",
         type=str,
-        default="SignDyGFormer",
+        default=SignDyGFormer.NAME,
         help="name of the model, note that EdgeBank is only applicable for evaluation",
         choices=[
             "JODIE",
@@ -156,8 +162,8 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "EdgeBank",
             "TCL",
             "GraphMixer",
-            "DyGFormer",
-            "SignDyGFormer",
+            DyGFormer.NAME,
+            SignDyGFormer.NAME,
         ],
     )
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")
@@ -487,7 +493,7 @@ def load_link_prediction_best_configs(args: argparse.Namespace):
             args.sample_neighbor_strategy = "uniform"
         else:
             args.sample_neighbor_strategy = "recent"
-    elif args.model_name == "SignDyGFormer":
+    elif args.model_name == SignDyGFormer.NAME:
         args.num_layers = 2
         if args.dataset_name in ["reddit"]:
             args.max_input_sequence_length = 64
@@ -536,7 +542,7 @@ def get_node_classification_args():
     parser.add_argument(
         "--model_name",
         type=str,
-        default="DyGFormer",
+        default=DyGFormer.NAME,
         help="name of the model",
         choices=[
             "JODIE",
@@ -546,7 +552,7 @@ def get_node_classification_args():
             "CAWN",
             "TCL",
             "GraphMixer",
-            "DyGFormer",
+            DyGFormer.NAME,
         ],
     )
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")
@@ -713,7 +719,7 @@ def load_node_classification_best_configs(args: argparse.Namespace):
             args.num_neighbors = 30
         args.dropout = 0.5
         args.sample_neighbor_strategy = "recent"
-    elif args.model_name == "DyGFormer":
+    elif args.model_name == DyGFormer.NAME:
         args.num_layers = 2
         if args.dataset_name in ["reddit"]:
             args.max_input_sequence_length = 64

@@ -5,7 +5,7 @@ from pandas.testing import assert_frame_equal
 from distutils.dir_util import copy_tree
 from pydantic.v1 import BaseModel, Field
 import pydantic_argparse
-from typing import Literal
+from typing import Literal, Optional
 
 
 def preprocess(
@@ -14,6 +14,7 @@ def preprocess(
     skip_first_line: bool = True,
     sep: str = ",",
     swap_time_sign: bool = False,
+    tail_num: Optional[int] = None,
 ):
     """
     read the original data file and return the DataFrame that has columns ['u', 'i', 'ts','sign', 'label', 'idx']
@@ -33,6 +34,13 @@ def preprocess(
         lines = f.readlines()
 
         lines.sort(key=lambda x: float(x.strip().split(sep)[ts_idx]))
+
+        if tail_num is not None and len(lines) > tail_num:
+            lines = lines[-tail_num:]
+            print(f"[Fast-dev] truncated to last {tail_num} edges")
+
+        print(f"[DEBUG] records after truncate: {len(lines)}")
+
         previous_time = -1
         import tqdm
 
@@ -127,6 +135,7 @@ def preprocess_data(
     skip_first_line: bool = True,
     sep: str = ",",
     swap_time_sign: bool = False,
+    tail_num: Optional[int] = None,
 ):
     """
     preprocess the data
@@ -138,15 +147,26 @@ def preprocess_data(
     Path("../processed_data/{}/".format(dataset_name)).mkdir(
         parents=True, exist_ok=True
     )
+    tail_mark = "" if tail_num is None or tail_num == 0 else f"_tail{tail_num}"
+
     PATH = "../DG_data/{}/{}.csv".format(dataset_name, dataset_name)
-    OUT_DF = "../processed_data/{}/ml_{}.csv".format(dataset_name, dataset_name)
-    OUT_FEAT = "../processed_data/{}/ml_{}.npy".format(dataset_name, dataset_name)
-    OUT_NODE_FEAT = "../processed_data/{}/ml_{}_node.npy".format(
-        dataset_name, dataset_name
+    OUT_DF = "../processed_data/{}/ml_{}{}.csv".format(
+        dataset_name, dataset_name, tail_mark
+    )
+    OUT_FEAT = "../processed_data/{}/ml_{}{}.npy".format(
+        dataset_name, dataset_name, tail_mark
+    )
+    OUT_NODE_FEAT = "../processed_data/{}/ml_{}{}_node.npy".format(
+        dataset_name, dataset_name, tail_mark
     )
 
     df, edge_feats = preprocess(
-        PATH, unsigned, skip_first_line, sep, swap_time_sign=swap_time_sign
+        PATH,
+        unsigned,
+        skip_first_line,
+        sep,
+        swap_time_sign=swap_time_sign,
+        tail_num=tail_num,
     )
     new_df = reindex(df, bipartite)
 
@@ -232,10 +252,13 @@ class PreprocessArgs(BaseModel):
         "Contacts",
         "WikiVote",
         "BitcoinAlpha",
-        "BitcoinOTC","RedditHyperlinkTitle","RedditHyperlinkBody"
+        "BitcoinOTC",
+        "RedditHyperlinkTitle",
+        "RedditHyperlinkBody",
     ] = Field(default="wikipedia", description="Dataset name")
     node_feat_dim: int = Field(172, description="Number of node raw features")
     unsigned: bool = Field(False, description="Unsigned Graph")
+    tail_num: Optional[int] = Field(None, description="部分数据集比例")
 
 
 parser = pydantic_argparse.ArgumentParser(
@@ -265,6 +288,7 @@ else:
             bipartite=True,
             node_feat_dim=args.node_feat_dim,
             unsigned=True,
+            tail_num=args.tail_num,
         )
     elif args.dataset_name in ["WikiVote"]:
         preprocess_data(
@@ -272,6 +296,7 @@ else:
             bipartite=False,
             node_feat_dim=args.node_feat_dim,
             unsigned=False,
+            tail_num=args.tail_num,
         )
     elif args.dataset_name in ["BitcoinAlpha", "BitcoinOTC"]:
         preprocess_data(
@@ -281,20 +306,23 @@ else:
             skip_first_line=False,
             unsigned=False,
             swap_time_sign=True,
+            tail_num=args.tail_num,
         )
-    elif args.dataset_name in ["RedditHyperlinkTitle","RedditHyperlinkBody"]:
+    elif args.dataset_name in ["RedditHyperlinkTitle", "RedditHyperlinkBody"]:
         preprocess_data(
             dataset_name=args.dataset_name,
             bipartite=False,
             node_feat_dim=args.node_feat_dim,
             unsigned=False,
             swap_time_sign=True,
+            tail_num=args.tail_num,
         )
     else:
         preprocess_data(
             dataset_name=args.dataset_name,
             bipartite=False,
             node_feat_dim=args.node_feat_dim,
+            tail_num=args.tail_num,
         )
     print(f"{args.dataset_name} is processed successfully.")
 

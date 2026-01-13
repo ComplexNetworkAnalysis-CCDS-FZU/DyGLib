@@ -1,3 +1,4 @@
+from typing import Optional
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import random
@@ -26,7 +27,9 @@ class CustomizedDataset(Dataset):
         return len(self.indices_list)
 
 
-def get_idx_data_loader(indices_list: list, batch_size: int, shuffle: bool,sampler=None):
+def get_idx_data_loader(
+    indices_list: list, batch_size: int, shuffle: bool, sampler=None
+):
     """
     get data loader that iterates over indices
     :param indices_list: list, list of indices
@@ -37,7 +40,11 @@ def get_idx_data_loader(indices_list: list, batch_size: int, shuffle: bool,sampl
     dataset = CustomizedDataset(indices_list=indices_list)
 
     data_loader = DataLoader(
-        dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False,sampler=sampler
+        dataset=dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        drop_last=False,
+        sampler=sampler,
     )
     return data_loader
 
@@ -73,7 +80,13 @@ class Data:
         self.num_unique_nodes = len(self.unique_node_ids)
 
 
-def get_link_prediction_data(dataset_name: str, val_ratio: float, test_ratio: float):
+def get_link_prediction_data(
+    dataset_name: str,
+    val_ratio: float,
+    test_ratio: float,
+    *,
+    tail_num: Optional[int] = None,
+):
     """
     generate data for link prediction task (inductive & transductive settings)
     :param dataset_name: str, dataset name
@@ -82,15 +95,18 @@ def get_link_prediction_data(dataset_name: str, val_ratio: float, test_ratio: fl
     :return: node_raw_features, edge_raw_features, (np.ndarray),
             full_data, train_data, val_data, test_data, new_node_val_data, new_node_test_data, (Data object)
     """
+    tail_mark = "" if tail_num is None or tail_num == 0 else f"_tail{tail_num}"
     # Load data and train val test split
     graph_df = pd.read_csv(
-        "./processed_data/{}/ml_{}.csv".format(dataset_name, dataset_name)
+        "./processed_data/{}/ml_{}{}.csv".format(dataset_name, dataset_name, tail_mark)
     )
     edge_raw_features = np.load(
-        "./processed_data/{}/ml_{}.npy".format(dataset_name, dataset_name)
+        "./processed_data/{}/ml_{}{}.npy".format(dataset_name, dataset_name, tail_mark)
     )
     node_raw_features = np.load(
-        "./processed_data/{}/ml_{}_node.npy".format(dataset_name, dataset_name)
+        "./processed_data/{}/ml_{}{}_node.npy".format(
+            dataset_name, dataset_name, tail_mark
+        )
     )
 
     NODE_FEAT_DIM = EDGE_FEAT_DIM = 172

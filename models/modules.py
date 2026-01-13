@@ -4,6 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class AutoClassName(type):
+    def __init__(cls, name, bases, ns, **kw):
+        super().__init__(name, bases, ns, **kw)
+        cls.NAME = name
+
+
 class TimeEncoder(nn.Module):
 
     def __init__(self, time_dim: int, parameter_requires_grad: bool = True):

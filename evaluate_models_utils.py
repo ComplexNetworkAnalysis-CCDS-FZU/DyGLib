@@ -11,7 +11,9 @@ import argparse
 import os
 import json
 
+from models.DyGFormer import DyGFormer
 from models.EdgeBank import edge_bank_link_prediction
+from models.SignDyGFormer import SignDyGFormer
 from utils.metrics import (
     best_thr,
     get_link_prediction_metrics,
@@ -60,8 +62,8 @@ def evaluate_model_link_prediction(
         "CAWN",
         "TCL",
         "GraphMixer",
-        "DyGFormer",
-        "SignDygFormer",
+        DyGFormer.NAME,
+        SignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -183,7 +185,7 @@ def evaluate_model_link_prediction(
                     time_gap=time_gap,
                 )
 
-            elif model_name in ["DyGFormer"]:
+            elif model_name in [DyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
                     0
@@ -201,7 +203,7 @@ def evaluate_model_link_prediction(
                     dst_node_ids=batch_neg_dst_node_ids,
                     node_interact_times=batch_node_interact_times,
                 )
-            elif model_name in ["SignDyGFormer"]:
+            elif model_name in [SignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -297,8 +299,8 @@ def evaluate_model_sign_link_prediction(
     evaluate_neg_edge_sampler.reset_random_state()
 
     if model_name in [
-        "DyGFormer",
-        "SignDygFormer",
+        DyGFormer.NAME,
+        SignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -343,7 +345,7 @@ def evaluate_model_sign_link_prediction(
                 )
                 batch_neg_src_node_ids = batch_src_node_ids
 
-            if model_name in ["DyGFormer"]:
+            if model_name in [DyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
                     0
@@ -361,7 +363,7 @@ def evaluate_model_sign_link_prediction(
                     dst_node_ids=batch_neg_dst_node_ids,
                     node_interact_times=batch_node_interact_times,
                 )
-            elif model_name in ["SignDyGFormer"]:
+            elif model_name in [SignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -496,8 +498,8 @@ def evaluate_model_sign_link_3class_prediction(
     evaluate_neg_edge_sampler.reset_random_state()
 
     if model_name in [
-        "DyGFormer",
-        "SignDygFormer",
+        DyGFormer.NAME,
+        SignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -551,7 +553,7 @@ def evaluate_model_sign_link_3class_prediction(
                 )
                 batch_neg_src_node_ids = batch_src_node_ids
 
-            if model_name in ["DyGFormer"]:
+            if model_name in [DyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
                     0
@@ -569,7 +571,7 @@ def evaluate_model_sign_link_3class_prediction(
                     dst_node_ids=batch_neg_dst_node_ids,
                     node_interact_times=batch_node_interact_times,
                 )
-            elif model_name in ["SignDyGFormer"]:
+            elif model_name in [SignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -629,7 +631,9 @@ def evaluate_model_sign_link_3class_prediction(
 
             evaluate_losses.append(loss.item())
 
-            all_predict.append((torch.sigmoid(exist_predict), torch.sigmoid(sign_predict)))
+            all_predict.append(
+                (torch.sigmoid(exist_predict), torch.sigmoid(sign_predict))
+            )
             all_label.append((exist_label, sign_label))
 
             evaluate_idx_data_loader_tqdm.set_description(
@@ -692,8 +696,8 @@ def evaluate_model_sign_prediction(
     # Ensures the random sampler uses a fixed seed for evaluation (i.e. we always sample the same negatives for validation / test set)
 
     if model_name in [
-        "DyGFormer",
-        "SignDygFormer",
+        DyGFormer.NAME,
+        SignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -731,7 +735,7 @@ def evaluate_model_sign_prediction(
             batch_edge_ids = batch_edge_ids[mask]
             batch_node_interact_sign = batch_node_interact_sign[mask]
 
-            if model_name in ["DyGFormer"]:
+            if model_name in [DyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
                     0
@@ -741,7 +745,7 @@ def evaluate_model_sign_prediction(
                     node_interact_times=batch_node_interact_times,
                 )
 
-            elif model_name in ["SignDyGFormer"]:
+            elif model_name in [SignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -873,8 +877,8 @@ def evaluate_model_node_classification(
         "CAWN",
         "TCL",
         "GraphMixer",
-        "DyGFormer",
-        "SignDyGFormer",
+        DyGFormer.NAME,
+        SignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -939,7 +943,7 @@ def evaluate_model_node_classification(
                     num_neighbors=num_neighbors,
                     time_gap=time_gap,
                 )
-            elif model_name in ["SignDyGFormer"]:
+            elif model_name in [SignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[

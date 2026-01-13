@@ -5,12 +5,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import MultiheadAttention
 
-from models.modules import TimeEncoder
+from models.modules import AutoClassName, TimeEncoder
 from utils.direct_neighbor_sampler import DirectedNeighborSampler as NeighborSampler
 from typing import Union, Callable
 
 
-class SignDyGFormer(nn.Module):
+class SignDyGFormer(nn.Module, metaclass=AutoClassName):
 
     def __init__(
         self,
@@ -88,9 +88,7 @@ class SignDyGFormer(nn.Module):
                 ),
                 "neighbor_co_occurrence": nn.Linear(
                     in_features=self.patch_size
-                    * (
-                        self.neighbor_co_occurrence_feat_dim
-                    ),
+                    * (self.neighbor_co_occurrence_feat_dim),
                     out_features=self.channel_embedding_dim,
                     bias=True,
                 ),
@@ -573,10 +571,7 @@ class SignDyGFormer(nn.Module):
         ).reshape(
             batch_size,
             num_patches,
-            patch_size
-            * (
-                self.neighbor_co_occurrence_feat_dim
-            ),
+            patch_size * (self.neighbor_co_occurrence_feat_dim),
         )
 
         return (
@@ -968,9 +963,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
         x_nonzero = x[mask]  # [N, F]
         out_nonzero = self.neighbor_sign_effect_layer(x_nonzero)  # LeakyReLU+Linear
         # 把结果填回全零张量
-        out = torch.zeros(
-            x.size(0), x.size(1), out_nonzero.size(2), device=x.device
-        )
+        out = torch.zeros(x.size(0), x.size(1), out_nonzero.size(2), device=x.device)
         out[mask] = out_nonzero
 
         return out
