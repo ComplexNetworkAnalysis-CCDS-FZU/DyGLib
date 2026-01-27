@@ -47,7 +47,7 @@ SCRIPT_EXTRA = {
 }
 
 # 公共参数
-COMMA_EXTRA =["--num-runs","3","--tail-num" ,'200000']
+COMMA_EXTRA =["--num-runs","3","--tail-num" ,'20000']
 # 如果实验太多，把上面内容写 experiments.json 然后 json.load 即可
 
 

@@ -1,9 +1,10 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Tuple
 import numpy as np
 from sklearn.calibration import label_binarize
 import torch
 from sklearn.metrics import (
     average_precision_score,
+    classification_report,
     f1_score,
     precision_recall_curve,
     recall_score,
@@ -63,7 +64,7 @@ def safe_roc_auc_score(
 
 def best_thr(
     predict: np.ndarray,
-    labels: np.ndarray,
+    labels: np.ndarray,*,
     best_recall=False,
     min_recall: Optional[float] = None,
 ):
@@ -80,6 +81,66 @@ def best_thr(
     best_thr = thr[best_idx]
 
     return best_thr
+
+
+def joint_pred(
+    exist_predicts: np.ndarray,
+    sign_predicts: np.ndarray,
+    exist_thr: float,
+    sign_thr: float,
+):
+    has = exist_predicts >= exist_thr  # bool
+    sign = sign_predicts >= sign_thr  # bool
+    return np.where(has, sign.astype(int) + 1, 0)
+
+
+def best_thr_fast(
+    exist_predicts:np.ndarray,
+    sign_predicts:np.ndarray,
+    labels:np.ndarray,
+    coarse=20,
+    fine=50,
+    radius=0.1,
+    average: Literal["macro", "micro", "weight", "binary"] = "macro",
+):
+    # 1. 粗搜
+    c1 = np.linspace(0.01, 0.99, coarse)
+    c2 = np.linspace(0.01, 0.99, coarse)
+    f1_coarse = np.zeros((coarse, coarse))
+    for i, t1 in enumerate(c1):
+        for j, t2 in enumerate(c2):
+            pred = joint_pred(exist_predicts, sign_predicts, t1, t2)  # 一行函数见下
+            f1_coarse[i, j] = f1_score(labels, pred, average=average)
+    idx = np.unravel_index(f1_coarse.argmax(), f1_coarse.shape)
+    t1_c, t2_c = c1[idx[0]], c2[idx[1]]
+
+    # 2. 精搜
+    f1_fine = np.zeros((fine, fine))
+    fine1 = np.linspace(max(0.01, t1_c - radius), min(0.99, t1_c + radius), fine)
+    fine2 = np.linspace(max(0.01, t2_c - radius), min(0.99, t2_c + radius), fine)
+    for i, t1 in enumerate(fine1):
+        for j, t2 in enumerate(fine2):
+            pred = joint_pred(exist_predicts, sign_predicts, t1, t2)
+            f1_fine[i, j] = f1_score(labels, pred, average=average)
+    idx = np.unravel_index(f1_fine.argmax(), f1_fine.shape)
+    return fine1[idx[0]], fine2[idx[1]]
+
+
+def best_cascade_thr(
+    exist_predicts: np.ndarray,
+    exist_labels: np.ndarray,
+    sign_predicts: np.ndarray,
+    sign_labels: np.ndarray,
+) -> Tuple[float, float]:
+    # ---- 拼三分类标签 ----
+    y_true = np.empty_like(exist_labels)
+    y_true[exist_labels == 0] = 0
+    mask = exist_labels == 1
+    y_true[mask] = sign_labels[mask] + 1  # 0→1  1→2
+
+    exist_thr, sign_thr = best_thr_fast(exist_predicts, sign_predicts, y_true)
+
+    return float(exist_thr), float(sign_thr)
 
 
 def np_sigmoid(x):
@@ -135,8 +196,8 @@ def get_link_sign_3class_prediction_metrics(
     exist_labels: torch.Tensor,
     sign_predicts: torch.Tensor,
     sign_labels: torch.Tensor,
-    best_exist_thr:float=0.5,
-    best_sign_thr:float = 0.5,
+    best_exist_thr: float = 0.5,
+    best_sign_thr: float = 0.5,
 ):
     exist_predicts = exist_predicts.cpu().detach().numpy().ravel()
     exist_labels = exist_labels.cpu().numpy().ravel()
@@ -195,7 +256,8 @@ def get_link_sign_3class_prediction_metrics(
         y_true=labels_bin, y_score=prob_3, average="macro"
     )
     auc = safe_roc_auc_score(y_true=y_true, y_pred=prob_3, average="macro")
-
+    report = classification_report(y_true, y_pred)
+    print(report)
     return {
         "exist_recall": exist_recall,
         "sign_f1": sign_f1_binary,

@@ -650,8 +650,8 @@ def evaluate_model_sign_link_3class_prediction(
             )  # [N_real]
             sign_label = torch.cat([v[1] for v in all_label]).squeeze(-1).cpu().numpy()
 
-            exist_best_thr = float(best_thr(exist_prob, exist_label, True, 0.7))
-            sign_best_thr = float(best_thr(sign_prob, sign_label))
+            exist_best_thr = float(best_thr(exist_prob, exist_label))
+            sign_best_thr = float(best_thr(sign_prob, sign_label, min_recall=0.95))
 
         for (exist_predict, sign_predict), (exist_label, sign_label) in zip(
             all_predict, all_label
@@ -663,6 +663,8 @@ def evaluate_model_sign_link_3class_prediction(
                     sign_labels=sign_label,
                     exist_predicts=exist_predict,
                     exist_labels=exist_label,
+                    best_exist_thr=exist_best_thr,
+                    best_sign_thr=sign_best_thr,
                 )
             )
 
