@@ -1,3 +1,4 @@
+from enum import Enum
 import typing
 import numpy as np
 import torch
@@ -92,10 +93,15 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
                     out_features=self.channel_embedding_dim,
                     bias=True,
                 ),
+                "common_neighbor_effect": nn.Linear(
+                    in_features=self.patch_size * self.neighbor_co_occurrence_feat_dim,
+                    out_features=self.channel_embedding_dim,
+                    bias=True,
+                ),
             }
         )
 
-        self.num_channels = 4
+        self.num_channels = 5
 
         self.transformers = nn.ModuleList(
             [
@@ -138,7 +144,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dst_nodes_edge_ids_list,
             dst_nodes_neighbor_times_list,
             dst_nodes_neighbor_sign_list,
-        ) = self.neighbor_sampler.get_common_neighbors(
+        ) = self.neighbor_sampler.get_repeat_interactive(
             src_node_ids, dst_node_ids, node_interact_times
         )
 
@@ -183,8 +189,6 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             max_input_sequence_length=self.max_input_sequence_length,
         )
 
-        # src_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, src_max_seq_length, neighbor_co_occurrence_feat_dim)
-        # dst_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, dst_max_seq_length, neighbor_co_occurrence_feat_dim)
         (
             src_padded_nodes_neighbor_co_occurrence_features,
             dst_padded_nodes_neighbor_co_occurrence_features,
@@ -193,6 +197,20 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
             src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
             dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+            sample_type=SampleType.RepeatAware,
+        )
+
+        # src_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, src_max_seq_length, neighbor_co_occurrence_feat_dim)
+        # dst_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, dst_max_seq_length, neighbor_co_occurrence_feat_dim)
+        (
+            src_padded_nodes_common_neighbor_effect_features,
+            dst_padded_nodes_common_neighbor_effect_features,
+        ) = self.neighbor_co_occurrence_encoder.forward(
+            src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
+            dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
+            src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
+            dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+            sample_type=SampleType.CommonNeighborAware,
         )
 
         # get the features of the sequence of source and destination nodes
@@ -235,11 +253,13 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             src_patches_nodes_edge_raw_features,
             src_patches_nodes_neighbor_time_features,
             src_patches_nodes_neighbor_co_occurrence_features,
+            src_patches_nodes_common_neighbor_effect_features
         ) = self.get_patches(
             padded_nodes_neighbor_node_raw_features=src_padded_nodes_neighbor_node_raw_features,
             padded_nodes_edge_raw_features=src_padded_nodes_edge_raw_features,
             padded_nodes_neighbor_time_features=src_padded_nodes_neighbor_time_features,
             padded_nodes_neighbor_co_occurrence_features=src_padded_nodes_neighbor_co_occurrence_features,
+            padded_nodes_common_neighbor_effect_features=src_padded_nodes_common_neighbor_effect_features,
             patch_size=self.patch_size,
         )
 
@@ -251,11 +271,13 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dst_patches_nodes_edge_raw_features,
             dst_patches_nodes_neighbor_time_features,
             dst_patches_nodes_neighbor_co_occurrence_features,
+            dst_patches_nodes_common_neighbor_effect_features
         ) = self.get_patches(
             padded_nodes_neighbor_node_raw_features=dst_padded_nodes_neighbor_node_raw_features,
             padded_nodes_edge_raw_features=dst_padded_nodes_edge_raw_features,
             padded_nodes_neighbor_time_features=dst_padded_nodes_neighbor_time_features,
             padded_nodes_neighbor_co_occurrence_features=dst_padded_nodes_neighbor_co_occurrence_features,
+            padded_nodes_common_neighbor_effect_features=dst_padded_nodes_common_neighbor_effect_features,
             patch_size=self.patch_size,
         )
 
@@ -273,6 +295,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         src_patches_nodes_neighbor_co_occurrence_features = self.projection_layer[
             "neighbor_co_occurrence"
         ](src_patches_nodes_neighbor_co_occurrence_features)
+        src_patches_nodes_common_neighbor_effect_features = self.projection_layer[
+            "common_neighbor_effect"
+        ](src_patches_nodes_common_neighbor_effect_features)
 
         # Tensor, shape (batch_size, dst_num_patches, channel_embedding_dim)
         dst_patches_nodes_neighbor_node_raw_features = self.projection_layer["node"](
@@ -287,6 +312,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         dst_patches_nodes_neighbor_co_occurrence_features = self.projection_layer[
             "neighbor_co_occurrence"
         ](dst_patches_nodes_neighbor_co_occurrence_features)
+        dst_patches_nodes_common_neighbor_effect_features = self.projection_layer[
+            "common_neighbor_effect"
+        ](dst_patches_nodes_common_neighbor_effect_features)
 
         batch_size = len(src_patches_nodes_neighbor_node_raw_features)
         src_num_patches = src_patches_nodes_neighbor_node_raw_features.shape[1]
@@ -319,11 +347,20 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dim=1,
         )
 
+        patches_nodes_common_neighbor_effect_features = torch.cat(
+            [
+                src_patches_nodes_common_neighbor_effect_features,
+                dst_patches_nodes_common_neighbor_effect_features,
+            ],
+            dim=1,
+        )
+
         patches_data = [
             patches_nodes_neighbor_node_raw_features,
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
+            patches_nodes_common_neighbor_effect_features
         ]
         # Tensor, shape (batch_size, src_num_patches + dst_num_patches, num_channels, channel_embedding_dim)
         patches_data = torch.stack(patches_data, dim=2)
@@ -514,6 +551,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         padded_nodes_edge_raw_features: torch.Tensor,
         padded_nodes_neighbor_time_features: torch.Tensor,
         padded_nodes_neighbor_co_occurrence_features: torch.Tensor = None,
+        padded_nodes_common_neighbor_effect_features: torch.Tensor = None,
         patch_size: int = 1,
     ):
         """
@@ -534,7 +572,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
-        ) = ([], [], [], [])
+            padded_nodes_common_neighbor_effect_features,
+        ) = ([], [], [], [], [])
 
         for patch_id in range(num_patches):
             start_idx = patch_id * patch_size
@@ -550,6 +589,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             )
             patches_nodes_neighbor_co_occurrence_features.append(
                 padded_nodes_neighbor_co_occurrence_features[:, start_idx:end_idx, :]
+            )
+            padded_nodes_common_neighbor_effect_features.append(
+                padded_nodes_common_neighbor_effect_features[:, start_idx:end_idx, :]
             )
 
         batch_size = len(padded_nodes_neighbor_node_raw_features)
@@ -574,11 +616,20 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patch_size * (self.neighbor_co_occurrence_feat_dim),
         )
 
+        padded_nodes_common_neighbor_effect_features = torch.stack(
+            padded_nodes_common_neighbor_effect_features, dim=1
+        ).reshape(
+            batch_size,
+            num_patches,
+            patch_size * (self.neighbor_co_occurrence_feat_dim),
+        )
+
         return (
             patches_nodes_neighbor_node_raw_features,
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
+            padded_nodes_common_neighbor_effect_features,
         )
 
     def set_neighbor_sampler(self, neighbor_sampler: NeighborSampler):
@@ -594,6 +645,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         ]:
             assert self.neighbor_sampler.seed is not None
             self.neighbor_sampler.reset_random_state()
+
+
+class SampleType(Enum):
+    RepeatAware = 0
+    CommonNeighborAware = 1
 
 
 class NeighborCooccurrenceEncoder(nn.Module):
@@ -974,6 +1030,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         dst_padded_nodes_neighbor_ids: np.ndarray,
         src_padded_nodes_neighbor_sign: np.ndarray,
         dst_padded_nodes_neighbor_sign: np.ndarray,
+        *,
+        sample_type: SampleType,
     ):
         """
         compute the neighbor co-occurrence features of nodes in src_padded_nodes_neighbor_ids and dst_padded_nodes_neighbor_ids
@@ -983,56 +1041,56 @@ class NeighborCooccurrenceEncoder(nn.Module):
         """
         # src_padded_nodes_appearances, Tensor, shape (batch_size, src_max_seq_length, 2)
         # dst_padded_nodes_appearances, Tensor, shape (batch_size, dst_max_seq_length, 2)
-        src_padded_nodes_appearances, dst_padded_nodes_appearances = (
-            self.count_nodes_appearances(
-                src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
-                dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
+        if sample_type == SampleType.RepeatAware:
+            src_padded_nodes_appearances, dst_padded_nodes_appearances = (
+                self.count_nodes_appearances(
+                    src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
+                    dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
+                )
             )
-        )
 
-        src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = (
-            self.count_neighbor_sign_effect(
-                src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
-                dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
-                src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
-                dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+            # sum the neighbor co-occurrence features in the sequence of source and destination nodes
+            # Tensor, shape (batch_size, src_max_seq_length, neighbor_co_occurrence_feat_dim)
+            src_padded_nodes_neighbor_co_occurrence_features = (
+                self.neighbor_co_occurrence_encode_layer(
+                    src_padded_nodes_appearances.unsqueeze(dim=-1)
+                ).sum(dim=2)
             )
-        )
+            # Tensor, shape (batch_size, dst_max_seq_length, neighbor_co_occurrence_feat_dim)
+            dst_padded_nodes_neighbor_co_occurrence_features = (
+                self.neighbor_co_occurrence_encode_layer(
+                    dst_padded_nodes_appearances.unsqueeze(dim=-1)
+                ).sum(dim=2)
+            )
 
-        # sum the neighbor co-occurrence features in the sequence of source and destination nodes
-        # Tensor, shape (batch_size, src_max_seq_length, neighbor_co_occurrence_feat_dim)
-        src_padded_nodes_neighbor_co_occurrence_features = (
-            self.neighbor_co_occurrence_encode_layer(
-                src_padded_nodes_appearances.unsqueeze(dim=-1)
-            ).sum(dim=2)
-        )
-        # Tensor, shape (batch_size, dst_max_seq_length, neighbor_co_occurrence_feat_dim)
-        dst_padded_nodes_neighbor_co_occurrence_features = (
-            self.neighbor_co_occurrence_encode_layer(
-                dst_padded_nodes_appearances.unsqueeze(dim=-1)
-            ).sum(dim=2)
-        )
+            return (
+                src_padded_nodes_neighbor_co_occurrence_features,
+                dst_padded_nodes_neighbor_co_occurrence_features,
+            )
 
-        src_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
-            src_padded_nodes_sign_effect
-        )
-        dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
-            dst_padded_nodes_sign_effect
-        )
+        if sample_type == SampleType.CommonNeighborAware:
+            src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = (
+                self.count_neighbor_sign_effect(
+                    src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
+                    dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
+                    src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
+                    dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+                )
+            )
 
-        src_padded_nodes_neighbor_co_occurrence_features.add_(
-            src_padded_nodes_sign_effect_features
-        )
-        dst_padded_nodes_neighbor_co_occurrence_features.add_(
-            dst_padded_nodes_sign_effect_features
-        )
+            src_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
+                src_padded_nodes_sign_effect
+            )
+            dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
+                dst_padded_nodes_sign_effect
+            )
 
-        # src_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, src_max_seq_length, neighbor_co_occurrence_feat_dim + neighbor_sign_effect_feat_dim)
-        # dst_padded_nodes_neighbor_co_occurrence_features, Tensor, shape (batch_size, dst_max_seq_length, neighbor_co_occurrence_feat_dim + neighbor_sign_effect_feat_dim)
-        return (
-            src_padded_nodes_neighbor_co_occurrence_features,
-            dst_padded_nodes_neighbor_co_occurrence_features,
-        )
+            return (
+                src_padded_nodes_sign_effect_features,
+                dst_padded_nodes_sign_effect_features,
+            )
+        else:
+            raise TypeError("未知采样类型")
 
 
 class TransformerEncoder(nn.Module):
