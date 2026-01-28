@@ -440,6 +440,129 @@ class DirectedNeighborSampler:
             dst_nodes_neighbor_sign_list,
         )
 
+    def get_repeat_interactive(
+        self,
+        src_node_ids: np.ndarray,
+        dst_node_ids: np.ndarray,
+        node_interact_times: np.ndarray,
+        *,
+        neighbor_ty: Optional[NeighborType] = None,
+    ):
+        """重复交互感知节点"""
+        # TODO 感知重复交互节点并向前采样
+        (
+            src_nodes_neighbor_ids_list,
+            src_nodes_edge_ids_list,
+            src_nodes_neighbor_times_list,
+            src_nodes_neighbor_sign_list,
+        ) = ([], [], [], [])
+
+        (
+            dst_nodes_neighbor_ids_list,
+            dst_nodes_edge_ids_list,
+            dst_nodes_neighbor_times_list,
+            dst_nodes_neighbor_sign_list,
+        ) = ([], [], [], [])
+
+        for idx, (src_node_id, dst_node_id, interact_time) in enumerate(
+            zip(src_node_ids, dst_node_ids, node_interact_times)
+        ):
+            # find neighbors that interacted with node_id before time node_interact_time
+            (
+                src_node_neighbor_ids,
+                src_node_edge_ids,
+                src_node_neighbor_times,
+                src_node_neighbor_sign,
+                _,
+            ) = self.find_neighbors_before(
+                node_id=src_node_id,
+                interact_time=interact_time,
+                return_sampled_probabilities=False,
+                neighbor_ty=neighbor_ty,
+            )
+            (
+                dst_node_neighbor_ids,
+                dst_node_edge_ids,
+                dst_node_neighbor_times,
+                dst_node_neighbor_sign,
+                _,
+            ) = self.find_neighbors_before(
+                node_id=dst_node_id,
+                interact_time=interact_time,
+                return_sampled_probabilities=False,
+                neighbor_ty=neighbor_ty,
+            )
+
+            # 对于每个历史交互邻居序列，寻找一侧的序列中的x
+            src_idxes = []
+            dst_idxes = []
+
+            src_repeat_aware_nodes_idx = [
+                idx
+                for idx, node_id in enumerate(src_node_neighbor_ids)
+                if node_id == dst_node_id
+            ]
+            dst_repeat_aware_nodes_idx = [
+                idx
+                for idx, node_id in enumerate(dst_node_neighbor_ids)
+                if node_id == src_node_id
+            ]
+
+            for repeat_idx in src_repeat_aware_nodes_idx:
+                # 重复节点
+                # TODO: 这个参数后续替换掉
+                start = max(0, repeat_idx - self.common_neighbors_look_forward)
+                # 寻找是否有大于start的重复节点
+                for ss_idx in range(repeat_idx - 1, start - 1, -1):
+                    if src_node_neighbor_ids[ss_idx] == dst_node_id:
+                        start = ss_idx + 1
+                        break
+
+                src_idxes.extend(np.arange(start, repeat_idx + 1,dtype=np.int32))
+            
+            for repeat_idx in dst_repeat_aware_nodes_idx:
+                start = max(0,repeat_idx-self.common_neighbors_look_forward)
+
+                for left in range(repeat_idx-1,start-1,-1):
+                    if dst_node_neighbor_ids[left] == src_node_id:
+                        start = left +1
+                        break
+                
+                dst_idxes.extend(np.arange(start,repeat_idx +1, dtype=np.int32))
+            
+            src_idxs = (
+                    np.concatenate(src_idxs)
+                    if src_idxes
+                    else np.array([], dtype=np.int64)
+                )
+            dst_idxs = (
+                    np.concatenate(dst_idxs)
+                    if dst_idxes
+                    else np.array([], dtype=np.int64)
+                )
+
+            src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
+            src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
+            src_nodes_neighbor_times_list.append(src_node_neighbor_times[src_idxs])
+            src_nodes_neighbor_sign_list.append(src_node_neighbor_sign[src_idxs])
+
+            dst_nodes_neighbor_ids_list.append(dst_node_neighbor_ids[dst_idxs])
+            dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
+            dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
+            dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
+
+
+        return (
+            src_nodes_neighbor_ids_list,
+            src_nodes_edge_ids_list,
+            src_nodes_neighbor_times_list,
+            src_nodes_neighbor_sign_list,
+            dst_nodes_neighbor_ids_list,
+            dst_nodes_edge_ids_list,
+            dst_nodes_neighbor_times_list,
+            dst_nodes_neighbor_sign_list,
+        )
+
     def reset_random_state(self):
         """
         reset the random state by self.seed

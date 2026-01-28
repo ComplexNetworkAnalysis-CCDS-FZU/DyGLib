@@ -39,7 +39,7 @@ class SignPredictArgs(BaseModel):
         description="控制时间间隔对采样的影响，更大的值倾向于采样更近的节点，当0时就是平均采样",
     )
     common_neighbors_look_forward: int = Field(
-        2, description="每个共同邻居前向采样数量"
+        1, description="每个共同邻居前向采样数量"
     )
     pos_weight: float = Field(1.0, description="符号分类任务中的pos权重")
 
