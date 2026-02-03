@@ -144,7 +144,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dst_nodes_edge_ids_list,
             dst_nodes_neighbor_times_list,
             dst_nodes_neighbor_sign_list,
-        ) = self.neighbor_sampler.get_repeat_interactive(
+        ) = self.neighbor_sampler.get_common_neighbors(
             src_node_ids, dst_node_ids, node_interact_times
         )
 
@@ -572,7 +572,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
-            padded_nodes_common_neighbor_effect_features,
+            patches_nodes_common_neighbor_effect_features,
         ) = ([], [], [], [], [])
 
         for patch_id in range(num_patches):
@@ -590,7 +590,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patches_nodes_neighbor_co_occurrence_features.append(
                 padded_nodes_neighbor_co_occurrence_features[:, start_idx:end_idx, :]
             )
-            padded_nodes_common_neighbor_effect_features.append(
+            patches_nodes_common_neighbor_effect_features.append(
                 padded_nodes_common_neighbor_effect_features[:, start_idx:end_idx, :]
             )
 
@@ -616,8 +616,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patch_size * (self.neighbor_co_occurrence_feat_dim),
         )
 
-        padded_nodes_common_neighbor_effect_features = torch.stack(
-            padded_nodes_common_neighbor_effect_features, dim=1
+        patches_nodes_common_neighbor_effect_features = torch.stack(
+            patches_nodes_common_neighbor_effect_features, dim=1
         ).reshape(
             batch_size,
             num_patches,
@@ -629,7 +629,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
-            padded_nodes_common_neighbor_effect_features,
+            patches_nodes_common_neighbor_effect_features,
         )
 
     def set_neighbor_sampler(self, neighbor_sampler: NeighborSampler):
