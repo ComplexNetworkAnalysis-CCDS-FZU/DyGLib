@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # 计算正负边占比
     classes = np.array([1, -1])
-    non_zero = full_data.node_interact_sign[full_data.node_interact_sign != 0]
+    non_zero = train_data.node_interact_sign[train_data.node_interact_sign != 0]
     weights = compute_class_weight("balanced", classes=np.unique(non_zero), y=non_zero)
     weights = np.array([weights[0], weights[1], 1], dtype=np.float32)
 

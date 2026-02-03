@@ -256,8 +256,8 @@ def get_link_sign_3class_prediction_metrics(
         y_true=labels_bin, y_score=prob_3, average="macro"
     )
     auc = safe_roc_auc_score(y_true=y_true, y_pred=prob_3, average="macro")
-    report = classification_report(y_true, y_pred)
-    print(report)
+    # report = classification_report(y_true, y_pred)
+    # print(report)
     return {
         "exist_recall": exist_recall,
         "sign_f1": sign_f1_binary,
