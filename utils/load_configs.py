@@ -91,6 +91,8 @@ class SignPredictArgs(BaseModel):
 
     tail_num: Optional[int] = Field(None, description="部分数据集比例")
 
+    repeat_aware: bool = Field(False, description="启用重复感知邻居采样")
+
     @property
     def device(self):
         return (

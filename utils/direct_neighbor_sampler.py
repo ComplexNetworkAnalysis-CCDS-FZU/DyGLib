@@ -68,23 +68,48 @@ class NeighborGroup:
         return len(self.ids)
 
 
-def common_positions_np(a, b):
+def common_neighbor_location(
+    src_neighbor: np.ndarray,
+    dst_neighbor: np.ndarray,
+    *,
+    repeat_aware: bool = False,
+    src: Optional[int] = None,
+    dst: Optional[int] = None,
+):
     """
     a, b : 1-D numpy array
     return : dict{value: (idx_a, idx_b)}
     """
     # 对 a 做唯一化 + 逆索引
-    uniq_a, inv_a = np.unique(a, return_inverse=True)
+    uniq_a, inv_a = np.unique(src_neighbor, return_inverse=True)
     # 把相同 value 的下标按 value 分组
     pos_a = {v: np.where(inv_a == i)[0] for i, v in enumerate(uniq_a)}
 
     # 对 b 同理
-    uniq_b, inv_b = np.unique(b, return_inverse=True)
+    uniq_b, inv_b = np.unique(dst_neighbor, return_inverse=True)
     pos_b = {v: np.where(inv_b == i)[0] for i, v in enumerate(uniq_b)}
+
+    if repeat_aware:
+        assert (
+            src is not None and dst is not None
+        ), "重复交互感知采样需要提供对向节点信息"
 
     # 交集 & 组装
     common_vals = np.intersect1d(uniq_a, uniq_b, assume_unique=True)
-    return {int(v): (pos_a[v], pos_b[v]) for v in common_vals}
+    # 两个分别表示在src的位置和在dst的位置
+    aware_nodes = {int(v): (pos_a[v], pos_b[v]) for v in common_vals}
+
+    if repeat_aware:
+        dst_in_src = pos_a.get(int(dst), np.array([],dtype=int))
+        src_in_dst = pos_b.get(int(src), np.array([],dtype=int))
+
+        if len(dst_in_src) != 0:
+            aware_nodes[int(dst)] = (dst_in_src, np.array([],dtype=int))
+
+        if len(src_in_dst) != 0:
+            aware_nodes[int(src)] = (np.array([],dtype=int), src_in_dst)
+
+    return aware_nodes
 
 
 class DirectedNeighborSampler:
@@ -96,6 +121,7 @@ class DirectedNeighborSampler:
         time_scaling_factor: float = 0.0,
         seed: int = None,
         common_neighbor_look_forward: int = 5,
+        repeat_aware:bool=False
     ):
         """
         Neighbor sampler.
@@ -108,6 +134,7 @@ class DirectedNeighborSampler:
         self.sample_neighbor_strategy = sample_neighbor_strategy
         self.seed = seed
         self.common_neighbors_look_forward = common_neighbor_look_forward
+        self.repeat_aware=repeat_aware
 
         # list of each node's neighbor ids, edge ids and interaction times, which are sorted by interaction times
         # 无符号时使用的邻居，不考虑邻居符号信息
@@ -369,8 +396,12 @@ class DirectedNeighborSampler:
                 neighbor_ty=neighbor_ty,
             )
 
-            common_neighbors = common_positions_np(
-                src_node_neighbor_ids, dst_node_neighbor_ids
+            common_neighbors = common_neighbor_location(
+                src_node_neighbor_ids,
+                dst_node_neighbor_ids,
+                repeat_aware=self.repeat_aware,
+                src=src_node_id,
+                dst=dst_node_id,
             )
             if len(common_neighbors) == 0:
                 # 退回普通采样
@@ -413,11 +444,20 @@ class DirectedNeighborSampler:
                     if src_idxs
                     else np.array([], dtype=np.int64)
                 )
+                src_idxs.sort()
                 dst_idxs = (
                     np.concatenate(dst_idxs)
                     if dst_idxs
                     else np.array([], dtype=np.int64)
                 )
+                dst_idxs.sort()
+
+                assert np.all(
+                    np.diff(src_node_neighbor_times[src_idxs]) >= 0
+                ), "src历史邻居采样序列不是升序的"
+                assert np.all(
+                    np.diff(dst_node_neighbor_times[dst_idxs]) >= 0
+                ), "dst历史邻居采样序列不是升序的"
 
                 src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
                 src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
@@ -518,28 +558,24 @@ class DirectedNeighborSampler:
                         start = ss_idx + 1
                         break
 
-                src_idxes.extend(np.arange(start, repeat_idx + 1,dtype=np.int32))
-            
-            for repeat_idx in dst_repeat_aware_nodes_idx:
-                start = max(0,repeat_idx-self.common_neighbors_look_forward)
+                src_idxes.extend(np.arange(start, repeat_idx + 1, dtype=np.int32))
 
-                for left in range(repeat_idx-1,start-1,-1):
+            for repeat_idx in dst_repeat_aware_nodes_idx:
+                start = max(0, repeat_idx - self.common_neighbors_look_forward)
+
+                for left in range(repeat_idx - 1, start - 1, -1):
                     if dst_node_neighbor_ids[left] == src_node_id:
-                        start = left +1
+                        start = left + 1
                         break
-                
-                dst_idxes.extend(np.arange(start,repeat_idx +1, dtype=np.int32))
-            
+
+                dst_idxes.extend(np.arange(start, repeat_idx + 1, dtype=np.int32))
+
             src_idxs = (
-                    np.concatenate(src_idxs)
-                    if src_idxes
-                    else np.array([], dtype=np.int64)
-                )
+                np.concatenate(src_idxs) if src_idxes else np.array([], dtype=np.int64)
+            )
             dst_idxs = (
-                    np.concatenate(dst_idxs)
-                    if dst_idxes
-                    else np.array([], dtype=np.int64)
-                )
+                np.concatenate(dst_idxs) if dst_idxes else np.array([], dtype=np.int64)
+            )
 
             src_nodes_neighbor_ids_list.append(src_node_neighbor_ids[src_idxs])
             src_nodes_edge_ids_list.append(src_node_edge_ids[src_idxs])
@@ -550,7 +586,6 @@ class DirectedNeighborSampler:
             dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
             dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
             dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
-
 
         return (
             src_nodes_neighbor_ids_list,
@@ -572,11 +607,13 @@ class DirectedNeighborSampler:
 
 
 def get_neighbor_sampler(
+        *,
     data: Data,
     sample_neighbor_strategy: str = "uniform",
     time_scaling_factor: float = 0.0,
     seed: int = None,
     common_neighbor_look_forward: int = 2,
+    repeat_aware:bool=False
 ):
     """
     get neighbor sampler
@@ -630,4 +667,5 @@ def get_neighbor_sampler(
         time_scaling_factor=time_scaling_factor,
         seed=seed,
         common_neighbor_look_forward=common_neighbor_look_forward,
+        repeat_aware=repeat_aware
     )

@@ -50,7 +50,8 @@ if __name__ == "__main__":
     ) = get_link_prediction_data(
         dataset_name=args.dataset_name,
         val_ratio=args.val_ratio,
-        test_ratio=args.test_ratio,tail_num=args.tail_num
+        test_ratio=args.test_ratio,
+        tail_num=args.tail_num,
     )
 
     # initialize training neighbor sampler to retrieve temporal graph
@@ -60,6 +61,7 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
+        repeat_aware=args.repeat_aware,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -69,6 +71,7 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
+        repeat_aware=args.repeat_aware,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -541,7 +544,8 @@ if __name__ == "__main__":
 
         (
             test_losses,
-            test_metrics,_,
+            test_metrics,
+            _,
             _,
         ) = evaluate_model_sign_link_3class_prediction(
             model_name=args.model_name,
