@@ -10,13 +10,19 @@ LOG_ROOT = pathlib.Path("expm-logs")
 
 
 @dataclass
+class ModuleCtrl:
+    name: str
+    exp: list[str] = None
+
+
+@dataclass
 class Exp:
     script: str
     dataset: str
     model: str
     extra: list[str] = None  # 每个实验私有参数
     dataset_extra: list[str] = None
-    modules: list[str] = None
+    modules: ModuleCtrl = None
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -31,9 +37,10 @@ DATASETS = [
     "RedditHyperlinkTitle",
     "RedditHyperlinkBody",
 ]
-MODELS = ["SignDyGFormer"
-        #   , "DyGFormer"
-          ]
+MODELS = [
+    "SignDyGFormer"
+    #   , "DyGFormer"
+]
 # 任务特定参数
 SCRIPT_EXTRA = {
     "train_link_sign_prediction.py": [
@@ -47,10 +54,16 @@ SCRIPT_EXTRA = {
         "exist_recall",
         "sign_f1",
         "auc",
+        "f1_mac",
     ],  # Train_B 要的
 }
 
-MODULE_CTRL = [["--repeat-aware"], []]
+MODULE_CTRL = {
+    "has-repeat-module": [
+        ModuleCtrl("has-repeat", ["--repeat-aware"]),
+        ModuleCtrl("no-repeat",[]),
+    ]
+}
 
 # 公共参数
 COMMA_EXTRA = ["--num-runs", "3"]
@@ -61,9 +74,11 @@ DATASET_EXTRA = {
 }
 
 
-# ========== 2. 生成笛卡尔积 ==========
+# ========== 2. 生成笛卡尔积 ==========、
 def make_experiments():
-    for s, d, m, mc in itertools.product(SCRIPTS, DATASETS, MODELS, MODULE_CTRL):
+    for s, d, m, mc in itertools.product(
+        SCRIPTS, DATASETS, MODELS, *MODULE_CTRL.values()
+    ):
         yield Exp(
             script=(s),
             dataset=d,
@@ -85,7 +100,7 @@ def run(exp: Exp):
         "--model",
         exp.model,
         *exp.extra,
-        *exp.modules,
+        *exp.modules.exp,
         *exp.dataset_extra,
         *COMMA_EXTRA,
     ]
@@ -95,7 +110,7 @@ def run(exp: Exp):
 
     # 3. 日志文件：Dataset_Model_时间戳.log
     ts = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
-    log_file = log_dir / f"{exp.dataset}_{exp.model}_{ts}.log"
+    log_file = log_dir / f"{exp.dataset}_{exp.model}_{ts}_{exp.modules.name}.log"
 
     print(">>>", " ".join(cmd))
     with log_file.open("w", encoding="utf-8") as f:
@@ -123,7 +138,7 @@ def main():
                         "--model",
                         exp.model,
                         *exp.extra,
-                        *exp.modules,
+                        *exp.modules.exp,
                         *exp.dataset_extra,
                         *COMMA_EXTRA,
                     ]

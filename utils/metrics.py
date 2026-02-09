@@ -250,6 +250,9 @@ def get_link_sign_3class_prediction_metrics(
     exist_recall = recall_score(exist_labels, pred_exist)
     # 3分类指标
     f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+    f1_micro = f1_score(y_true, y_pred, average="micro", zero_division=0)
+
     acc = accuracy_score(y_true, y_pred)
 
     average_precision = average_precision_score(
@@ -262,7 +265,9 @@ def get_link_sign_3class_prediction_metrics(
         "exist_recall": exist_recall,
         "sign_f1": sign_f1_binary,
         "ap": average_precision,
-        "f1": f1_macro,
+        "f1_mac": f1_macro,
+        "f1_wt": f1_weighted,
+        "f1_mic": f1_micro,
         "acc": acc,
         "auc": auc,
     }
