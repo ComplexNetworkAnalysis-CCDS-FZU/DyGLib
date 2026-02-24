@@ -194,6 +194,7 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
+                
             )
         elif args.model_name == "SignDyGFormer":
             dynamic_backbone = SignDyGFormer(
@@ -208,6 +209,7 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
+                pair_sign_effect_aware=args.pair_sign_effect_aware
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")

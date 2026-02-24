@@ -93,6 +93,8 @@ class SignPredictArgs(BaseModel):
 
     repeat_aware: bool = Field(False, description="启用重复感知邻居采样")
 
+    pair_sign_effect_aware:bool = Field(False,description="交互对重复交互对符号影响也考虑")
+
     @property
     def device(self):
         return (

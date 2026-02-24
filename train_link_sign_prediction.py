@@ -57,7 +57,7 @@ if __name__ == "__main__":
         dataset_name=args.dataset_name,
         val_ratio=args.val_ratio,
         test_ratio=args.test_ratio,
-        tail_num=args.tail_num
+        tail_num=args.tail_num,
     )
 
     # initialize training neighbor sampler to retrieve temporal graph
@@ -66,7 +66,8 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
-        common_neighbor_look_forward=args.common_neighbors_look_forward,repeat_aware=args.repeat_aware
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
+        repeat_aware=args.repeat_aware,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -75,7 +76,8 @@ if __name__ == "__main__":
         sample_neighbor_strategy=args.sample_neighbor_strategy,
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
-        common_neighbor_look_forward=args.common_neighbors_look_forward,repeat_aware=args.repeat_aware
+        common_neighbor_look_forward=args.common_neighbors_look_forward,
+        repeat_aware=args.repeat_aware,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -225,6 +227,7 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
+                pair_sign_effect_aware=args.pair_sign_effect_aware,
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")

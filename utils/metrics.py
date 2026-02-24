@@ -7,6 +7,7 @@ from sklearn.metrics import (
     classification_report,
     f1_score,
     precision_recall_curve,
+    precision_recall_fscore_support,
     recall_score,
     roc_auc_score,
     accuracy_score,
@@ -64,7 +65,8 @@ def safe_roc_auc_score(
 
 def best_thr(
     predict: np.ndarray,
-    labels: np.ndarray,*,
+    labels: np.ndarray,
+    *,
     best_recall=False,
     min_recall: Optional[float] = None,
 ):
@@ -95,9 +97,9 @@ def joint_pred(
 
 
 def best_thr_fast(
-    exist_predicts:np.ndarray,
-    sign_predicts:np.ndarray,
-    labels:np.ndarray,
+    exist_predicts: np.ndarray,
+    sign_predicts: np.ndarray,
+    labels: np.ndarray,
     coarse=20,
     fine=50,
     radius=0.1,
@@ -247,7 +249,12 @@ def get_link_sign_3class_prediction_metrics(
     # 计算指标
     # 二分类指标
     sign_f1_binary = f1_score(sign_labels, pred_sign, average="binary")
-    exist_recall = recall_score(exist_labels, pred_exist)
+    exist_precision, exist_recall, exist_f1, _ = precision_recall_fscore_support(
+        exist_labels, pred_exist, average="binary"
+    )
+    # exist_f1 = f1_score(sign_labels, pred_sign, average="binary")
+    # exist_precision=precision_recall_curve()
+    # exist_recall = recall_score(exist_labels, pred_exist)
     # 3分类指标
     f1_macro = f1_score(y_true, y_pred, average="macro", zero_division=0)
     f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0)
@@ -263,6 +270,8 @@ def get_link_sign_3class_prediction_metrics(
     # print(report)
     return {
         "exist_recall": exist_recall,
+        "exist_precision": exist_precision,
+        "exist_f1": exist_f1,
         "sign_f1": sign_f1_binary,
         "ap": average_precision,
         "f1_mac": f1_macro,
