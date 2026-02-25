@@ -14,10 +14,12 @@ import json
 from models.DyGFormer import DyGFormer
 from models.EdgeBank import edge_bank_link_prediction
 from models.SignDyGFormer import SignDyGFormer
+from models.modules import cascade_loss, sign_link3class_label
 from utils.metrics import (
     best_thr,
     get_link_prediction_metrics,
     get_link_sign_3class_prediction_metrics,
+    get_link_sign_3class_prediction_metrics_support_reject,
     get_node_classification_metrics,
     get_link_sign_prediction_metrics,
     get_sign_prediction_metrics,
@@ -597,44 +599,31 @@ def evaluate_model_sign_link_3class_prediction(
                 raise ValueError(f"Wrong value for model_name {model_name}!")
             # get positive and negative probabilities, shape (batch_size, )
 
-            exist_predict, sign_predict = model[1](
+            exist_predict,exist_prob, sign_predict = model[1](
                 input_1=batch_src_node_embeddings,
                 input_2=batch_dst_node_embeddings,
                 null_input_1=batch_neg_src_node_embeddings,
                 null_input_2=batch_neg_dst_node_embeddings,
             )
+            y_exist, y_sign = sign_link3class_label(
+                    src_emb=batch_src_node_embeddings,
+                    dst_emb=batch_dst_node_embeddings,
+                    neg_src_emb=batch_neg_src_node_embeddings,
+                    neg_dst_emb=batch_neg_dst_node_embeddings,
+                    edge_sign=batch_node_interact_sign,
+                    reject_support=True,
+                )
 
-            exist_label = torch.cat(
-                [
-                    torch.ones(
-                        batch_src_node_embeddings.size(0),
-                        device=batch_src_node_embeddings.device,
-                    ),  # 有边
-                    torch.zeros(
-                        batch_neg_src_node_embeddings.size(0),
-                        device=batch_neg_src_node_embeddings.device,
-                    ),  # null
-                ]
-            ).unsqueeze(1)
-
-            exist_loss = loss_func(input=exist_predict, target=exist_label)
-
-            sign_label = torch.tensor(
-                batch_node_interact_sign > 0,
-                device=batch_src_node_embeddings.device,
-                dtype=float,
-            ).unsqueeze(1)
-
-            sign_loss = loss_func(input=sign_predict, target=sign_label)
-
-            loss = exist_loss + sign_loss
-
+            loss = cascade_loss(
+                    exist_predict, sign_predict, exist_prob, y_exist, y_sign,reject_support=True
+                )
+              
             evaluate_losses.append(loss.item())
 
             all_predict.append(
                 (torch.sigmoid(exist_predict), torch.sigmoid(sign_predict))
             )
-            all_label.append((exist_label, sign_label))
+            all_label.append((y_exist, y_sign))
 
             evaluate_idx_data_loader_tqdm.set_description(
                 f"evaluate for the {batch_idx + 1}-th batch, evaluate loss: {loss.item()}"
@@ -658,13 +647,13 @@ def evaluate_model_sign_link_3class_prediction(
         ):
 
             evaluate_metrics.append(
-                get_link_sign_3class_prediction_metrics(
+                get_link_sign_3class_prediction_metrics_support_reject(
                     sign_predicts=sign_predict,
                     sign_labels=sign_label,
                     exist_predicts=exist_predict,
                     exist_labels=exist_label,
                     best_exist_thr=exist_best_thr,
-                    best_sign_thr=sign_best_thr,
+                    # best_sign_thr=sign_best_thr,
                 )
             )
 

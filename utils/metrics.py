@@ -13,6 +13,12 @@ from sklearn.metrics import (
     accuracy_score,
 )
 
+def np_softmax(x, axis=-1):
+    """数值稳定的 softmax"""
+    x_max = np.max(x, axis=axis, keepdims=True)
+    exp_x = np.exp(x - x_max)
+    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)
+
 
 def safe_roc_auc_score(
     y_true: np.ndarray,
@@ -69,6 +75,7 @@ def best_thr(
     *,
     best_recall=False,
     min_recall: Optional[float] = None,
+    print_f1: bool = True,
 ):
     precision, recall, thr = precision_recall_curve(labels, predict)
     if best_recall:
@@ -80,6 +87,11 @@ def best_thr(
     else:
         f1_scores = 2 * precision * recall / (precision + recall + 1e-8)
         best_idx = np.argmax(f1_scores)
+        if print_f1:
+            print(f"最优阈值: {thr[best_idx]:.3f}")
+            print(f"Precision: {precision[best_idx]:.3f}")
+            print(f"Recall: {recall[best_idx]:.3f}")
+            print(f"F1: {f1_scores[best_idx]:.3f}")
     best_thr = thr[best_idx]
 
     return best_thr
@@ -279,6 +291,77 @@ def get_link_sign_3class_prediction_metrics(
         "f1_mic": f1_micro,
         "acc": acc,
         "auc": auc,
+    }
+
+
+def get_link_sign_3class_prediction_metrics_support_reject(
+    exist_predicts: torch.Tensor,  # [N, 1]
+    exist_labels: torch.Tensor,  # [N]，前一半是1，后一半是0
+    sign_predicts: torch.Tensor,  # [N, 3]，前一半是真实符号，后一半是2
+    sign_labels: torch.Tensor,  # [N]，前一半是0/1，后一半是2
+    best_exist_thr: float = 0.5,
+):
+    # 转numpy
+    exist_logits = exist_predicts.cpu().detach().numpy().ravel()
+    exist_labels = exist_labels.cpu().numpy().ravel()
+    sign_logits = sign_predicts.cpu().detach().numpy()  # [N, 3]
+    sign_labels = sign_labels.cpu().numpy().ravel()
+
+    # 概率
+    prob_exist = np_sigmoid(exist_logits)  # [N]
+    prob_sign = np_softmax(sign_logits, axis=-1)  # [N, 3]
+
+    # 预测
+    pred_exist = prob_exist > best_exist_thr  # [N]
+    pred_sign = prob_sign.argmax(axis=-1)  # [N]，0/1/2
+
+    # === 级联预测 ===
+    # 默认不存在（2）
+    y_pred = np.full_like(exist_labels, 2)
+
+    # 第一步通过的，用第二步预测
+    passed = pred_exist
+    y_pred[passed] = pred_sign[passed]
+
+    # 但第二步预测为2（拒绝）的，也改为不存在（2）→ 已经是2，不用改
+
+    y_true = sign_labels  # 直接用，已经是0/1/2
+
+    # === 指标 ===
+    exist_f1 = f1_score(exist_labels, pred_exist, average="binary")
+
+    # 符号F1：只在真实存在（标签0/1）且第一步通过的样本上算
+    real_mask = sign_labels < 2  # 0或1
+    passed_real = pred_exist & real_mask
+    if passed_real.sum() > 0:
+        sign_f1 = f1_score(
+            sign_labels[passed_real],
+            y_pred[passed_real],
+            labels=[0, 1],
+            average="macro",
+        )
+    else:
+        sign_f1 = 0.0
+
+    # 整体3分类F1
+    f1_macro = f1_score(sign_labels, y_pred, average="macro")
+    f1_weighted = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+    f1_micro = f1_score(y_true, y_pred, average="micro", zero_division=0)
+    acc = accuracy_score(y_true, y_pred)
+
+
+    # 拒绝准确率（null样本被分到2的比例）
+    null_mask = sign_labels == 2
+    reject_acc = (y_pred[null_mask] == 2).mean() if null_mask.any() else 0.0
+
+    return {
+        "exist_f1": exist_f1,
+        "sign_f1": sign_f1,
+        "f1_mac": f1_macro,
+        "f1_wt": f1_weighted,
+        "f1_mic": f1_micro,
+        "reject_acc": reject_acc,
+        "acc": acc,
     }
 
 

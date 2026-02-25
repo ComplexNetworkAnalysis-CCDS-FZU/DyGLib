@@ -98,16 +98,29 @@ class SignNullClassifyLayer(nn.Module):
         null_input_dim1: int,
         null_input_dim2: int,
         hidden_dim: int,
+        *,
+        reject_support: bool = False,
     ):
         super().__init__()
+        self.reject_support = reject_support
 
-        self.sign_classify = MergeLayer(
-            input_dim1=input_dim1,
-            input_dim2=input_dim2,
-            hidden_dim=hidden_dim,
-            output_dim=1,
-            require_relu=True,
-        )
+        if reject_support:
+
+            self.sign_classify = MergeLayer(
+                input_dim1=input_dim1,
+                input_dim2=input_dim2,
+                hidden_dim=hidden_dim,
+                output_dim=3,
+                require_relu=True,
+            )
+        else:
+            self.sign_classify = MergeLayer(
+                input_dim1=input_dim1,
+                input_dim2=input_dim2,
+                hidden_dim=hidden_dim,
+                output_dim=1,
+                require_relu=True,
+            )
         self.exist_classify = MergeLayer(
             input_dim1=input_dim1,
             input_dim2=input_dim2,
@@ -122,16 +135,49 @@ class SignNullClassifyLayer(nn.Module):
         input_2: torch.Tensor,
         null_input_1: torch.Tensor,
         null_input_2: torch.Tensor,
+        *,
+        training: bool = True,
+        exist_thr: float = 0.5,
     ):
 
         exist_input_1 = torch.cat([input_1, null_input_1], dim=0)
         exist_input_2 = torch.cat([input_2, null_input_2], dim=0)
 
-        exist_pred = self.exist_classify.forward(exist_input_1, exist_input_2)
+        # 先计算边是否存在
+        exist_logits = self.exist_classify.forward(exist_input_1, exist_input_2)
+        exist_prob = torch.sigmoid(exist_logits)
+        #
+        if self.reject_support:
+            if training:
+                sign_input_1, sign_input_2 = exist_input_1, exist_input_2
 
-        sign_pred = self.sign_classify(input_1, input_2)
+                sign_logits = self.sign_classify(sign_input_1, sign_input_2)
 
-        return exist_pred, sign_pred
+                return exist_logits, exist_prob, sign_logits
+            else:
+
+                exist_mask = (exist_logits >= exist_thr).squeeze(-1)
+
+                if exist_mask.sum() == 0:
+                    # 没有通过的，返回空
+                    return (
+                        exist_prob,
+                        torch.empty(0, 3, device=exist_prob.device),
+                    )
+
+                sign_input_src = exist_input_1[exist_mask]
+                sign_input_dst = exist_input_2[exist_mask]
+
+                sign_logits = self.sign_classify(sign_input_src, sign_input_dst)
+
+                return exist_logits, exist_prob, sign_logits
+        else:
+            sign_input_src = input_1
+            sign_input_dst = input_2
+
+            sign_logits = self.sign_classify(sign_input_src, sign_input_dst)
+
+            return exist_logits, exist_prob, sign_logits
 
 
 class MLPClassifier(nn.Module):
@@ -388,3 +434,77 @@ class TransformerEncoder(nn.Module):
         outputs = self.norm_layers[1](outputs + self.dropout(hidden_states))
 
         return outputs
+
+
+def cascade_loss(
+    exist_logits,
+    sign_logits,
+    exist_prob,
+    y_exist,
+    y_sign,
+    reject_support=False,
+    exist_weight=1.0,
+    sign_weight=1.0,
+):
+    """
+    y_exist: [B+N], 0=不存在, 1=存在
+    y_sign: [B+N], 0=负, 1=正, 2=拒绝（当 reject_support=True）
+    """
+    total_size =exist_logits.size(0)
+
+    assert exist_logits.shape == (total_size, 1), f"exist_logits shape {exist_logits.shape}"
+    assert sign_logits.shape == (total_size, 3), f"sign_logits shape {sign_logits.shape}"
+
+    batch_total = y_exist.size(0)
+    batch_real = (y_exist == 1).sum().item()  # 真实存在数
+
+    # 第一步损失：所有样本
+    loss_exist = F.binary_cross_entropy_with_logits(
+        exist_logits, y_exist.float()
+    )
+
+    # 第二步损失
+    if reject_support:
+        # 3类分类：正、负、拒绝
+        loss_sign = F.cross_entropy(sign_logits, y_sign.squeeze(1))
+
+        # 可选：给拒绝样本更高权重（因为它们容易被错分）
+        # 或给真实符号样本更高权重（更关注正确分类）
+    else:
+        # 2类分类：只算真实存在样本
+        loss_sign = F.binary_cross_entropy_with_logits(
+            sign_logits.squeeze(), y_sign.float()
+        )
+
+    return exist_weight * loss_exist + sign_weight * loss_sign
+
+
+def sign_link3class_label(
+    *,src_emb, dst_emb, neg_src_emb, neg_dst_emb, edge_sign, reject_support: bool = False
+):
+    
+    batch_size = src_emb.size(0)
+    device = src_emb.device
+    exist_label = torch.cat(
+        [
+            torch.ones(
+                src_emb.size(0),
+                device=device,
+            ),  # 有边
+            torch.zeros(
+                neg_src_emb.size(0),
+                device=device,
+            ),  # null
+        ]
+    ).unsqueeze(1)
+
+    sign_front = torch.tensor(
+        edge_sign > 0, device=device, dtype=torch.long
+    )
+    sign_back = torch.full((batch_size,), 2, device=device, dtype=torch.long)
+
+    sign_label = torch.cat([sign_front, sign_back]).unsqueeze(1)
+
+    return exist_label,sign_label
+
+    

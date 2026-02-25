@@ -14,7 +14,7 @@ import torch.nn as nn
 
 from models.SignDyGFormer import SignDyGFormer
 from models.DyGFormer import DyGFormer
-from models.modules import SignNullClassifyLayer
+from models.modules import SignNullClassifyLayer, cascade_loss, sign_link3class_label
 from utils.utils import (
     dataset_sampler,
     set_random_seed,
@@ -25,7 +25,7 @@ from utils.utils import (
 from utils.direct_neighbor_sampler import get_neighbor_sampler
 from utils.utils import NegativeEdgeSampler
 from evaluate_models_utils import evaluate_model_sign_link_3class_prediction
-from utils.metrics import get_link_sign_3class_prediction_metrics
+from utils.metrics import get_link_sign_3class_prediction_metrics, get_link_sign_3class_prediction_metrics_support_reject
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_sign_prediction_args
@@ -194,7 +194,6 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
-                
             )
         elif args.model_name == "SignDyGFormer":
             dynamic_backbone = SignDyGFormer(
@@ -209,7 +208,7 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
-                pair_sign_effect_aware=args.pair_sign_effect_aware
+                pair_sign_effect_aware=args.pair_sign_effect_aware,
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")
@@ -220,6 +219,7 @@ if __name__ == "__main__":
             null_input_dim1=node_raw_features.shape[1],
             null_input_dim2=node_raw_features.shape[1],
             hidden_dim=node_raw_features.shape[1],
+            reject_support=True
         )
         model = nn.Sequential(dynamic_backbone, link_sign_predictor)
         logger.info(f"model -> {model}")
@@ -345,44 +345,33 @@ if __name__ == "__main__":
                 else:
                     raise ValueError(f"Wrong value for model_name {args.model_name}!")
                 # get positive and negative probabilities, shape (batch_size, )
-                exist_predict, sign_predict = model[1](
+                exist_predict, exist_prob, sign_predict = model[1](
                     input_1=batch_src_node_embeddings,
                     input_2=batch_dst_node_embeddings,
                     null_input_1=batch_neg_src_node_embeddings,
                     null_input_2=batch_neg_dst_node_embeddings,
                 )
 
-                exist_label = torch.cat(
-                    [
-                        torch.ones(
-                            batch_src_node_embeddings.size(0),
-                            device=batch_src_node_embeddings.device,
-                        ),  # 有边
-                        torch.zeros(
-                            batch_neg_src_node_embeddings.size(0),
-                            device=batch_neg_src_node_embeddings.device,
-                        ),  # null
-                    ]
-                ).unsqueeze(1)
+                y_exist, y_sign = sign_link3class_label(
+                    src_emb=batch_src_node_embeddings,
+                    dst_emb=batch_dst_node_embeddings,
+                    neg_src_emb=batch_neg_src_node_embeddings,
+                    neg_dst_emb=batch_neg_dst_node_embeddings,
+                    edge_sign=batch_sign,
+                    reject_support=True,
+                )
 
-                exist_loss = loss_func(input=exist_predict, target=exist_label)
-
-                sign_label = torch.tensor(
-                    batch_sign > 0, device=batch_src_node_embeddings.device, dtype=float
-                ).unsqueeze(1)
-
-                sign_loss = loss_func(input=sign_predict, target=sign_label)
-
-                loss = exist_loss + sign_loss
-
+                loss = cascade_loss(
+                    exist_predict, sign_predict, exist_prob, y_exist, y_sign,reject_support=True
+                )
                 train_losses.append(loss.item())
 
                 train_metrics.append(
-                    get_link_sign_3class_prediction_metrics(
+                    get_link_sign_3class_prediction_metrics_support_reject(
                         sign_predicts=sign_predict,
-                        sign_labels=sign_label,
+                        sign_labels=y_sign,
                         exist_predicts=exist_predict,
-                        exist_labels=exist_label,
+                        exist_labels=y_exist,
                     )
                 )
 
@@ -395,7 +384,7 @@ if __name__ == "__main__":
                 optimizer.step()
 
                 train_idx_data_loader_tqdm.set_description(
-                    f"Epoch: {epoch + 1}, train for the {batch_idx + 1}-th batch, train loss: [exist:{exist_loss.item():4f}, sign:{sign_loss.item():4f}]"
+                    f"Epoch: {epoch + 1}, train for the {batch_idx + 1}-th batch, train loss: {loss.item():4f}"
                 )
                 # total_norm = 0
 
@@ -427,6 +416,8 @@ if __name__ == "__main__":
                     loss_func=loss_func,
                     num_neighbors=args.num_neighbors,
                     time_gap=args.time_gap,
+                    exist_best_thr=0.5,
+                    sign_best_thr=0.12,
                 )
             )
 
