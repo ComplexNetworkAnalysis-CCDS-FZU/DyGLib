@@ -5,9 +5,14 @@ import itertools
 from dataclasses import dataclass
 import argparse, json, sys
 
-# 日志
-LOG_ROOT = pathlib.Path("expm-logs")
 
+
+# 只取日期
+start_date = datetime.datetime.now().date()
+
+# 日志
+LOG_ROOT = pathlib.Path(f"expm-{start_date}-logs")
+print(f"Save Log at {LOG_ROOT}")
 
 @dataclass
 class ModuleCtrl:
@@ -61,8 +66,12 @@ SCRIPT_EXTRA = {
 MODULE_CTRL = {
     "has-repeat-module": [
         ModuleCtrl("has-repeat", ["--repeat-aware"]),
-        ModuleCtrl("no-repeat",[]),
-    ]
+        ModuleCtrl("no-repeat", []),
+    ],
+    "pair-aware": [
+        ModuleCtrl("has-pair-aware", ["--pair-sign-effect-aware"]),
+        ModuleCtrl("no-pair-aware", []),
+    ],
 }
 
 # 公共参数
@@ -76,9 +85,11 @@ DATASET_EXTRA = {
 
 # ========== 2. 生成笛卡尔积 ==========、
 def make_experiments():
-    for s, d, m, mc in itertools.product(
-        SCRIPTS, DATASETS, MODELS, *MODULE_CTRL.values()
-    ):
+    for item in itertools.product(SCRIPTS, DATASETS, MODELS, *MODULE_CTRL.values()):
+        s = item[0]
+        d = item[1]
+        m = item[2]
+        mc = [] if len(item) == 3 else item[3:]
         yield Exp(
             script=(s),
             dataset=d,
@@ -100,7 +111,7 @@ def run(exp: Exp):
         "--model",
         exp.model,
         *exp.extra,
-        *exp.modules.exp,
+        *list(itertools.chain(*[modules.exp for modules in exp.modules])),
         *exp.dataset_extra,
         *COMMA_EXTRA,
     ]
@@ -110,7 +121,10 @@ def run(exp: Exp):
 
     # 3. 日志文件：Dataset_Model_时间戳.log
     ts = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
-    log_file = log_dir / f"{exp.dataset}_{exp.model}_{ts}_{exp.modules.name}.log"
+    log_file = (
+        log_dir
+        / f"{exp.dataset}_{exp.model}_{'_'.join([m.name for m in exp.modules])}_{ts}.log"
+    )
 
     print(">>>", " ".join(cmd))
     with log_file.open("w", encoding="utf-8") as f:
@@ -138,7 +152,9 @@ def main():
                         "--model",
                         exp.model,
                         *exp.extra,
-                        *exp.modules.exp,
+                        *list(
+                            itertools.chain(*[modules.exp for modules in exp.modules])
+                        ),
                         *exp.dataset_extra,
                         *COMMA_EXTRA,
                     ]
