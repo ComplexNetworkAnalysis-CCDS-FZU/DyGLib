@@ -15,6 +15,7 @@ import torch.nn as nn
 from models.SignDyGFormer import SignDyGFormer
 from models.DyGFormer import DyGFormer
 from models.modules import SignNullClassifyLayer, cascade_loss, sign_link3class_label
+from utils.metrics.linkSignPredict import get_linksign_prediction_metrics
 from utils.utils import (
     dataset_sampler,
     set_random_seed,
@@ -25,7 +26,6 @@ from utils.utils import (
 from utils.direct_neighbor_sampler import get_neighbor_sampler
 from utils.utils import NegativeEdgeSampler
 from evaluate_models_utils import evaluate_model_sign_link_3class_prediction
-from utils.metrics import get_link_sign_3class_prediction_metrics, get_link_sign_3class_prediction_metrics_support_reject
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_sign_prediction_args
@@ -219,7 +219,7 @@ if __name__ == "__main__":
             null_input_dim1=node_raw_features.shape[1],
             null_input_dim2=node_raw_features.shape[1],
             hidden_dim=node_raw_features.shape[1],
-            reject_support=True
+            reject_support=args.reject_support,
         )
         model = nn.Sequential(dynamic_backbone, link_sign_predictor)
         logger.info(f"model -> {model}")
@@ -358,20 +358,26 @@ if __name__ == "__main__":
                     neg_src_emb=batch_neg_src_node_embeddings,
                     neg_dst_emb=batch_neg_dst_node_embeddings,
                     edge_sign=batch_sign,
-                    reject_support=True,
+                    reject_support=args.reject_support,
                 )
 
                 loss = cascade_loss(
-                    exist_predict, sign_predict, exist_prob, y_exist, y_sign,reject_support=True
+                    exist_predict,
+                    sign_predict,
+                    exist_prob,
+                    y_exist,
+                    y_sign,
+                    reject_support=args.reject_support,
                 )
                 train_losses.append(loss.item())
 
                 train_metrics.append(
-                    get_link_sign_3class_prediction_metrics_support_reject(
+                    get_linksign_prediction_metrics(
                         sign_predicts=sign_predict,
                         sign_labels=y_sign,
                         exist_predicts=exist_predict,
                         exist_labels=y_exist,
+                        reject_support=args.reject_support,
                     )
                 )
 
@@ -416,8 +422,8 @@ if __name__ == "__main__":
                     loss_func=loss_func,
                     num_neighbors=args.num_neighbors,
                     time_gap=args.time_gap,
-                    exist_best_thr=0.5,
-                    sign_best_thr=0.12,
+                    exist_best_thr=args.exist_thr,
+                    sign_best_thr=args.sign_thr,
                 )
             )
 

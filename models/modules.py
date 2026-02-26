@@ -453,7 +453,8 @@ def cascade_loss(
     total_size =exist_logits.size(0)
 
     assert exist_logits.shape == (total_size, 1), f"exist_logits shape {exist_logits.shape}"
-    assert sign_logits.shape == (total_size, 3), f"sign_logits shape {sign_logits.shape}"
+    if reject_support:
+        assert sign_logits.shape == (total_size, 3), f"sign_logits shape {sign_logits.shape}"
 
     batch_total = y_exist.size(0)
     batch_real = (y_exist == 1).sum().item()  # 真实存在数
@@ -473,7 +474,7 @@ def cascade_loss(
     else:
         # 2类分类：只算真实存在样本
         loss_sign = F.binary_cross_entropy_with_logits(
-            sign_logits.squeeze(), y_sign.float()
+            sign_logits.squeeze(), y_sign.squeeze(1).float()
         )
 
     return exist_weight * loss_exist + sign_weight * loss_sign
@@ -501,10 +502,12 @@ def sign_link3class_label(
     sign_front = torch.tensor(
         edge_sign > 0, device=device, dtype=torch.long
     )
-    sign_back = torch.full((batch_size,), 2, device=device, dtype=torch.long)
-
-    sign_label = torch.cat([sign_front, sign_back]).unsqueeze(1)
+    if reject_support:
+        sign_back = torch.full((batch_size,), 2, device=device, dtype=torch.long)
+        sign_label = torch.cat([sign_front, sign_back]).unsqueeze(1)
+    else:
+        sign_label = sign_front.unsqueeze(1)
 
     return exist_label,sign_label
-
+ 
     
