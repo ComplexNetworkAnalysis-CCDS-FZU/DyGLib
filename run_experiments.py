@@ -6,13 +6,13 @@ from dataclasses import dataclass
 import argparse, json, sys
 
 
-
 # 只取日期
 start_date = datetime.datetime.now().date()
 
 # 日志
 LOG_ROOT = pathlib.Path(f"expm-{start_date}-logs")
 print(f"Save Log at {LOG_ROOT}")
+
 
 @dataclass
 class ModuleCtrl:
@@ -52,26 +52,53 @@ SCRIPT_EXTRA = {
         "--early-stop-notice",
         "f1_binary",
         "auc",
-        "acc",
+        "f1_weighted",
     ],  # Train_A 要的
     "train_sign_link_3class_prediction.py": [
         "--early-stop-notice",
-        "exist_recall",
-        "sign_f1",
-        "auc",
+        "f1_wt",
+        "f1_mic",
+        "ap",
         "f1_mac",
-    ],  # Train_B 要的
+        "auc",
+    ],
 }
 
 MODULE_CTRL = {
-    "has-repeat-module": [
-        ModuleCtrl("has-repeat", ["--repeat-aware"]),
-        ModuleCtrl("no-repeat", []),
+    "module_repeat_aware_sampler": [
+        ModuleCtrl("has-repeat-sampler", ["--module-repeat-aware-sampler"]),
+        ModuleCtrl("no-repeat-sampler", []),
     ],
-    "pair-aware": [
-        ModuleCtrl("has-pair-aware", ["--pair-sign-effect-aware"]),
-        ModuleCtrl("no-pair-aware", []),
+    "module_repeat_aware_sign_encoder": [
+        ModuleCtrl(
+            "has-repeat-aware-sign_encoder", ["--module-repeat-aware-sign-encoder"]
+        ),
+        ModuleCtrl("no-repeat-aware-sign_encoder", []),
     ],
+    "module_balance_theory_encoder": [
+        ModuleCtrl("has-balance-theory-encoder", []),
+        ModuleCtrl("no-balance-theory-encoder", ["--no-module-balance-theory-encoder"]),
+    ],
+    "module_common_neighbor_aware_sampler": [
+        ModuleCtrl("has-module-common-neighbor-aware-sampler", []),
+        ModuleCtrl(
+            "no-module-common-neighbor-aware-sampler",
+            ["--no-module-common-neighbor-aware-sampler"],
+        ),
+    ],
+    # "common-neighbors-look-forward":[
+    #     ModuleCtrl("look1",["--common-neighbors-look-forward","1"]),
+    #     ModuleCtrl("look5",["--common-neighbors-look-forward","5"]),
+    #     ModuleCtrl("look10",["--common-neighbors-look-forward","10"]),
+    #     ModuleCtrl("look20",["--common-neighbors-look-forward","20"]),
+    # ],
+    # "num-neighbor":[
+    #     ModuleCtrl("num10",["--num-neighbors","10"]),
+    #     ModuleCtrl("num20",["--num-neighbors","20"]),
+    #     ModuleCtrl("num32",["--num-neighbors","32"]),
+    #     ModuleCtrl("num64",["--num-neighbors","64"]),
+    #     ModuleCtrl("num100",["--num-neighbors","100"]),
+    # ]
 }
 
 # 公共参数
@@ -101,7 +128,7 @@ def make_experiments():
 
 
 # ========== 3. 顺序运行 ==========
-def run(exp: Exp):
+def run(exp: Exp, dry_run: bool = False):
     extra = SCRIPT_EXTRA.get(exp.script, [])
     cmd = [
         sys.executable,
@@ -115,7 +142,8 @@ def run(exp: Exp):
         *exp.dataset_extra,
         *COMMA_EXTRA,
     ]
-
+    if dry_run:
+        return " ".join(cmd)
     log_dir = LOG_ROOT / pathlib.Path(exp.script).stem
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -142,24 +170,7 @@ def main():
 
     for exp in make_experiments():
         if args.dry_run:
-            print(
-                " ".join(
-                    [
-                        sys.executable,
-                        exp.script,
-                        "--dataset-name",
-                        exp.dataset,
-                        "--model",
-                        exp.model,
-                        *exp.extra,
-                        *list(
-                            itertools.chain(*[modules.exp for modules in exp.modules])
-                        ),
-                        *exp.dataset_extra,
-                        *COMMA_EXTRA,
-                    ]
-                )
-            )
+            print(run(exp, dry_run=True))
         else:
             run(exp)
 

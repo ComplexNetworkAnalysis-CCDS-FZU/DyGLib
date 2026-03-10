@@ -61,7 +61,7 @@ if __name__ == "__main__":
         seed=0,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
         module_repeat_aware_sampler=args.module_repeat_aware_sampler,
-        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler
+        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         seed=1,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
         module_repeat_aware_sampler=args.module_repeat_aware_sampler,
-        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler
+        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
                 module_repeat_aware_sign_encoder=args.module_repeat_aware_sign_encoder,
-                module_balance_theory_encoder=args.module_balance_theory_encoder
+                module_balance_theory_encoder=args.module_balance_theory_encoder,
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")
@@ -250,16 +250,14 @@ if __name__ == "__main__":
 
         model = convert_to_gpu(model, device=args.device)
 
-        start_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-
-        save_model_folder = f"./saved_models/{args.model_name}-{start_time}/{args.dataset_name}/{args.save_model_name}/"
+        save_model_folder = f"./saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
         shutil.rmtree(save_model_folder, ignore_errors=True)
         os.makedirs(save_model_folder, exist_ok=True)
 
         early_stopping = EarlyStopping(
             patience=args.patience,
             save_model_folder=save_model_folder,
-            save_model_name=args.save_model_name,
+            save_model_name=args.result_save_name,
             logger=logger,
             model_name=args.model_name,
         )
@@ -568,12 +566,10 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = (
-            f"./saved_results/{args.model_name}-{start_time}/{args.dataset_name}"
-        )
+        save_result_folder = f"./saved_results/{args.model_name}/{args.dataset_name}"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
-            save_result_folder, f"{args.save_model_name}.json"
+            save_result_folder, f"{args.result_save_name}.json"
         )
 
         with open(save_result_path, "w") as file:

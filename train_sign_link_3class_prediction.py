@@ -240,16 +240,14 @@ if __name__ == "__main__":
 
         model = convert_to_gpu(model, device=args.device)
 
-        start_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-
-        save_model_folder = f"./saved_models/{args.model_name}-{start_time}/{args.dataset_name}/{args.save_model_name}/"
+        save_model_folder = f"./saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
         shutil.rmtree(save_model_folder, ignore_errors=True)
         os.makedirs(save_model_folder, exist_ok=True)
 
         early_stopping = EarlyStopping(
             patience=args.patience,
             save_model_folder=save_model_folder,
-            save_model_name=args.save_model_name,
+            save_model_name=args.result_save_name,
             logger=logger,
             model_name=args.model_name,
         )
@@ -632,12 +630,10 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = (
-            f"./saved_results/{args.model_name}-{start_time}/{args.dataset_name}"
-        )
+        save_result_folder = f"./saved_results/{args.model_name}/{args.dataset_name}"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
-            save_result_folder, f"{args.save_model_name}.json"
+            save_result_folder, f"{args.result_save_name}.json"
         )
 
         with open(save_result_path, "w") as file:

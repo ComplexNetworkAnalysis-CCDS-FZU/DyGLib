@@ -8,7 +8,19 @@ from models.DyGFormer import DyGFormer
 from models.SignDyGFormer import SignDyGFormer
 
 EarlyStopLiteral = Literal[
-    "exist_recall", "sign_f1", "ap", "f1_macro", "f1_binary", "acc", "auc"
+    "exist_recall",
+    "sign_f1",
+    "ap",
+    "f1_macro",
+    "f1_binary",
+    "acc",
+    "auc",
+    "f1_wt",
+    "f1_mic",
+    "f1_mac",
+    "f1_bin",
+    "f1_weighted",
+    "f1_binary",
 ]
 
 
@@ -102,20 +114,34 @@ class SignPredictArgs(BaseModel):
         False, description="交互对重复交互对符号影响也考虑"
     )
 
-    module_balance_theory_encoder:bool =Field(
-        True,description="平衡理论编码模块"
+    module_balance_theory_encoder: bool = Field(True, description="平衡理论编码模块")
+
+    module_common_neighbor_aware_sampler: bool = Field(
+        True, description="历史共邻居采样感知模块"
     )
-
-    module_common_neighbor_aware_sampler:bool = Field(
-        True,description="历史共邻居采样感知模块"
-    )
-
-
 
     @property
     def device(self):
         return (
             f"cuda:{self.gpu}" if torch.cuda.is_available() and self.gpu >= 0 else "cpu"
+        )
+
+    @property
+    def result_save_name(self):
+        look_forward = self.common_neighbors_look_forward
+        sample_number = self.num_neighbors
+
+        enable_RAS = self.module_repeat_aware_sampler
+        enable_RASE = self.module_repeat_aware_sign_encoder
+        enable_BTE = self.module_balance_theory_encoder
+        enable_CNAS = self.module_common_neighbor_aware_sampler
+
+        bool2str = lambda x: "E" if x else "D"
+
+        return (
+            f"{self.save_model_name}.NN-{sample_number}.LF-{look_forward}"
+            f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
+            f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
         )
 
 
