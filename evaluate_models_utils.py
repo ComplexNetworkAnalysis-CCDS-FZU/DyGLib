@@ -17,7 +17,10 @@ from models.SignDyGFormer import SignDyGFormer
 from models.modules import cascade_loss, sign_link3class_label
 
 from utils.metrics import best_thr
-from utils.metrics.linkSignPredict import get_linksign_prediction_metrics
+from utils.metrics.linkSignPredict import (
+    cascade_best_thr,
+    get_linksign_prediction_metrics,
+)
 from utils.metrics.signPredict import get_sign_prediction_metrics
 from utils.utils import set_random_seed
 from utils.utils import NegativeEdgeSampler, NeighborSampler
@@ -189,6 +192,24 @@ def evaluate_model_sign_link_3class_prediction(
 
             evaluate_idx_data_loader_tqdm.set_description(
                 f"evaluate for the {batch_idx + 1}-th batch, evaluate loss: {loss.item()}"
+            )
+
+        if exist_best_thr is None and sign_best_thr is None:
+            exist_prob = (
+                torch.cat([v[0] for v in all_predict]).squeeze(-1).cpu().numpy()
+            )  # [N_val]
+            exist_label = torch.cat([v[0] for v in all_label]).squeeze(-1).cpu().numpy()
+            sign_prob = (
+                torch.cat([v[1] for v in all_predict]).squeeze(-1).cpu().numpy()
+            )  # [N_real]
+            sign_label = torch.cat([v[1] for v in all_label]).squeeze(-1).cpu().numpy()
+
+            exist_best_thr, sign_best_thr = cascade_best_thr(
+                exist_predicts=exist_prob,
+                exist_labels=exist_label,
+                sign_predicts=sign_prob,
+                sign_labels=sign_label,
+                is_logits=False,
             )
 
         if exist_best_thr is None:

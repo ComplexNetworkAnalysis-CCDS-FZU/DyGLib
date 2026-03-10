@@ -1,3 +1,6 @@
+import functools
+from itertools import product
+
 import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.calibration import label_binarize
@@ -7,6 +10,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 import torch
+from tqdm import tqdm
 
 from utils.metrics import np_sigmoid, np_softmax, safe_roc_auc_score
 
@@ -20,7 +24,7 @@ def get_linksign_prediction_metrics(
     best_sign_thr: float = 0.5,
     *,
     reject_support: bool = False,
-    is_logits: bool = True
+    is_logits: bool = True,
 ):
     if not reject_support:
         return get_link_sign_3class_prediction_metrics(
@@ -43,6 +47,123 @@ def get_linksign_prediction_metrics(
         )
 
 
+def two_step_label_pred_construct(
+    exist_predicts: np.ndarray,
+    exist_labels: np.ndarray,
+    sign_predicts: np.ndarray,
+    sign_labels: np.ndarray,
+    *,
+    exist_thr: float,
+    sign_thr: float,
+    is_logits: bool = True,
+    is_numpy: bool = False,
+):
+    if not is_numpy:
+        exist_predicts = exist_predicts.cpu().detach().numpy().ravel()
+        exist_labels = exist_labels.cpu().numpy().ravel()
+        sign_predicts = sign_predicts.cpu().detach().numpy().ravel()
+        sign_labels = sign_labels.cpu().numpy().ravel()
+
+    if is_logits:
+        prob_exist = np_sigmoid(exist_predicts)
+        prob_sign = np_sigmoid(sign_predicts)
+    else:
+        prob_exist = exist_predicts
+        prob_sign = sign_predicts
+
+    # best_exist_thr = best_thr(prob_exist, exist_labels, True, 0.7)
+    # best_sign_thr = best_thr(prob_sign, sign_labels)
+
+    pred_exist = prob_exist >= exist_thr
+    pred_sign = prob_sign >= sign_thr
+
+    n_sign_task = sign_labels.shape[0]
+    # 标签生成
+    y_true = np.empty(len(exist_labels), dtype=int)
+    y_true[:n_sign_task] = sign_labels
+    y_true[n_sign_task:] = 2
+
+    # 预测生成
+    y_pred = np.empty_like(y_true, dtype=int)
+
+    passed = pred_exist
+    passed_real = passed[:n_sign_task]
+    n_pass_real = passed_real.sum()
+
+    y_pred[:n_sign_task] = pred_sign.astype(int)
+    y_pred[n_sign_task:] = 2
+    if n_pass_real > 0:
+        # 判断有连边，用符号预测结果
+        y_pred[:n_sign_task][passed_real] = pred_sign[passed_real].astype(int)
+    # 有连边但是被判断为无连边
+    y_pred[:n_sign_task][~passed_real] = 2
+
+    prob_3 = np.zeros((len(y_true), 3))
+    prob_3[:n_sign_task, 0] = 1 - prob_sign.squeeze()  # 负边概率，prob_sign 计算
+    prob_3[:n_sign_task, 1] = prob_sign.squeeze()  # 正边概率，prob_sign计算
+    # null 概率 = 1 - exist 概率
+    prob_3[n_sign_task:, 2] = (
+        1 - prob_exist[n_sign_task:].squeeze()
+    )  # 无连边概率 prob_exist 计算
+
+    y_bin = label_binarize(y_true, classes=[0, 1, 2])
+
+    return y_true, y_pred, prob_3, y_bin
+
+
+def cascade_best_thr(
+    exist_predicts: np.ndarray,
+    exist_labels: np.ndarray,
+    sign_predicts: np.ndarray,
+    sign_labels: np.ndarray,
+    *,
+    print_f1: bool = True,
+    is_logits: bool = False,
+    grid_step: float = 0.01,
+):
+    sign_thresholds = np.arange(grid_step, 1.0, grid_step)
+    exist_thresholds = np.arange(grid_step, 1.0, grid_step)
+
+    best_cascade_f1, best_sign_thr, best_exist_thr = 0, 0.5, 0.5
+
+    process_bar = tqdm(product(exist_thresholds, sign_thresholds))
+    for exist_thr, sign_thr in product(exist_thresholds, sign_thresholds):
+        y_true, y_pred, _, _ = two_step_label_pred_construct(
+            exist_predicts=exist_predicts,
+            exist_labels=exist_labels,
+            sign_predicts=sign_predicts,
+            sign_labels=sign_labels,
+            exist_thr=exist_thr,
+            sign_thr=sign_thr,
+            is_numpy=True,
+            is_logits=is_logits,
+        )
+
+        curr_f1 = f1_score(
+            y_true=y_true, y_pred=y_pred, average="macro", zero_division=0
+        )
+
+        if curr_f1 > best_cascade_f1:
+            best_cascade_f1 = curr_f1
+            best_exist_thr = exist_thr
+            best_sign_thr = sign_thr
+
+        process_bar.set_description(
+            f"best F1: {best_cascade_f1}, current F1: {curr_f1},best thr【{best_exist_thr}, {best_sign_thr}】,curr thr 【{exist_thr},{sign_thr}】"
+        )
+
+    if print_f1:
+        print(
+            f"\nbest cascade F1 macro is : {best_cascade_f1}",
+            f"best sign thr: {best_sign_thr}",
+            f"best exist thr: {best_exist_thr}",
+            sep="\n",
+            end="\n",
+        )
+
+        return best_exist_thr, best_sign_thr
+
+
 def get_link_sign_3class_prediction_metrics(
     exist_predicts: torch.Tensor,
     exist_labels: torch.Tensor,
@@ -51,8 +172,9 @@ def get_link_sign_3class_prediction_metrics(
     best_exist_thr: float = 0.5,
     best_sign_thr: float = 0.5,
     *,
-    is_logits: bool = True
+    is_logits: bool = True,
 ):
+
     exist_predicts = exist_predicts.cpu().detach().numpy().ravel()
     exist_labels = exist_labels.cpu().numpy().ravel()
     sign_predicts = sign_predicts.cpu().detach().numpy().ravel()
@@ -145,7 +267,7 @@ def get_link_sign_3class_prediction_metrics_support_reject(
     sign_labels: torch.Tensor,  # [N]，前一半是0/1，后一半是2
     best_exist_thr: float = 0.5,
     *,
-    is_logits: bool = True
+    is_logits: bool = True,
 ):
     # 转numpy
     exist_logits = exist_predicts.cpu().detach().numpy().ravel()
