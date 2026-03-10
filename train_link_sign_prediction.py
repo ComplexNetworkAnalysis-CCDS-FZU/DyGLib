@@ -60,7 +60,8 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
-        repeat_aware=args.repeat_aware,
+        module_repeat_aware_sampler=args.module_repeat_aware_sampler,
+        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -70,7 +71,8 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
-        repeat_aware=args.repeat_aware,
+        module_repeat_aware_sampler=args.module_repeat_aware_sampler,
+        module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs
@@ -220,7 +222,8 @@ if __name__ == "__main__":
                 dropout=args.dropout,
                 max_input_sequence_length=args.max_input_sequence_length,
                 device=args.device,
-                pair_sign_effect_aware=args.pair_sign_effect_aware,
+                module_repeat_aware_sign_encoder=args.module_repeat_aware_sign_encoder,
+                module_balance_theory_encoder=args.module_balance_theory_encoder
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")

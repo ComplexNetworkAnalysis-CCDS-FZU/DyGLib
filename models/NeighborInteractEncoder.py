@@ -6,6 +6,7 @@ import numpy as np
 import torch.nn.functional as F
 from torch.nn import MultiheadAttention
 
+
 class EncodeType(Enum):
     CoOccurredNeighbor = 0
     InteractSignEffect = 1
@@ -18,7 +19,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         neighbor_co_occurrence_feat_dim: int,
         device: str = "cpu",
         *,
-        pair_sign_effect_aware:bool = False
+        module_repeat_aware_sign_encoder: bool = False,
+        module_balance_theory_encoder: bool = True,
     ):
         """
         Neighbor co-occurrence encoder.
@@ -28,7 +30,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         super(NeighborCooccurrenceEncoder, self).__init__()
         self.neighbor_co_occurrence_feat_dim = neighbor_co_occurrence_feat_dim
         self.device = device
-        self.pair_sign_effect_aware= pair_sign_effect_aware
+        self.module_repeat_aware_sign_encoder = module_repeat_aware_sign_encoder
+        self.module_balance_theory_encoder = module_balance_theory_encoder
 
         self.neighbor_co_occurrence_encode_layer = nn.Sequential(
             nn.Linear(in_features=1, out_features=self.neighbor_co_occurrence_feat_dim),
@@ -197,10 +200,10 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
             common_neighbor = np.intersect1d(src_unique_keys, dst_unique_keys)
 
-            if self.pair_sign_effect_aware:
+            if self.module_repeat_aware_sign_encoder:
                 # 同时感知当前交互节点对的信息
                 # 假定节点不会自己和自己交互
-                np.append(common_neighbor,[src_id,dst_id])
+                np.append(common_neighbor, [src_id, dst_id])
 
             pos_effect, neg_effect = self.sign_effect_count(
                 common_neighbor=common_neighbor,
@@ -394,8 +397,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
     def forward(
         self,
-        src_ids:np.ndarray,
-        dst_ids:np.ndarray,
+        src_ids: np.ndarray,
+        dst_ids: np.ndarray,
         src_padded_nodes_neighbor_ids: np.ndarray,
         dst_padded_nodes_neighbor_ids: np.ndarray,
         src_padded_nodes_neighbor_sign: np.ndarray,
@@ -409,6 +412,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
         :param dst_padded_nodes_neighbor_ids:: ndarray, shape (batch_size, dst_max_seq_length)
         :return:
         """
+
         # src_padded_nodes_appearances, Tensor, shape (batch_size, src_max_seq_length, 2)
         # dst_padded_nodes_appearances, Tensor, shape (batch_size, dst_max_seq_length, 2)
         if sample_type == EncodeType.CoOccurredNeighbor:
@@ -438,29 +442,33 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dst_padded_nodes_neighbor_co_occurrence_features,
             )
 
-        if sample_type == EncodeType.InteractSignEffect:
-            src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = (
-                self.count_neighbor_sign_effect(
-                    src_nodes=src_ids,
-                    dst_nodes=dst_ids,
-                    src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
-                    dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
-                    src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
-                    dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+        # 采样类似为交互符号编码 且 启用了平衡理论编码器
+        elif sample_type == EncodeType.InteractSignEffect:
+            if self.module_balance_theory_encoder:
+                src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = (
+                    self.count_neighbor_sign_effect(
+                        src_nodes=src_ids,
+                        dst_nodes=dst_ids,
+                        src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,
+                        dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
+                        src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
+                        dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+                    )
                 )
-            )
 
-            src_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
-                src_padded_nodes_sign_effect
-            )
-            dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
-                dst_padded_nodes_sign_effect
-            )
+                src_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
+                    src_padded_nodes_sign_effect
+                )
+                dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
+                    dst_padded_nodes_sign_effect
+                )
 
-            return (
-                src_padded_nodes_sign_effect_features,
-                dst_padded_nodes_sign_effect_features,
-            )
+                return (
+                    src_padded_nodes_sign_effect_features,
+                    dst_padded_nodes_sign_effect_features,
+                )
+            else:
+                # 未启用，返回空
+                return (None, None)
         else:
             raise TypeError("未知采样类型")
-

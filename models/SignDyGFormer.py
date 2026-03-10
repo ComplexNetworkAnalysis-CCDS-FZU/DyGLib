@@ -28,7 +28,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         max_input_sequence_length: int = 512,
         device: str = "cpu",
         *,
-        pair_sign_effect_aware: bool = False
+        module_repeat_aware_sign_encoder: bool = False,
+        module_balance_theory_encoder: bool = True
     ):
         """
         DyGFormer model.
@@ -45,6 +46,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         :param device: str, device
         """
         super(SignDyGFormer, self).__init__()
+
+        self.module_balance_theory_encoder = module_balance_theory_encoder
 
         self.node_raw_features = torch.from_numpy(
             node_raw_features.astype(np.float32)
@@ -68,10 +71,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         self.time_encoder = TimeEncoder(time_dim=time_feat_dim)
 
         self.neighbor_co_occurrence_feat_dim = self.channel_embedding_dim
+
         self.neighbor_co_occurrence_encoder = NeighborCooccurrenceEncoder(
             neighbor_co_occurrence_feat_dim=self.neighbor_co_occurrence_feat_dim,
             device=self.device,
-            pair_sign_effect_aware=pair_sign_effect_aware,
+            module_repeat_aware_sign_encoder=module_repeat_aware_sign_encoder,
         )
 
         self.projection_layer = nn.ModuleDict(
@@ -105,7 +109,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             }
         )
 
-        self.num_channels = 5
+        self.num_channels = 5 if self.module_balance_theory_encoder else 4
 
         self.transformers = nn.ModuleList(
             [
@@ -148,7 +152,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             dst_nodes_edge_ids_list,
             dst_nodes_neighbor_times_list,
             dst_nodes_neighbor_sign_list,
-        ) = self.neighbor_sampler.get_common_neighbors(
+        ) = self.neighbor_sampler.history_neighbors_sampling(
             src_node_ids, dst_node_ids, node_interact_times
         )
 
@@ -193,7 +197,6 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             max_input_sequence_length=self.max_input_sequence_length,
         )
 
-        # TODO: 调整邻居采样实现
         (
             src_padded_nodes_neighbor_co_occurrence_features,
             dst_padded_nodes_neighbor_co_occurrence_features,
@@ -304,9 +307,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         src_patches_nodes_neighbor_co_occurrence_features = self.projection_layer[
             "neighbor_co_occurrence"
         ](src_patches_nodes_neighbor_co_occurrence_features)
-        src_patches_nodes_common_neighbor_effect_features = self.projection_layer[
-            "common_neighbor_effect"
-        ](src_patches_nodes_common_neighbor_effect_features)
+
+        if self.module_balance_theory_encoder:
+            src_patches_nodes_common_neighbor_effect_features = self.projection_layer[
+                "common_neighbor_effect"
+            ](src_patches_nodes_common_neighbor_effect_features)
 
         # Tensor, shape (batch_size, dst_num_patches, channel_embedding_dim)
         dst_patches_nodes_neighbor_node_raw_features = self.projection_layer["node"](
@@ -321,9 +326,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         dst_patches_nodes_neighbor_co_occurrence_features = self.projection_layer[
             "neighbor_co_occurrence"
         ](dst_patches_nodes_neighbor_co_occurrence_features)
-        dst_patches_nodes_common_neighbor_effect_features = self.projection_layer[
-            "common_neighbor_effect"
-        ](dst_patches_nodes_common_neighbor_effect_features)
+
+        if self.module_balance_theory_encoder:
+            dst_patches_nodes_common_neighbor_effect_features = self.projection_layer[
+                "common_neighbor_effect"
+            ](dst_patches_nodes_common_neighbor_effect_features)
 
         batch_size = len(src_patches_nodes_neighbor_node_raw_features)
         src_num_patches = src_patches_nodes_neighbor_node_raw_features.shape[1]
@@ -355,22 +362,24 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             ],
             dim=1,
         )
-
-        patches_nodes_common_neighbor_effect_features = torch.cat(
-            [
-                src_patches_nodes_common_neighbor_effect_features,
-                dst_patches_nodes_common_neighbor_effect_features,
-            ],
-            dim=1,
-        )
+        if self.module_balance_theory_encoder:
+            patches_nodes_common_neighbor_effect_features = torch.cat(
+                [
+                    src_patches_nodes_common_neighbor_effect_features,
+                    dst_patches_nodes_common_neighbor_effect_features,
+                ],
+                dim=1,
+            )
 
         patches_data = [
             patches_nodes_neighbor_node_raw_features,
             patches_nodes_edge_raw_features,
             patches_nodes_neighbor_time_features,
             patches_nodes_neighbor_co_occurrence_features,
-            patches_nodes_common_neighbor_effect_features,
         ]
+        if self.module_balance_theory_encoder:
+            patches_data.append(patches_nodes_common_neighbor_effect_features)
+
         # Tensor, shape (batch_size, src_num_patches + dst_num_patches, num_channels, channel_embedding_dim)
         patches_data = torch.stack(patches_data, dim=2)
         # Tensor, shape (batch_size, src_num_patches + dst_num_patches, num_channels * channel_embedding_dim)
@@ -599,9 +608,13 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             patches_nodes_neighbor_co_occurrence_features.append(
                 padded_nodes_neighbor_co_occurrence_features[:, start_idx:end_idx, :]
             )
-            patches_nodes_common_neighbor_effect_features.append(
-                padded_nodes_common_neighbor_effect_features[:, start_idx:end_idx, :]
-            )
+            # 启用了平衡理论编码器才使用
+            if self.module_balance_theory_encoder:
+                patches_nodes_common_neighbor_effect_features.append(
+                    padded_nodes_common_neighbor_effect_features[
+                        :, start_idx:end_idx, :
+                    ]
+                )
 
         batch_size = len(padded_nodes_neighbor_node_raw_features)
         # Tensor, shape (batch_size, num_patches, patch_size * node_feat_dim)
@@ -624,14 +637,14 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             num_patches,
             patch_size * (self.neighbor_co_occurrence_feat_dim),
         )
-
-        patches_nodes_common_neighbor_effect_features = torch.stack(
-            patches_nodes_common_neighbor_effect_features, dim=1
-        ).reshape(
-            batch_size,
-            num_patches,
-            patch_size * (self.neighbor_co_occurrence_feat_dim),
-        )
+        if self.module_balance_theory_encoder:
+            patches_nodes_common_neighbor_effect_features = torch.stack(
+                patches_nodes_common_neighbor_effect_features, dim=1
+            ).reshape(
+                batch_size,
+                num_patches,
+                patch_size * (self.neighbor_co_occurrence_feat_dim),
+            )
 
         return (
             patches_nodes_neighbor_node_raw_features,

@@ -91,16 +91,26 @@ class SignPredictArgs(BaseModel):
 
     tail_num: Optional[int] = Field(None, description="部分数据集比例")
 
-    repeat_aware: bool = Field(False, description="启用重复感知邻居采样")
-
-    pair_sign_effect_aware: bool = Field(
-        False, description="交互对重复交互对符号影响也考虑"
-    )
-
     reject_support: bool = Field(False, description="符号预测模块是否需要支持拒绝")
 
     exist_thr: Optional[float] = Field(None, description="边存在阈值，不提供自适应计算")
     sign_thr: Optional[float] = Field(None, description="符号阈值，不提供将自适应计算")
+
+    module_repeat_aware_sampler: bool = Field(False, description="启用重复感知邻居采样")
+
+    module_repeat_aware_sign_encoder: bool = Field(
+        False, description="交互对重复交互对符号影响也考虑"
+    )
+
+    module_balance_theory_encoder:bool =Field(
+        True,description="平衡理论编码模块"
+    )
+
+    module_common_neighbor_aware_sampler:bool = Field(
+        True,description="历史共邻居采样感知模块"
+    )
+
+
 
     @property
     def device(self):
