@@ -23,6 +23,9 @@ class Args:
     def arg_list(arg_list):
         return list(itertools.chain(*[arg.exp for arg in arg_list]))
 
+    def names(arg_list):
+        return ".".join([arg.name for arg in arg_list])
+
 
 @dataclass
 class ModuleCtrl:
@@ -79,6 +82,7 @@ class Exp:
     dataset_extra: list[str] = None
     modules: list[Args] = None
     param: list[Args] = None
+    gpu: int = 0
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -159,6 +163,11 @@ PARMA_CTRL = [
     ParamArgs.range("numN", "--num-neighbors", 10, 100, 10),
 ]
 
+DEFAULT_PARMA=[
+    Args(["--common-neighbors-look-forward","5"]),
+    Args(["--num-neighbors","20"])
+]
+
 # 公共参数
 COMMA_EXTRA = ["--num-runs", "1"]
 # 如果实验太多，把上面内容写 experiments.json 然后 json.load 即可
@@ -169,7 +178,7 @@ DATASET_EXTRA = {
 
 
 # ========== 2. 生成笛卡尔积 ==========、
-def make_experiments(param_expm: bool = False):
+def make_experiments(param_expm: bool = False, gpu: int = 0):
     for item in itertools.product(
         SCRIPTS,
         DATASETS,
@@ -177,7 +186,7 @@ def make_experiments(param_expm: bool = False):
         ModuleCtrl.arg_sets(
             MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
         ),
-        *[p.args() for p in PARMA_CTRL],
+        *[p.args() for p in PARMA_CTRL]if param_expm else [[DEFAULT_PARMA]],
     ):
         s = item[0]
         d = item[1]
@@ -193,6 +202,7 @@ def make_experiments(param_expm: bool = False):
             modules=mc,
             param=p if param_expm else [],
             dataset_extra=DATASET_EXTRA.get(d, []),
+            gpu=gpu,
         )
 
 
@@ -205,14 +215,14 @@ def run(exp: Exp, dry_run: bool = False):
         exp.dataset,
         "--model",
         exp.model,
+        "--gpu",
+        str(exp.gpu),
         *exp.extra,
         *exp.dataset_extra,
         *COMMA_EXTRA,
         *Args.arg_list(exp.modules),
         *Args.arg_list(exp.param),
     ]
-    if dry_run:
-        return " ".join(cmd)
     log_dir = LOG_ROOT / pathlib.Path(exp.script).stem
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -220,8 +230,13 @@ def run(exp: Exp, dry_run: bool = False):
     ts = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
     log_file = (
         log_dir
-        / f"{exp.dataset}_{exp.model}_{'_'.join([m.name for m in exp.modules])}_{ts}.log"
+        / f"{exp.dataset}_{exp.model}.{Args.names(exp.modules)}.{Args.names(exp.param)}_{ts}.log"
     )
+
+    print(f"Save log at : {log_file}")
+
+    if dry_run:
+        return " ".join(cmd)
 
     print(">>>", " ".join(cmd))
     with log_file.open("w", encoding="utf-8") as f:
@@ -238,9 +253,15 @@ def main():
     ap.add_argument(
         "-p", "--param-expm", action="store_true", help="开启全部模块，进行精度实验"
     )
+    ap.add_argument(
+        "-g",
+        "--gpu",
+        type=int,
+        default=0,
+    )
     args = ap.parse_args()
 
-    for exp in make_experiments(args.param_expm):
+    for exp in make_experiments(args.param_expm, args.gpu):
         if args.dry_run:
             print(run(exp, dry_run=True))
         else:
