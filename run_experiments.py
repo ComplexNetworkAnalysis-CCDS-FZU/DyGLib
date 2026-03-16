@@ -4,6 +4,7 @@ import subprocess
 import itertools
 from dataclasses import dataclass
 import argparse, json, sys
+from typing import List
 
 
 # 只取日期
@@ -15,9 +16,58 @@ print(f"Save Log at {LOG_ROOT}")
 
 
 @dataclass
+class Args:
+    exp: list[str] = None
+    name: str = ""
+
+    def arg_list(arg_list):
+        return list(itertools.chain(*[arg.exp for arg in arg_list]))
+
+
+@dataclass
 class ModuleCtrl:
     name: str
-    exp: list[str] = None
+    enable: Args
+    disable: Args
+
+    def get_args(self, enable: bool):
+        exp = (self.enable if enable else self.disable).exp
+        name = self.get_name(enable)
+        return Args(exp, name)
+
+    def get_name(self, enable: bool):
+        return f"{('has' if enable else 'no')}-{self.name}"
+
+    @staticmethod
+    def arg_sets(modules, group: List[List[bool]]):
+        assert all(map(lambda x: len(modules) == len(x), group)), "控制长度不匹配"
+
+        args_set = [[m.get_args(c) for m, c in zip(modules, ctrl)] for ctrl in group]
+
+        return args_set
+
+
+@dataclass
+class ParamArgs:
+    name: str
+    arg_name: str
+    enums: list[int] = None
+
+    @classmethod
+    def range(cls, name: str, arg_name: str, start: int, end: int, step: int):
+        r = list(range(start, end + 1, step))
+        arg = cls(name=name, arg_name=arg_name, enums=r)
+        return arg
+
+    def args(self):
+        args_set = [
+            Args(
+                [self.arg_name, str(en)],
+                name=f"{self.name}-{en}",
+            )
+            for en in self.enums
+        ]
+        return args_set
 
 
 @dataclass
@@ -27,7 +77,8 @@ class Exp:
     model: str
     extra: list[str] = None  # 每个实验私有参数
     dataset_extra: list[str] = None
-    modules: ModuleCtrl = None
+    modules: list[Args] = None
+    param: list[Args] = None
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -64,45 +115,52 @@ SCRIPT_EXTRA = {
     ],
 }
 
-MODULE_CTRL = {
-    "module_repeat_aware_sampler": [
-        ModuleCtrl("has-repeat-sampler", ["--module-repeat-aware-sampler"]),
-        ModuleCtrl("no-repeat-sampler", []),
-    ],
-    "module_repeat_aware_sign_encoder": [
-        ModuleCtrl(
-            "has-repeat-aware-sign_encoder", ["--module-repeat-aware-sign-encoder"]
-        ),
-        ModuleCtrl("no-repeat-aware-sign_encoder", []),
-    ],
-    "module_balance_theory_encoder": [
-        ModuleCtrl("has-balance-theory-encoder", []),
-        ModuleCtrl("no-balance-theory-encoder", ["--no-module-balance-theory-encoder"]),
-    ],
-    "module_common_neighbor_aware_sampler": [
-        ModuleCtrl("has-module-common-neighbor-aware-sampler", []),
-        ModuleCtrl(
-            "no-module-common-neighbor-aware-sampler",
+MODULE_CTRL = [
+    ModuleCtrl(
+        "repeat-sampler",
+        Args(["--module-repeat-aware-sampler"]),
+        Args([]),
+    ),
+    ModuleCtrl(
+        "repeat-aware-sign-encoder",
+        Args(["--module-repeat-aware-sign-encoder"]),
+        Args([]),
+    ),
+    ModuleCtrl(
+        "balance-theory-encoder",
+        Args([]),
+        Args(["--no-module-balance-theory-encoder"]),
+    ),
+    ModuleCtrl(
+        "module-common-neighbor-aware-sampler",
+        Args([]),
+        Args(
             ["--no-module-common-neighbor-aware-sampler"],
         ),
-    ],
-    # "common-neighbors-look-forward":[
-    #     ModuleCtrl("look1",["--common-neighbors-look-forward","1"]),
-    #     ModuleCtrl("look5",["--common-neighbors-look-forward","5"]),
-    #     ModuleCtrl("look10",["--common-neighbors-look-forward","10"]),
-    #     ModuleCtrl("look20",["--common-neighbors-look-forward","20"]),
-    # ],
-    # "num-neighbor":[
-    #     ModuleCtrl("num10",["--num-neighbors","10"]),
-    #     ModuleCtrl("num20",["--num-neighbors","20"]),
-    #     ModuleCtrl("num32",["--num-neighbors","32"]),
-    #     ModuleCtrl("num64",["--num-neighbors","64"]),
-    #     ModuleCtrl("num100",["--num-neighbors","100"]),
-    # ]
-}
+    ),
+]
+#
+MODULE_GROUP = [
+    [True, True, True, True],
+    # 禁用重复感知
+    [False, False, True, True],
+    # 禁用平衡理论编码
+    [False, False, False, True],
+    # 有平衡编码，但是无共邻居采样，无重复感知
+    [False, False, True, False],
+    # 无共邻居采样
+    [True, True, True, False],
+    # 禁用全部
+    [False, False, False, False],
+]
+
+PARMA_CTRL = [
+    ParamArgs.range("look", "--common-neighbors-look-forward", 0, 20, 5),
+    ParamArgs.range("numN", "--num-neighbors", 10, 100, 10),
+]
 
 # 公共参数
-COMMA_EXTRA = ["--num-runs", "3"]
+COMMA_EXTRA = ["--num-runs", "1"]
 # 如果实验太多，把上面内容写 experiments.json 然后 json.load 即可
 DATASET_EXTRA = {
     "RedditHyperlinkBody": ["--tail-num", "20000"],
@@ -111,25 +169,35 @@ DATASET_EXTRA = {
 
 
 # ========== 2. 生成笛卡尔积 ==========、
-def make_experiments():
-    for item in itertools.product(SCRIPTS, DATASETS, MODELS, *MODULE_CTRL.values()):
+def make_experiments(param_expm: bool = False):
+    for item in itertools.product(
+        SCRIPTS,
+        DATASETS,
+        MODELS,
+        ModuleCtrl.arg_sets(
+            MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
+        ),
+        *[p.args() for p in PARMA_CTRL],
+    ):
         s = item[0]
         d = item[1]
         m = item[2]
-        mc = [] if len(item) == 3 else item[3:]
+        mc = item[3]
+        p = item[4:] if len(item) > 4 else []
+
         yield Exp(
             script=(s),
             dataset=d,
             model=m,
             extra=SCRIPT_EXTRA.get(s),
             modules=mc,
+            param=p if param_expm else [],
             dataset_extra=DATASET_EXTRA.get(d, []),
         )
 
 
 # ========== 3. 顺序运行 ==========
 def run(exp: Exp, dry_run: bool = False):
-    extra = SCRIPT_EXTRA.get(exp.script, [])
     cmd = [
         sys.executable,
         exp.script,
@@ -138,9 +206,10 @@ def run(exp: Exp, dry_run: bool = False):
         "--model",
         exp.model,
         *exp.extra,
-        *list(itertools.chain(*[modules.exp for modules in exp.modules])),
         *exp.dataset_extra,
         *COMMA_EXTRA,
+        *Args.arg_list(exp.modules),
+        *Args.arg_list(exp.param),
     ]
     if dry_run:
         return " ".join(cmd)
@@ -166,9 +235,12 @@ def run(exp: Exp, dry_run: bool = False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", "--dry-run", action="store_true", help="只打印命令不真跑")
+    ap.add_argument(
+        "-p", "--param-expm", action="store_true", help="开启全部模块，进行精度实验"
+    )
     args = ap.parse_args()
 
-    for exp in make_experiments():
+    for exp in make_experiments(args.param_expm):
         if args.dry_run:
             print(run(exp, dry_run=True))
         else:

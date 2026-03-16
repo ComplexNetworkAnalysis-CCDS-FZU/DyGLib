@@ -30,6 +30,8 @@ from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_sign_prediction_args
 
+TASK_NAME= "SignLinkPrediction"
+
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
@@ -240,7 +242,7 @@ if __name__ == "__main__":
 
         model = convert_to_gpu(model, device=args.device)
 
-        save_model_folder = f"./saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
+        save_model_folder = f"./saved_models/{TASK_NAME}/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
         shutil.rmtree(save_model_folder, ignore_errors=True)
         os.makedirs(save_model_folder, exist_ok=True)
 
@@ -630,7 +632,7 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = f"./saved_results/{args.model_name}/{args.dataset_name}"
+        save_result_folder = f"./saved_results/{TASK_NAME}/{args.model_name}/{args.dataset_name}"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
             save_result_folder, f"{args.result_save_name}.json"

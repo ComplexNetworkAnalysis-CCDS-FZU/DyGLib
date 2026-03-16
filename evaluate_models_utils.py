@@ -377,8 +377,8 @@ def evaluate_model_sign_prediction(
                 ],
             )
 
-            all_predict.append(predicts.sigmoid().numpy())
-            all_label.append(labels.numpy())
+            all_predict.append(predicts.sigmoid().cpu().numpy())
+            all_label.append(labels.cpu().numpy())
 
             loss = loss_func(predicts, labels)
 
