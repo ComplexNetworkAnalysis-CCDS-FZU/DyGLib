@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 
 from utils.DataLoader import Data
+from utils.profiler import Profiler
 
 
 class NeighborType(Enum):
@@ -80,28 +81,23 @@ def common_neighbor_location(
     a, b : 1-D numpy array
     return : dict{value: (idx_a, idx_b)}
     """
-    # 对 a 做唯一化 + 逆索引
-    uniq_a, inv_a = np.unique(src_neighbor, return_inverse=True)
-    # 把相同 value 的下标按 value 分组
-    pos_a = {v: np.where(inv_a == i)[0] for i, v in enumerate(uniq_a)}
 
-    # 对 b 同理
-    uniq_b, inv_b = np.unique(dst_neighbor, return_inverse=True)
-    pos_b = {v: np.where(inv_b == i)[0] for i, v in enumerate(uniq_b)}
-
+    # 交集 & 组装
+    common_vals = np.intersect1d(src_neighbor, dst_neighbor, assume_unique=True)
+    # 两个分别表示在src的位置和在dst的位置
+    aware_nodes = {}
+    for v in common_vals:
+        # np.where 仍是瓶颈，但可用 np.argwhere 或 numba 加速
+        src_pos = np.where(src_neighbor == v)[0]
+        dst_pos = np.where(dst_neighbor == v)[0]
+        aware_nodes[int(v)] = (src_pos, dst_pos)
     if repeat_aware:
+
         assert (
             src is not None and dst is not None
         ), "重复交互感知采样需要提供对向节点信息"
-
-    # 交集 & 组装
-    common_vals = np.intersect1d(uniq_a, uniq_b, assume_unique=True)
-    # 两个分别表示在src的位置和在dst的位置
-    aware_nodes = {int(v): (pos_a[v], pos_b[v]) for v in common_vals}
-
-    if repeat_aware:
-        dst_in_src = pos_a.get(int(dst), np.array([], dtype=int))
-        src_in_dst = pos_b.get(int(src), np.array([], dtype=int))
+        dst_in_src = aware_nodes.get(int(dst), (np.array([], dtype=int), None))[0]
+        src_in_dst = aware_nodes.get(int(src), (None, np.array([], dtype=int)))[1]
 
         if len(dst_in_src) != 0:
             aware_nodes[int(dst)] = (dst_in_src, np.array([], dtype=int))
@@ -372,39 +368,43 @@ class DirectedNeighborSampler:
         for idx, (src_node_id, dst_node_id, interact_time) in enumerate(
             zip(src_node_ids, dst_node_ids, node_interact_times)
         ):
+            prof = Profiler()
             # find neighbors that interacted with node_id before time node_interact_time
-            (
-                src_node_neighbor_ids,
-                src_node_edge_ids,
-                src_node_neighbor_times,
-                src_node_neighbor_sign,
-                _,
-            ) = self.find_neighbors_before(
-                node_id=src_node_id,
-                interact_time=interact_time,
-                return_sampled_probabilities=False,
-                neighbor_ty=neighbor_ty,
-            )
-            (
-                dst_node_neighbor_ids,
-                dst_node_edge_ids,
-                dst_node_neighbor_times,
-                dst_node_neighbor_sign,
-                _,
-            ) = self.find_neighbors_before(
-                node_id=dst_node_id,
-                interact_time=interact_time,
-                return_sampled_probabilities=False,
-                neighbor_ty=neighbor_ty,
-            )
 
-            common_neighbors = common_neighbor_location(
-                src_node_neighbor_ids,
-                dst_node_neighbor_ids,
-                repeat_aware=self.module_repeat_aware_sampler,
-                src=src_node_id,
-                dst=dst_node_id,
-            )
+            with prof.timer("Sampling: History Neighbor"):
+                (
+                    src_node_neighbor_ids,
+                    src_node_edge_ids,
+                    src_node_neighbor_times,
+                    src_node_neighbor_sign,
+                    _,
+                ) = self.find_neighbors_before(
+                    node_id=src_node_id,
+                    interact_time=interact_time,
+                    return_sampled_probabilities=False,
+                    neighbor_ty=neighbor_ty,
+                )
+                (
+                    dst_node_neighbor_ids,
+                    dst_node_edge_ids,
+                    dst_node_neighbor_times,
+                    dst_node_neighbor_sign,
+                    _,
+                ) = self.find_neighbors_before(
+                    node_id=dst_node_id,
+                    interact_time=interact_time,
+                    return_sampled_probabilities=False,
+                    neighbor_ty=neighbor_ty,
+                )
+
+            with prof.timer("Sampling: Common Neighbor"):
+                common_neighbors = common_neighbor_location(
+                    src_node_neighbor_ids,
+                    dst_node_neighbor_ids,
+                    repeat_aware=self.module_repeat_aware_sampler,
+                    src=src_node_id,
+                    dst=dst_node_id,
+                )
             if len(common_neighbors) == 0:
                 # 退回普通采样
                 src_nodes_neighbor_ids_list.append(src_node_neighbor_ids)
@@ -418,41 +418,28 @@ class DirectedNeighborSampler:
                 dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign)
 
             else:
-                common_set = set(common_neighbors.keys())
+                with prof.timer("Sampling: Looking Forward"):
 
-                src_idxs = []
-                dst_idxs = []
-                for v, (src_pos, dst_pos) in common_neighbors.items():
-                    for idx in src_pos:
-                        start = max(0, idx - self.common_neighbors_look_forward)
-                        # 往前找第一个公共节点或边界
-                        for left in range(idx - 1, start - 1, -1):
-                            if left < 0 or src_node_neighbor_ids[left] in common_set:
-                                start = left + 1
-                                break
-                        src_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
+                    src_idxs, dst_idxs = look_forward_sampling(
+                        src_node_neighbor_ids,
+                        dst_node_neighbor_ids,
+                        common_neighbors,
+                        self.common_neighbors_look_forward,
+                    )
 
-                    for idx in dst_pos:
-                        start = max(0, idx - self.common_neighbors_look_forward)
-
-                        for left in range(idx - 1, start - 1, -1):
-                            if left < 0 or dst_node_neighbor_ids[left] in common_set:
-                                start = left + 1
-                                break
-                        dst_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
-
-                src_idxs = (
-                    np.concatenate(src_idxs)
-                    if src_idxs
-                    else np.array([], dtype=np.int64)
-                )
-                src_idxs.sort()
-                dst_idxs = (
-                    np.concatenate(dst_idxs)
-                    if dst_idxs
-                    else np.array([], dtype=np.int64)
-                )
-                dst_idxs.sort()
+                with prof.timer("Sampling: Concat & Sort"):
+                    src_idxs = (
+                        np.concatenate(src_idxs)
+                        if src_idxs
+                        else np.array([], dtype=np.int64)
+                    )
+                    src_idxs.sort()
+                    dst_idxs = (
+                        np.concatenate(dst_idxs)
+                        if dst_idxs
+                        else np.array([], dtype=np.int64)
+                    )
+                    dst_idxs.sort()
 
                 assert np.all(
                     np.diff(src_node_neighbor_times[src_idxs]) >= 0
@@ -470,7 +457,7 @@ class DirectedNeighborSampler:
                 dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
                 dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
                 dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
-
+            prof.report()
         return (
             src_nodes_neighbor_ids_list,
             src_nodes_edge_ids_list,
@@ -529,6 +516,69 @@ class DirectedNeighborSampler:
         :return:
         """
         self.random_state = np.random.RandomState(self.seed)
+
+
+def look_forward_sampling(
+    src_neighbor_ids, dst_neighbor_ids, common_neighbors: dict, k
+):
+    pf = Profiler()
+
+    with pf.timer("LF: All Common Neighbor "):
+        src_all_common = np.sort(
+            np.concatenate([v[0] for v in common_neighbors.values()])
+        )
+        dst_all_common = np.sort(
+            np.concatenate([v[1] for v in common_neighbors.values()])
+        )
+
+    with pf.timer("LF-look forward"):
+        src_idxs = []
+        dst_idxs = []
+
+        for v, (src_pos, dst_pos) in common_neighbors.items():
+            for idx in src_pos:
+                start = max(0, idx - k)
+                left, right = 0, len(src_all_common)
+                # 往前找第一个公共节点或边界
+                while left < right:
+                    mid = (left + right) // 2
+                    if src_all_common[mid] < idx:
+                        left = mid + 1
+                    else:
+                        right = mid
+                if left > 0 and src_all_common[left - 1] >= start:
+                    start = src_all_common[left - 1] + 1
+                src_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
+
+            for idx in dst_pos:
+                start = max(0, idx - k)
+
+                left, right = 0, len(dst_all_common)
+                # 往前找第一个公共节点或边界
+                while left < right:
+                    mid = (left + right) // 2
+                    if dst_all_common[mid] < idx:
+                        left = mid + 1
+                    else:
+                        right = mid
+                if left > 0 and dst_all_common[left - 1] >= start:
+                    start = dst_all_common[left - 1] + 1
+                # 往前找第一个公共节点或边界
+                dst_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
+    # pf.report()
+
+    return src_idxs, dst_idxs
+
+
+def find_boundary_numba(neighbor_ids, aware_flags, idx, k):
+    start = max(0, idx - k)
+
+    # 在 [start, idx) 范围内找最后一个感知节点
+    for i in range(idx - 1, start - 1, -1):
+        if aware_flags[i]:
+            return i + 1  # 感知节点不纳入，从下一个开始
+
+    return start
 
 
 def get_neighbor_sampler(
