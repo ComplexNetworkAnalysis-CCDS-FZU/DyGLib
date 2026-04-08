@@ -118,3 +118,5 @@ saved_result
 saved_models
 
 *.json
+*.pdf
+*.csv

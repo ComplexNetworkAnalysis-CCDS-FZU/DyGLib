@@ -4,7 +4,7 @@ import subprocess
 import itertools
 from dataclasses import dataclass
 import argparse, json, sys
-from typing import List
+from typing import Iterable, List
 
 
 # 只取日期
@@ -62,6 +62,11 @@ class ParamArgs:
         arg = cls(name=name, arg_name=arg_name, enums=r)
         return arg
 
+    @classmethod
+    def new(cls, name: str, arg_name: str, *params):
+        arg = cls(name=name, arg_name=arg_name, enums=params)
+        return arg
+
     def args(self):
         args_set = [
             Args(
@@ -71,6 +76,10 @@ class ParamArgs:
             for en in self.enums
         ]
         return args_set
+
+    def with_param(self, *sepc_param):
+        self.enums.extend(sepc_param)
+        return self
 
 
 @dataclass
@@ -90,6 +99,10 @@ SCRIPTS = [
     "train_link_sign_prediction.py",
     "train_sign_link_3class_prediction.py",
 ]  # 需要跑的脚本池
+
+SCRIPTS_OPTS = {"all": SCRIPTS, "sign": [SCRIPTS[0]], "linksign": [SCRIPTS[1]]}
+
+
 DATASETS = [
     "WikiVote",
     "BitcoinAlpha",
@@ -157,15 +170,25 @@ MODULE_GROUP = [
     # 禁用全部
     [False, False, False, False],
 ]
-
+PARMA_GROUPS = {
+    "batch": [ParamArgs.new("batch", "--batch-size", 50, 150, 200, 250, 300)],
+    "sampling": [
+        ParamArgs.range("look", "--common-neighbors-look-forward", 5, 20, 5).with_param(
+            1, 3
+        ),
+        ParamArgs.range("numN", "--num-neighbors", 20, 100, 20).with_param(10, 15),
+    ],
+}
 PARMA_CTRL = [
-    ParamArgs.range("look", "--common-neighbors-look-forward", 0, 20, 5),
-    ParamArgs.range("numN", "--num-neighbors", 10, 100, 10),
+    ParamArgs.range("look", "--common-neighbors-look-forward", 5, 20, 5).with_param(
+        1, 3
+    ),
+    ParamArgs.range("numN", "--num-neighbors", 20, 100, 20).with_param(10, 15),
 ]
 
-DEFAULT_PARMA=[
-    Args(["--common-neighbors-look-forward","5"]),
-    Args(["--num-neighbors","20"])
+DEFAULT_PARMA = [
+    Args(["--common-neighbors-look-forward", "5"]),
+    Args(["--num-neighbors", "20"]),
 ]
 
 # 公共参数
@@ -176,17 +199,32 @@ DATASET_EXTRA = {
     "RedditHyperlinkTitle": ["--tail-num", "20000"],
 }
 
+DATASET_BEST_PARAMS={
+     "WikiVote":["--batch-size","200"],
+    "BitcoinAlpha":["--batch-size","200"],
+    "BitcoinOTC":["--batch-size","200"],
+    "RedditHyperlinkTitle":["--batch-size","200"],
+    "RedditHyperlinkBody":["--batch-size","200"],
+}
+
 
 # ========== 2. 生成笛卡尔积 ==========、
-def make_experiments(param_expm: bool = False, gpu: int = 0):
+def make_experiments(
+        *,
+    param_expm: bool = False,
+    gpu: int = 0,
+    script_type: str = "all",
+    skip_dataset: list = None,
+    param_ty:str="sampling"
+):
     for item in itertools.product(
-        SCRIPTS,
+        SCRIPTS_OPTS[script_type],
         DATASETS,
         MODELS,
         ModuleCtrl.arg_sets(
             MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
         ),
-        *[p.args() for p in PARMA_CTRL]if param_expm else [[DEFAULT_PARMA]],
+        *[p.args() for p in PARMA_GROUPS[param_ty]] if param_expm else [[DEFAULT_PARMA]],
     ):
         s = item[0]
         d = item[1]
@@ -194,6 +232,9 @@ def make_experiments(param_expm: bool = False, gpu: int = 0):
         mc = item[3]
         p = item[4:] if len(item) > 4 else []
 
+        if skip_dataset is not None and d in skip_dataset:
+            print(f"skip dataset {d}")
+            continue
         yield Exp(
             script=(s),
             dataset=d,
@@ -237,7 +278,6 @@ def run(exp: Exp, dry_run: bool = False):
 
     if dry_run:
         return " ".join(cmd)
-
     print(">>>", " ".join(cmd))
     with log_file.open("w", encoding="utf-8") as f:
         ret = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
@@ -259,9 +299,20 @@ def main():
         type=int,
         default=0,
     )
+    ap.add_argument(
+        "-s", "--script", type=str, choices=["all", "sign", "linksign"], default="all"
+    )
+    ap.add_argument("-r", "--ignore-dataset", nargs="+", required=False, default=None)
+    ap.add_argument("-t","--param-type",default="sampling",choices=PARMA_GROUPS.keys(),help="参数实验类型")
     args = ap.parse_args()
 
-    for exp in make_experiments(args.param_expm, args.gpu):
+    for exp in make_experiments(
+        param_expm=args.param_expm,
+        gpu=args.gpu,
+        script_type=args.script,
+        skip_dataset=args.ignore_dataset,
+        param_ty=args.param_type
+    ):
         if args.dry_run:
             print(run(exp, dry_run=True))
         else:

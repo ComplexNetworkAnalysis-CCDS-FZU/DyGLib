@@ -67,7 +67,6 @@ class SignPredictArgs(BaseModel):
     channel_embedding_dim: int = Field(
         50, description="各个通道的嵌入维度（邻居共现等）"
     )
-    max_input_sequence_length: int = Field(32, description="各个节点的最大输入长度")
 
     # 模型训练参数
     learning_rate: float = Field(0.0001)
@@ -143,7 +142,9 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
         )
-
+    @property
+    def max_input_sequence_length(self):
+        return self.num_neighbors
 
 def get_sign_prediction_args(is_evaluation=False):
     import pydantic_argparse
