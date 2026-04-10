@@ -457,7 +457,7 @@ class DirectedNeighborSampler:
                 dst_nodes_edge_ids_list.append(dst_node_edge_ids[dst_idxs])
                 dst_nodes_neighbor_times_list.append(dst_node_neighbor_times[dst_idxs])
                 dst_nodes_neighbor_sign_list.append(dst_node_neighbor_sign[dst_idxs])
-            prof.report()
+            # prof.report()
         return (
             src_nodes_neighbor_ids_list,
             src_nodes_edge_ids_list,

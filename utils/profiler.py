@@ -20,7 +20,7 @@ class Profiler:
 
         def __enter__(self):
             if self.enable:
-                self.p.start[self.name] = time.perf_counter()
+                self.p.start[self.name] = time.perf_counter_ns()
 
         def __exit__(self, exc_type, exc, tb):
             if self.enable:
@@ -31,4 +31,6 @@ class Profiler:
         all_time = sum(self.times.values())
 
         for name,times in self.times.items():
-            print(f"module: {name}, usage: {times:.8f}s, {(times/all_time)*100:.2f}")
+            print(f"module: {name}, \tusage: {times:.8f}ns, \t{(times/all_time)*100:.2f}%")
+        
+        print(f"module: {name}, \ttotal Usage: {all_time}ns\n")
