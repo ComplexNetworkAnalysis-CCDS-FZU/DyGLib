@@ -5,7 +5,7 @@ import itertools
 from dataclasses import dataclass
 import argparse, json, sys
 from typing import Iterable, List
-
+from enum import Enum
 
 # 只取日期
 start_date = datetime.datetime.now().date()
@@ -13,6 +13,17 @@ start_date = datetime.datetime.now().date()
 # 日志
 LOG_ROOT = pathlib.Path(f"expm-{start_date}-logs")
 print(f"Save Log at {LOG_ROOT}")
+
+
+class TaskTy(Enum):
+    All = "all"
+    Sign = "sign"
+    LinkSign = "linksign"
+
+
+class ExprTy(Enum):
+    Ablation = "ablation"
+    Hyperparameter = "parameter"
 
 
 @dataclass
@@ -25,6 +36,11 @@ class Args:
 
     def names(arg_list):
         return ".".join([arg.name for arg in arg_list])
+    
+    @classmethod
+    def new(cls,*args):
+        this = cls(args)
+        return this
 
 
 @dataclass
@@ -91,7 +107,8 @@ class Exp:
     dataset_extra: list[str] = None
     modules: list[Args] = None
     param: list[Args] = None
-    gpu: int = 0
+    gpu: int = 0,
+    ablation:bool=False
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -100,7 +117,16 @@ SCRIPTS = [
     "train_sign_link_3class_prediction.py",
 ]  # 需要跑的脚本池
 
-SCRIPTS_OPTS = {"all": SCRIPTS, "sign": [SCRIPTS[0]], "linksign": [SCRIPTS[1]]}
+SCRIPTS_TO_TASK = {
+    SCRIPTS[0]:TaskTy.Sign,
+    SCRIPTS[1]:TaskTy.LinkSign
+}
+
+SCRIPTS_OPTS = {
+    TaskTy.All.value: SCRIPTS,
+    TaskTy.Sign.value: [SCRIPTS[0]],
+    TaskTy.LinkSign.value: [SCRIPTS[1]],
+}
 
 
 DATASETS = [
@@ -199,32 +225,49 @@ DATASET_EXTRA = {
     "RedditHyperlinkTitle": ["--tail-num", "20000"],
 }
 
-DATASET_BEST_PARAMS={
-     "WikiVote":["--batch-size","200"],
-    "BitcoinAlpha":["--batch-size","200"],
-    "BitcoinOTC":["--batch-size","200"],
-    "RedditHyperlinkTitle":["--batch-size","200"],
-    "RedditHyperlinkBody":["--batch-size","200"],
+
+TASK_DATASET_BEST_PARAMS = {
+    TaskTy.Sign.value: {
+        "WikiVote": Args(["--batch-size", "200"]),
+        "BitcoinAlpha": Args(["--batch-size", "200"]),
+        "BitcoinOTC": Args(["--batch-size", "200"]),
+        "RedditHyperlinkTitle": Args(["--batch-size", "200"]),
+        "RedditHyperlinkBody": Args(["--batch-size", "200"]),
+    },
+    TaskTy.Sign.value: {
+        "WikiVote": Args(["--batch-size", "200"]),
+        "BitcoinAlpha": Args(["--batch-size", "200"]),
+        "BitcoinOTC": Args(["--batch-size", "200"]),
+        "RedditHyperlinkTitle": Args(["--batch-size", "200"]),
+        "RedditHyperlinkBody": Args(["--batch-size", "200"]),
+    },
 }
 
 
 # ========== 2. 生成笛卡尔积 ==========、
 def make_experiments(
-        *,
+    *,
     param_expm: bool = False,
     gpu: int = 0,
     script_type: str = "all",
     skip_dataset: list = None,
-    param_ty:str="sampling"
+    param_ty: str = "sampling",
 ):
+    ablation = ModuleCtrl.arg_sets(
+            MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
+        ),
+    params_fn =lambda dataset,script: [TASK_DATASET_BEST_PARAMS[SCRIPTS_TO_TASK[script].value][dataset]]
+
     for item in itertools.product(
         SCRIPTS_OPTS[script_type],
         DATASETS,
         MODELS,
-        ModuleCtrl.arg_sets(
-            MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
+        ablation,
+        *(
+            [p.args() for p in PARMA_GROUPS[param_ty]]
+            if param_expm
+            else [[DEFAULT_PARMA]]
         ),
-        *[p.args() for p in PARMA_GROUPS[param_ty]] if param_expm else [[DEFAULT_PARMA]],
     ):
         s = item[0]
         d = item[1]
@@ -241,9 +284,10 @@ def make_experiments(
             model=m,
             extra=SCRIPT_EXTRA.get(s),
             modules=mc,
-            param=p if param_expm else [],
+            param=p if param_expm else params_fn(d,s),
             dataset_extra=DATASET_EXTRA.get(d, []),
             gpu=gpu,
+            ablation=not param_expm
         )
 
 
@@ -258,6 +302,7 @@ def run(exp: Exp, dry_run: bool = False):
         exp.model,
         "--gpu",
         str(exp.gpu),
+        *["--ablation"] if exp.ablation else [],
         *exp.extra,
         *exp.dataset_extra,
         *COMMA_EXTRA,
@@ -300,10 +345,20 @@ def main():
         default=0,
     )
     ap.add_argument(
-        "-s", "--script", type=str, choices=["all", "sign", "linksign"], default="all"
+        "-s",
+        "--script",
+        type=str,
+        choices=list(TaskTy.__members__.keys()),
+        default="all",
     )
     ap.add_argument("-r", "--ignore-dataset", nargs="+", required=False, default=None)
-    ap.add_argument("-t","--param-type",default="sampling",choices=PARMA_GROUPS.keys(),help="参数实验类型")
+    ap.add_argument(
+        "-t",
+        "--param-type",
+        default="sampling",
+        choices=PARMA_GROUPS.keys(),
+        help="参数实验类型",
+    )
     args = ap.parse_args()
 
     for exp in make_experiments(
@@ -311,7 +366,7 @@ def main():
         gpu=args.gpu,
         script_type=args.script,
         skip_dataset=args.ignore_dataset,
-        param_ty=args.param_type
+        param_ty=args.param_type,
     ):
         if args.dry_run:
             print(run(exp, dry_run=True))

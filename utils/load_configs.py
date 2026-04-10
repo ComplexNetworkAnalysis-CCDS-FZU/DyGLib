@@ -119,6 +119,8 @@ class SignPredictArgs(BaseModel):
         True, description="历史共邻居采样感知模块"
     )
 
+    ablation:bool =Field(False,description="消融实验模式")
+
     @property
     def device(self):
         return (
@@ -130,6 +132,11 @@ class SignPredictArgs(BaseModel):
         look_forward = self.common_neighbors_look_forward
         sample_number = self.num_neighbors
 
+        if self.ablation:
+            param_fmt = ".NN-Best.LF-Best"
+        else:
+            param_fmt = f".NN-{sample_number}.LF-{look_forward}"
+
         enable_RAS = self.module_repeat_aware_sampler
         enable_RASE = self.module_repeat_aware_sign_encoder
         enable_BTE = self.module_balance_theory_encoder
@@ -137,8 +144,10 @@ class SignPredictArgs(BaseModel):
 
         bool2str = lambda x: "E" if x else "D"
 
+
+
         return (
-            f"{self.save_model_name}.NN-{sample_number}.LF-{look_forward}"
+            f"{self.save_model_name}{param_fmt}"
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
         )
