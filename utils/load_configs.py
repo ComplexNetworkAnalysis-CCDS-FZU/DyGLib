@@ -58,7 +58,7 @@ class SignPredictArgs(BaseModel):
     # 模型参数
     num_heads: int = Field(2, description="注意力层中头的数量")
     num_layers: int = Field(2, description="模型层数量")
-    seed: int = Field(2026)
+    seeds: List[int] = Field([2026], description="随机种子列表")
 
     # 潜空间维度
     time_feat_dim: int = Field(100, description="时间编码的维度")
@@ -72,7 +72,7 @@ class SignPredictArgs(BaseModel):
     learning_rate: float = Field(0.0001)
     dropout: float = Field(0.1)
     num_epochs: int = Field(100)
-    num_runs: int = Field(4)
+    # num_runs: int = Field(4)
     optimizer: Literal["SGD", "Adam", "RMSprop"] = Field("Adam")
 
     weight_decay: float = Field(
@@ -144,13 +144,16 @@ class SignPredictArgs(BaseModel):
 
         bool2str = lambda x: "E" if x else "D"
 
-
-
+        
         return (
             f"{self.save_model_name}{param_fmt}"
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
         )
+    @property
+    def num_runs(self):
+        return len(self.seeds)
+    
     @property
     def max_input_sequence_length(self):
         return self.num_neighbors

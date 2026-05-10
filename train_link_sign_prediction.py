@@ -158,11 +158,11 @@ if __name__ == "__main__":
 
     print(f" pos interact: {num_pos}, neg interact: {num_neg}")
 
-    for run in range(args.num_runs):
+    for run,seed in enumerate(args.seeds):
 
-        set_random_seed(seed=run)
+        set_random_seed(seed=seed)
 
-        args.seed = run
+        args.seed = seed
         args.save_model_name = f"{args.model_name}_seed{args.seed}"
 
         # set up logger

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import argparse, json, sys
 from typing import Iterable, List
 from enum import Enum
+import functools
 
 # 只取日期
 start_date = datetime.datetime.now().date()
@@ -36,11 +37,16 @@ class Args:
 
     def names(arg_list):
         return ".".join([arg.name for arg in arg_list])
-    
+
     @classmethod
-    def new(cls,*args):
+    def new(cls, *args):
         this = cls(args)
         return this
+
+
+class ParamArgs(Args):
+    param_name: str
+    param: str
 
 
 @dataclass
@@ -85,10 +91,7 @@ class ParamArgs:
 
     def args(self):
         args_set = [
-            Args(
-                [self.arg_name, str(en)],
-                name=f"{self.name}-{en}",
-            )
+            Args([self.arg_name, str(en)], name=f"{self.name}-{en}",)
             for en in self.enums
         ]
         return args_set
@@ -107,8 +110,8 @@ class Exp:
     dataset_extra: list[str] = None
     modules: list[Args] = None
     param: list[Args] = None
-    gpu: int = 0,
-    ablation:bool=False
+    gpu: int = (0,)
+    ablation: bool = False
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -117,10 +120,7 @@ SCRIPTS = [
     "train_sign_link_3class_prediction.py",
 ]  # 需要跑的脚本池
 
-SCRIPTS_TO_TASK = {
-    SCRIPTS[0]:TaskTy.Sign,
-    SCRIPTS[1]:TaskTy.LinkSign
-}
+SCRIPTS_TO_TASK = {SCRIPTS[0]: TaskTy.Sign, SCRIPTS[1]: TaskTy.LinkSign}
 
 SCRIPTS_OPTS = {
     TaskTy.All.value: SCRIPTS,
@@ -130,11 +130,11 @@ SCRIPTS_OPTS = {
 
 
 DATASETS = [
-    "WikiVote",
     "BitcoinAlpha",
     "BitcoinOTC",
     "RedditHyperlinkTitle",
     "RedditHyperlinkBody",
+    "WikiVote",
 ]
 MODELS = [
     "SignDyGFormer"
@@ -159,11 +159,7 @@ SCRIPT_EXTRA = {
 }
 
 MODULE_CTRL = [
-    ModuleCtrl(
-        "repeat-sampler",
-        Args(["--module-repeat-aware-sampler"]),
-        Args([]),
-    ),
+    ModuleCtrl("repeat-sampler", Args(["--module-repeat-aware-sampler"]), Args([]),),
     ModuleCtrl(
         "repeat-aware-sign-encoder",
         Args(["--module-repeat-aware-sign-encoder"]),
@@ -177,24 +173,22 @@ MODULE_CTRL = [
     ModuleCtrl(
         "module-common-neighbor-aware-sampler",
         Args([]),
-        Args(
-            ["--no-module-common-neighbor-aware-sampler"],
-        ),
+        Args(["--no-module-common-neighbor-aware-sampler"],),
     ),
 ]
 #
 MODULE_GROUP = [
-    [True, True, True, True],
+    #[True, True, True, True],
     # 禁用重复感知
-    [False, False, True, True],
+    #[False, False, True, True],
     # 禁用平衡理论编码
     [False, False, False, True],
     # 有平衡编码，但是无共邻居采样，无重复感知
-    [False, False, True, False],
+    #[False, False, True, False],
     # 无共邻居采样
-    [True, True, True, False],
+    #[True, True, True, False],
     # 禁用全部
-    [False, False, False, False],
+    #[False, False, False, False],
 ]
 PARMA_GROUPS = {
     "batch": [ParamArgs.new("batch", "--batch-size", 50, 150, 200, 250, 300)],
@@ -228,18 +222,58 @@ DATASET_EXTRA = {
 
 TASK_DATASET_BEST_PARAMS = {
     TaskTy.Sign.value: {
-        "WikiVote": Args(["--batch-size", "200"]),
-        "BitcoinAlpha": Args(["--batch-size", "200"]),
-        "BitcoinOTC": Args(["--batch-size", "200"]),
-        "RedditHyperlinkTitle": Args(["--batch-size", "200"]),
-        "RedditHyperlinkBody": Args(["--batch-size", "200"]),
+        "WikiVote": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "40"),
+            Args.new("--common-neighbors-look-forward", "15"),
+        ],
+        "BitcoinAlpha": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "40"),
+            Args.new("--common-neighbors-look-forward", "15"),
+        ],
+        "BitcoinOTC": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "60"),
+            Args.new("--common-neighbors-look-forward", "10"),
+        ],
+        "RedditHyperlinkTitle": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "100"),
+            Args.new("--common-neighbors-look-forward", "1"),
+        ],
+        "RedditHyperlinkBody": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "60"),
+            Args.new("--common-neighbors-look-forward", "1"),
+        ],
     },
-    TaskTy.Sign.value: {
-        "WikiVote": Args(["--batch-size", "200"]),
-        "BitcoinAlpha": Args(["--batch-size", "200"]),
-        "BitcoinOTC": Args(["--batch-size", "200"]),
-        "RedditHyperlinkTitle": Args(["--batch-size", "200"]),
-        "RedditHyperlinkBody": Args(["--batch-size", "200"]),
+    TaskTy.LinkSign.value: {
+        "WikiVote": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "15"),
+            Args.new("--common-neighbors-look-forward", "10"),
+        ],
+        "BitcoinAlpha": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "40"),
+            Args.new("--common-neighbors-look-forward", "15"),
+        ],
+        "BitcoinOTC": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "80"),
+            Args.new("--common-neighbors-look-forward", "5"),
+        ],
+        "RedditHyperlinkTitle": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "60"),
+            Args.new("--common-neighbors-look-forward", "1"),
+        ],
+        "RedditHyperlinkBody": [
+            Args(["--batch-size", "200"]),
+            Args.new("--num-neighbors", "80"),
+            Args.new("--common-neighbors-look-forward", "3"),
+        ],
     },
 }
 
@@ -254,9 +288,12 @@ def make_experiments(
     param_ty: str = "sampling",
 ):
     ablation = ModuleCtrl.arg_sets(
-            MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
-        ),
-    params_fn =lambda dataset,script: [TASK_DATASET_BEST_PARAMS[SCRIPTS_TO_TASK[script].value][dataset]]
+        MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
+    )
+
+    params_fn = lambda dataset, script: TASK_DATASET_BEST_PARAMS[
+        SCRIPTS_TO_TASK[script].value
+    ][dataset]
 
     for item in itertools.product(
         SCRIPTS_OPTS[script_type],
@@ -284,10 +321,10 @@ def make_experiments(
             model=m,
             extra=SCRIPT_EXTRA.get(s),
             modules=mc,
-            param=p if param_expm else params_fn(d,s),
+            param=p if param_expm else params_fn(d, s),
             dataset_extra=DATASET_EXTRA.get(d, []),
             gpu=gpu,
-            ablation=not param_expm
+            ablation=not param_expm,
         )
 
 
@@ -302,7 +339,7 @@ def run(exp: Exp, dry_run: bool = False):
         exp.model,
         "--gpu",
         str(exp.gpu),
-        *["--ablation"] if exp.ablation else [],
+        *(["--ablation"] if exp.ablation else []),
         *exp.extra,
         *exp.dataset_extra,
         *COMMA_EXTRA,
@@ -335,20 +372,15 @@ def run(exp: Exp, dry_run: bool = False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", "--dry-run", action="store_true", help="只打印命令不真跑")
+    ap.add_argument("-p", "--param-expm", action="store_true", help="开启全部模块，进行精度实验")
     ap.add_argument(
-        "-p", "--param-expm", action="store_true", help="开启全部模块，进行精度实验"
-    )
-    ap.add_argument(
-        "-g",
-        "--gpu",
-        type=int,
-        default=0,
+        "-g", "--gpu", type=int, default=0,
     )
     ap.add_argument(
         "-s",
         "--script",
         type=str,
-        choices=list(TaskTy.__members__.keys()),
+        choices=list([v.value for v in TaskTy.__members__.values()]),
         default="all",
     )
     ap.add_argument("-r", "--ignore-dataset", nargs="+", required=False, default=None)

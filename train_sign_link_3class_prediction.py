@@ -146,11 +146,11 @@ if __name__ == "__main__":
         new_node_test_metric_all_runs,
     ) = ([], [], [], [])
 
-    for run in range(args.num_runs):
+    for run,run_seed in enumerate(args.seeds):
 
-        set_random_seed(seed=run)
+        set_random_seed(seed=run_seed)
 
-        args.seed = run
+        args.seed = run_seed
         args.save_model_name = f"{args.model_name}_seed{args.seed}"
 
         # set up logger
