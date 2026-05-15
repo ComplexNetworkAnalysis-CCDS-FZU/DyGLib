@@ -59,7 +59,7 @@ class SignPredictArgs(BaseModel):
     num_heads: int = Field(2, description="注意力层中头的数量")
     num_layers: int = Field(2, description="模型层数量")
     seeds: List[int] = Field([2026], description="随机种子列表")
-
+    seed:int=0
     # 潜空间维度
     time_feat_dim: int = Field(100, description="时间编码的维度")
     position_feat_dim: int = Field(172, description="位置编码的维度")

@@ -466,6 +466,7 @@ if __name__ == "__main__":
 
             # perform testing once after test_interval_epochs
             if (epoch + 1) % args.test_interval_epochs == 0:
+                model[0].profiler.enable()  # 开启模型内部的Profiler以记录测试阶段的时间
                 test_losses, test_metrics, best_exist_thr, best_sign_thr = (
                     evaluate_model_sign_link_3class_prediction(
                         model_name=args.model_name,
@@ -500,6 +501,7 @@ if __name__ == "__main__":
                     sign_best_thr=best_sign_thr,
                     exist_best_thr=best_exist_thr,
                 )
+                model[0].profiler.disable()  # 关闭模型内部的Profiler
 
                 logger.info(f"test loss: {np.mean(test_losses):.4f}")
                 for metric_name in test_metrics[0].keys():
@@ -511,6 +513,7 @@ if __name__ == "__main__":
                     logger.info(
                         f"new node test {metric_name}, {np.mean([new_node_test_metric[metric_name] for new_node_test_metric in new_node_test_metrics]):.4f}"
                     )
+                model[0].profiler.summary()  # 输出测试阶段的时间汇总统计
 
             # select the best model based on all the validate metrics
             val_metric_indicator = []
@@ -543,7 +546,7 @@ if __name__ == "__main__":
         best_exist_thr = hyper_parm["best_exist_thr"]
         # evaluate the best model
         logger.info(f"get final performance on dataset {args.dataset_name}...")
-
+        model[0].profiler.enable()  # 开启模型内部的Profiler以记录测试阶段的时间
         (
             test_losses,
             test_metrics,
@@ -578,6 +581,7 @@ if __name__ == "__main__":
                 exist_best_thr=best_exist_thr,
             )
         )
+        model[0].profiler.disable()  # 关闭模型内部的Profiler
         # store the evaluation metrics at the current run
         (
             val_metric_dict,
@@ -640,6 +644,11 @@ if __name__ == "__main__":
 
         with open(save_result_path, "w") as file:
             file.write(result_json)
+
+        save_profiler_folder = f"./saved_results/{TASK_NAME}/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
+        os.makedirs(save_profiler_folder, exist_ok=True)
+        model[0].profiler.save(os.path.join(save_profiler_folder, f"{args.result_save_name}"))
+        model[0].profiler.reset()  # 重置之前的记录，确保下一次运行时记录的是新的测试阶段的时间
 
     # store the average metrics at the log of the last run
     logger.info(f"metrics over {args.num_runs} runs:")

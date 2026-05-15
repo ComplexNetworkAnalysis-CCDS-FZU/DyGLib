@@ -111,7 +111,8 @@ class Exp:
     modules: list[Args] = None
     param: list[Args] = None
     gpu: int = (0,)
-    ablation: bool = False
+    ablation: bool = False,
+    seeds:bool = False
 
 
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
@@ -190,15 +191,23 @@ MODULE_GROUP = [
     # 禁用全部
     #[False, False, False, False],
 ]
+
+class ExpTy(Enum):
+    Main= "main"
+    Ablation = "ablation"
+    Hyperparameter = "parameter"
+
 PARMA_GROUPS = {
-    "batch": [ParamArgs.new("batch", "--batch-size", 50, 150, 200, 250, 300)],
-    "sampling": [
+    ExpTy.Hyperparameter.value: [
         ParamArgs.range("look", "--common-neighbors-look-forward", 5, 20, 5).with_param(
             1, 3
         ),
         ParamArgs.range("numN", "--num-neighbors", 20, 100, 20).with_param(10, 15),
     ],
+    ExpTy.Main.value: [],
+    ExpTy.Ablation.value: [],
 }
+
 PARMA_CTRL = [
     ParamArgs.range("look", "--common-neighbors-look-forward", 5, 20, 5).with_param(
         1, 3
@@ -212,7 +221,7 @@ DEFAULT_PARMA = [
 ]
 
 # 公共参数
-COMMA_EXTRA = ["--num-runs", "1"]
+COMMA_EXTRA = []
 # 如果实验太多，把上面内容写 experiments.json 然后 json.load 即可
 DATASET_EXTRA = {
     "RedditHyperlinkBody": ["--tail-num", "20000"],
@@ -277,18 +286,19 @@ TASK_DATASET_BEST_PARAMS = {
     },
 }
 
+TASK_SEED_VALUES = [42, 123, 456, 789, 1024]
 
 # ========== 2. 生成笛卡尔积 ==========、
 def make_experiments(
     *,
-    param_expm: bool = False,
     gpu: int = 0,
     script_type: str = "all",
     skip_dataset: list = None,
-    param_ty: str = "sampling",
+    exp_ty: ExpTy = ExpTy.Main,
+    seed_expm: bool = False,
 ):
     ablation = ModuleCtrl.arg_sets(
-        MODULE_CTRL, [[True, True, True, True]] if param_expm else MODULE_GROUP
+        MODULE_CTRL, [[True, True, True, True]] if exp_ty != ExpTy.Ablation else MODULE_GROUP
     )
 
     params_fn = lambda dataset, script: TASK_DATASET_BEST_PARAMS[
@@ -301,8 +311,8 @@ def make_experiments(
         MODELS,
         ablation,
         *(
-            [p.args() for p in PARMA_GROUPS[param_ty]]
-            if param_expm
+            [p.args() for p in PARMA_GROUPS[exp_ty.value]]
+            if exp_ty == ExpTy.Hyperparameter
             else [[DEFAULT_PARMA]]
         ),
     ):
@@ -321,10 +331,11 @@ def make_experiments(
             model=m,
             extra=SCRIPT_EXTRA.get(s),
             modules=mc,
-            param=p if param_expm else params_fn(d, s),
+            param=p if exp_ty == ExpTy.Hyperparameter else params_fn(d, s),
             dataset_extra=DATASET_EXTRA.get(d, []),
             gpu=gpu,
-            ablation=not param_expm,
+            ablation=exp_ty == ExpTy.Ablation,
+            seeds=seed_expm
         )
 
 
@@ -339,6 +350,8 @@ def run(exp: Exp, dry_run: bool = False):
         exp.model,
         "--gpu",
         str(exp.gpu),
+        "--seeds",
+        *([str(TASK_SEED_VALUES[0])] if not exp.seeds else [str(s) for s in TASK_SEED_VALUES]),
         *(["--ablation"] if exp.ablation else []),
         *exp.extra,
         *exp.dataset_extra,
@@ -386,19 +399,21 @@ def main():
     ap.add_argument("-r", "--ignore-dataset", nargs="+", required=False, default=None)
     ap.add_argument(
         "-t",
-        "--param-type",
-        default="sampling",
-        choices=PARMA_GROUPS.keys(),
+        "--exp-type",
+        default=ExpTy.Main.value,
+        choices=list([v.value for v in ExpTy.__members__.values()]),
         help="参数实验类型",
     )
+    ap.add_argument("-e","--seed_expm",action="store_true",help="开启随机种子实验")
+
     args = ap.parse_args()
 
     for exp in make_experiments(
-        param_expm=args.param_expm,
         gpu=args.gpu,
         script_type=args.script,
         skip_dataset=args.ignore_dataset,
-        param_ty=args.param_type,
+        exp_ty=ExpTy(args.exp_type),
+        seed_expm=args.seed_expm
     ):
         if args.dry_run:
             print(run(exp, dry_run=True))

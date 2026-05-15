@@ -130,6 +130,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             bias=True,
         )
 
+        self.profiler = Profiler()
+        self.profiler.disable()  # 默认关闭，只有在测试阶段才开启
+
     def compute_src_dst_node_temporal_embeddings(
         self,
         src_node_ids: np.ndarray,
@@ -144,7 +147,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         :param node_interact_times: ndarray, shape (batch_size, )
         :return:
         """
-        pf = Profiler()
+        pf = self.profiler
 
         with pf.timer("History Sampling"):
             # get the first-hop neighbors of source and destination nodes
