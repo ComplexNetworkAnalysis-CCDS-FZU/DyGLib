@@ -6,6 +6,7 @@ from pydantic.v1 import BaseModel, Field
 
 from models.DyGFormer import DyGFormer
 from models.SignDyGFormer import SignDyGFormer
+from models.DirectSignDyGFormer import DirectSignDyGFormer
 
 EarlyStopLiteral = Literal[
     "exist_recall",
@@ -37,6 +38,7 @@ class SignPredictArgs(BaseModel):
     model_name: Literal[
         "DyGFormer",
         "SignDyGFormer",
+        "DirectSignDyGFormer",
     ] = Field("SignDyGFormer", description="name of the model")
 
     gpu: int = Field(0, description="number of gpu to use")
@@ -114,6 +116,14 @@ class SignPredictArgs(BaseModel):
     )
 
     module_balance_theory_encoder: bool = Field(True, description="平衡理论编码模块")
+
+    module_status_theory_encoder: bool = Field(
+        True, description="状态理论编码模块 (DirectSignDyGFormer)"
+    )
+
+    module_balance_fallback: bool = Field(
+        True, description="状态理论不确定时退避到平衡理论 (DirectSignDyGFormer)"
+    )
 
     module_common_neighbor_aware_sampler: bool = Field(
         True, description="历史共邻居采样感知模块"
@@ -224,6 +234,7 @@ def get_link_prediction_args(is_evaluation: bool = False):
             "GraphMixer",
             DyGFormer.NAME,
             SignDyGFormer.NAME,
+            DirectSignDyGFormer.NAME,
         ],
     )
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")

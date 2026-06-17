@@ -469,6 +469,159 @@ class DirectedNeighborSampler:
             dst_nodes_neighbor_sign_list,
         )
 
+    def get_directed_common_neighbors(
+        self,
+        src_node_ids: np.ndarray,
+        dst_node_ids: np.ndarray,
+        node_interact_times: np.ndarray,
+    ):
+        """
+        有向版本的共同邻居采样，分别处理出入邻居序列。
+        对节点对 (u, v):
+          - src_out ∩ dst_in → Type A (u→k→v)
+          - src_in ∩ dst_out → Type B (v→k→u)
+        每组独立进行 look_forward_sampling。
+        :return: 8 个 list — (src_out_ids, src_out_edges, src_out_times, src_out_signs,
+                                  src_in_ids,  src_in_edges,  src_in_times,  src_in_signs,
+                                  dst_out_ids, dst_out_edges, dst_out_times, dst_out_signs,
+                                  dst_in_ids,  dst_in_edges,  dst_in_times,  dst_in_signs)
+        """
+        src_out_ids_list, src_out_edges_list, src_out_times_list, src_out_signs_list = (
+            [], [], [], []
+        )
+        src_in_ids_list, src_in_edges_list, src_in_times_list, src_in_signs_list = (
+            [], [], [], []
+        )
+        dst_out_ids_list, dst_out_edges_list, dst_out_times_list, dst_out_signs_list = (
+            [], [], [], []
+        )
+        dst_in_ids_list, dst_in_edges_list, dst_in_times_list, dst_in_signs_list = (
+            [], [], [], []
+        )
+
+        for src_id, dst_id, interact_time in zip(
+            src_node_ids, dst_node_ids, node_interact_times
+        ):
+            # ---- 采样四个方向的历史邻居 ----
+            (src_out_ids, src_out_edges, src_out_times, src_out_signs, _) = (
+                self.find_neighbors_before(
+                    node_id=src_id,
+                    interact_time=interact_time,
+                    neighbor_ty=NeighborType.OutcomeNeighbor,
+                )
+            )
+            (src_in_ids, src_in_edges, src_in_times, src_in_signs, _) = (
+                self.find_neighbors_before(
+                    node_id=src_id,
+                    interact_time=interact_time,
+                    neighbor_ty=NeighborType.IncomeNeighbor,
+                )
+            )
+            (dst_out_ids, dst_out_edges, dst_out_times, dst_out_signs, _) = (
+                self.find_neighbors_before(
+                    node_id=dst_id,
+                    interact_time=interact_time,
+                    neighbor_ty=NeighborType.OutcomeNeighbor,
+                )
+            )
+            (dst_in_ids, dst_in_edges, dst_in_times, dst_in_signs, _) = (
+                self.find_neighbors_before(
+                    node_id=dst_id,
+                    interact_time=interact_time,
+                    neighbor_ty=NeighborType.IncomeNeighbor,
+                )
+            )
+
+            # ---- Type A: src_out ∩ dst_in (u→k→v) ----
+            type_a_common = common_neighbor_location(
+                src_out_ids,
+                dst_in_ids,
+                repeat_aware=self.module_repeat_aware_sampler,
+                src=src_id,
+                dst=dst_id,
+            )
+            if len(type_a_common) > 0:
+                src_out_idxs_a, dst_in_idxs_a = look_forward_sampling(
+                    src_out_ids,
+                    dst_in_ids,
+                    type_a_common,
+                    self.common_neighbors_look_forward,
+                )
+                src_out_idxs_a = (
+                    np.concatenate(src_out_idxs_a)
+                    if src_out_idxs_a
+                    else np.array([], dtype=np.int64)
+                )
+                src_out_idxs_a.sort()
+                dst_in_idxs_a = (
+                    np.concatenate(dst_in_idxs_a)
+                    if dst_in_idxs_a
+                    else np.array([], dtype=np.int64)
+                )
+                dst_in_idxs_a.sort()
+            else:
+                src_out_idxs_a = np.arange(len(src_out_ids), dtype=np.int64)
+                dst_in_idxs_a = np.arange(len(dst_in_ids), dtype=np.int64)
+
+            # ---- Type B: src_in ∩ dst_out (v→k→u) ----
+            type_b_common = common_neighbor_location(
+                src_in_ids,
+                dst_out_ids,
+                repeat_aware=self.module_repeat_aware_sampler,
+                src=src_id,
+                dst=dst_id,
+            )
+            if len(type_b_common) > 0:
+                src_in_idxs_b, dst_out_idxs_b = look_forward_sampling(
+                    src_in_ids,
+                    dst_out_ids,
+                    type_b_common,
+                    self.common_neighbors_look_forward,
+                )
+                src_in_idxs_b = (
+                    np.concatenate(src_in_idxs_b)
+                    if src_in_idxs_b
+                    else np.array([], dtype=np.int64)
+                )
+                src_in_idxs_b.sort()
+                dst_out_idxs_b = (
+                    np.concatenate(dst_out_idxs_b)
+                    if dst_out_idxs_b
+                    else np.array([], dtype=np.int64)
+                )
+                dst_out_idxs_b.sort()
+            else:
+                src_in_idxs_b = np.arange(len(src_in_ids), dtype=np.int64)
+                dst_out_idxs_b = np.arange(len(dst_out_ids), dtype=np.int64)
+
+            # ---- 写入结果 ----
+            src_out_ids_list.append(src_out_ids[src_out_idxs_a])
+            src_out_edges_list.append(src_out_edges[src_out_idxs_a])
+            src_out_times_list.append(src_out_times[src_out_idxs_a])
+            src_out_signs_list.append(src_out_signs[src_out_idxs_a])
+
+            src_in_ids_list.append(src_in_ids[src_in_idxs_b])
+            src_in_edges_list.append(src_in_edges[src_in_idxs_b])
+            src_in_times_list.append(src_in_times[src_in_idxs_b])
+            src_in_signs_list.append(src_in_signs[src_in_idxs_b])
+
+            dst_out_ids_list.append(dst_out_ids[dst_out_idxs_b])
+            dst_out_edges_list.append(dst_out_edges[dst_out_idxs_b])
+            dst_out_times_list.append(dst_out_times[dst_out_idxs_b])
+            dst_out_signs_list.append(dst_out_signs[dst_out_idxs_b])
+
+            dst_in_ids_list.append(dst_in_ids[dst_in_idxs_a])
+            dst_in_edges_list.append(dst_in_edges[dst_in_idxs_a])
+            dst_in_times_list.append(dst_in_times[dst_in_idxs_a])
+            dst_in_signs_list.append(dst_in_signs[dst_in_idxs_a])
+
+        return (
+            src_out_ids_list, src_out_edges_list, src_out_times_list, src_out_signs_list,
+            src_in_ids_list,  src_in_edges_list,  src_in_times_list,  src_in_signs_list,
+            dst_out_ids_list, dst_out_edges_list, dst_out_times_list, dst_out_signs_list,
+            dst_in_ids_list,  dst_in_edges_list,  dst_in_times_list,  dst_in_signs_list,
+        )
+
     def history_neighbors_sampling(
         self,
         src_node_ids: np.ndarray,
@@ -508,6 +661,64 @@ class DirectedNeighborSampler:
                 dst_edge_ids,
                 dst_interact_time,
                 dst_interact_sign,
+            )
+
+    def history_neighbors_sampling_directed(
+        self,
+        src_node_ids: np.ndarray,
+        dst_node_ids: np.ndarray,
+        node_interact_times: np.ndarray,
+    ):
+        """
+        有向符号图的历史邻居采样。
+        为每个节点分别采样出邻居和入邻居，并通过有向共同邻居进行前瞻采样。
+        :return: 8 个 list —
+                 (src_out_ids, src_out_edges, src_out_times, src_out_signs,
+                  src_in_ids,  src_in_edges,  src_in_times,  src_in_signs,
+                  dst_out_ids, dst_out_edges, dst_out_times, dst_out_signs,
+                  dst_in_ids,  dst_in_edges,  dst_in_times,  dst_in_signs)
+        """
+        if self.module_common_neighbor_sampler:
+            return self.get_directed_common_neighbors(
+                src_node_ids=src_node_ids,
+                dst_node_ids=dst_node_ids,
+                node_interact_times=node_interact_times,
+            )
+        else:
+            # 关闭共邻居采样时，直接取全部出入邻居
+            (
+                src_out_ids, src_out_edges, src_out_times, src_out_signs,
+            ) = self.get_all_first_hop_neighbors(
+                node_ids=src_node_ids,
+                node_interact_times=node_interact_times,
+                neighbor_ty=NeighborType.OutcomeNeighbor,
+            )
+            (
+                src_in_ids, src_in_edges, src_in_times, src_in_signs,
+            ) = self.get_all_first_hop_neighbors(
+                node_ids=src_node_ids,
+                node_interact_times=node_interact_times,
+                neighbor_ty=NeighborType.IncomeNeighbor,
+            )
+            (
+                dst_out_ids, dst_out_edges, dst_out_times, dst_out_signs,
+            ) = self.get_all_first_hop_neighbors(
+                node_ids=dst_node_ids,
+                node_interact_times=node_interact_times,
+                neighbor_ty=NeighborType.OutcomeNeighbor,
+            )
+            (
+                dst_in_ids, dst_in_edges, dst_in_times, dst_in_signs,
+            ) = self.get_all_first_hop_neighbors(
+                node_ids=dst_node_ids,
+                node_interact_times=node_interact_times,
+                neighbor_ty=NeighborType.IncomeNeighbor,
+            )
+            return (
+                src_out_ids, src_out_edges, src_out_times, src_out_signs,
+                src_in_ids,  src_in_edges,  src_in_times,  src_in_signs,
+                dst_out_ids, dst_out_edges, dst_out_times, dst_out_signs,
+                dst_in_ids,  dst_in_edges,  dst_in_times,  dst_in_signs,
             )
 
     def reset_random_state(self):

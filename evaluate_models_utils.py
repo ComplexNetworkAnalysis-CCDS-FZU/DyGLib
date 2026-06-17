@@ -14,6 +14,7 @@ import json
 from models.DyGFormer import DyGFormer
 from models.EdgeBank import edge_bank_link_prediction
 from models.SignDyGFormer import SignDyGFormer
+from models.DirectSignDyGFormer import DirectSignDyGFormer
 from models.modules import cascade_loss, sign_link3class_label
 
 from utils.metrics import best_thr
@@ -62,6 +63,7 @@ def evaluate_model_sign_link_3class_prediction(
     if model_name in [
         DyGFormer.NAME,
         SignDyGFormer.NAME,
+        DirectSignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -133,7 +135,7 @@ def evaluate_model_sign_link_3class_prediction(
                     dst_node_ids=batch_neg_dst_node_ids,
                     node_interact_times=batch_node_interact_times,
                 )
-            elif model_name in [SignDyGFormer.NAME]:
+            elif model_name in [SignDyGFormer.NAME, DirectSignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
@@ -276,6 +278,7 @@ def evaluate_model_sign_prediction(
     if model_name in [
         DyGFormer.NAME,
         SignDyGFormer.NAME,
+        DirectSignDyGFormer.NAME,
     ]:
         # evaluation phase use all the graph information
         model[0].set_neighbor_sampler(neighbor_sampler)
@@ -323,7 +326,7 @@ def evaluate_model_sign_prediction(
                     node_interact_times=batch_node_interact_times,
                 )
 
-            elif model_name in [SignDyGFormer.NAME]:
+            elif model_name in [SignDyGFormer.NAME, DirectSignDyGFormer.NAME]:
                 # get temporal embedding of source and destination nodes
                 # two Tensors, with shape (batch_size, node_feat_dim)
                 batch_src_node_embeddings, batch_dst_node_embeddings = model[
