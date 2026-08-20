@@ -20,6 +20,7 @@ class TaskTy(Enum):
     All = "all"
     Sign = "sign"
     LinkSign = "linksign"
+    DirectLink = "directlink"
 
 
 class ExprTy(Enum):
@@ -115,18 +116,28 @@ class Exp:
     seeds:bool = False
 
 
+from models.DyGFormer import DyGFormer
+from models.SignDyGFormer import SignDyGFormer
+from models.DirectSignDyGFormer import DirectSignDyGFormer
+
 # ========== 1. 参数区（可 hard-code，也可读 json） ==========
 SCRIPTS = [
     "train_link_sign_prediction.py",
     "train_sign_link_3class_prediction.py",
+    "train_direct_link_prediction.py",
 ]  # 需要跑的脚本池
 
-SCRIPTS_TO_TASK = {SCRIPTS[0]: TaskTy.Sign, SCRIPTS[1]: TaskTy.LinkSign}
+SCRIPTS_TO_TASK = {
+    SCRIPTS[0]: TaskTy.Sign,
+    SCRIPTS[1]: TaskTy.LinkSign,
+    SCRIPTS[2]: TaskTy.DirectLink,
+}
 
 SCRIPTS_OPTS = {
     TaskTy.All.value: SCRIPTS,
     TaskTy.Sign.value: [SCRIPTS[0]],
     TaskTy.LinkSign.value: [SCRIPTS[1]],
+    TaskTy.DirectLink.value: [SCRIPTS[2]],
 }
 
 
@@ -138,8 +149,11 @@ DATASETS = [
     "WikiVote",
 ]
 MODELS = [
-    "SignDyGFormer"
-    #   , "DyGFormer"
+    SignDyGFormer.NAME,
+    DirectSignDyGFormer.NAME,
+    DyGFormer.NAME,
+    "TGAT",
+    "GraphMixer",
 ]
 # 任务特定参数
 SCRIPT_EXTRA = {
@@ -148,7 +162,7 @@ SCRIPT_EXTRA = {
         "f1_binary",
         "auc",
         "f1_weighted",
-    ],  # Train_A 要的
+    ],
     "train_sign_link_3class_prediction.py": [
         "--early-stop-notice",
         "f1_wt",
@@ -156,6 +170,12 @@ SCRIPT_EXTRA = {
         "ap",
         "f1_mac",
         "auc",
+    ],
+    "train_direct_link_prediction.py": [
+        "--early-stop-notice",
+        "ap",
+        "auc",
+        "f1_binary",
     ],
 }
 
@@ -179,23 +199,24 @@ MODULE_CTRL = [
 ]
 #
 MODULE_GROUP = [
-    #[True, True, True, True],
-    # 禁用重复感知
-    #[False, False, True, True],
-    # 禁用平衡理论编码
+    # ===== E-2 增量式消融（顺序: RAS, RAE, BTE, CNAS） =====
+    # 1. 基线（最简可用模型，无符号模块）
+    [False, False, False, False],
+    # 2. +CNAS: 采样策略贡献
     [False, False, False, True],
-    # 有平衡编码，但是无共邻居采样，无重复感知
-    #[False, False, True, False],
-    # 无共邻居采样
-    #[True, True, True, False],
-    # 禁用全部
-    #[False, False, False, False],
+    # 3. +RAS: 重复感知贡献
+    [True, False, False, True],
+    # 4. +RAE: 关系感知编码贡献
+    [True, True, False, True],
+    # 5. +BTE: 完整模型（最终性能）
+    [True, True, True, True],
 ]
 
 class ExpTy(Enum):
     Main= "main"
     Ablation = "ablation"
     Hyperparameter = "parameter"
+    Patch = "patch"
 
 PARMA_GROUPS = {
     ExpTy.Hyperparameter.value: [
@@ -206,6 +227,10 @@ PARMA_GROUPS = {
     ],
     ExpTy.Main.value: [],
     ExpTy.Ablation.value: [],
+    # E-3: patch size 消融
+    ExpTy.Patch.value: [
+        ParamArgs.new("P", "--patch-size", 1, 3, 5, 7),
+    ],
 }
 
 PARMA_CTRL = [
@@ -226,6 +251,8 @@ COMMA_EXTRA = []
 DATASET_EXTRA = {
     "RedditHyperlinkBody": ["--tail-num", "20000"],
     "RedditHyperlinkTitle": ["--tail-num", "20000"],
+    # 修订实验统一 top20000 简化（E-1~E-5）
+    "WikiVote": ["--tail-num", "20000"],
 }
 
 
@@ -284,6 +311,13 @@ TASK_DATASET_BEST_PARAMS = {
             Args.new("--common-neighbors-look-forward", "3"),
         ],
     },
+    TaskTy.DirectLink.value: {
+        "WikiVote": [],
+        "BitcoinAlpha": [],
+        "BitcoinOTC": [],
+        "RedditHyperlinkTitle": [],
+        "RedditHyperlinkBody": [],
+    },
 }
 
 TASK_SEED_VALUES = [42, 123, 456, 789, 1024]
@@ -294,6 +328,7 @@ def make_experiments(
     gpu: int = 0,
     script_type: str = "all",
     skip_dataset: list = None,
+    models: list = None,
     exp_ty: ExpTy = ExpTy.Main,
     seed_expm: bool = False,
 ):
@@ -305,14 +340,16 @@ def make_experiments(
         SCRIPTS_TO_TASK[script].value
     ][dataset]
 
+    models_pool = MODELS if models is None else models
+
     for item in itertools.product(
         SCRIPTS_OPTS[script_type],
         DATASETS,
-        MODELS,
+        models_pool,
         ablation,
         *(
             [p.args() for p in PARMA_GROUPS[exp_ty.value]]
-            if exp_ty == ExpTy.Hyperparameter
+            if exp_ty in (ExpTy.Hyperparameter, ExpTy.Patch)
             else [[DEFAULT_PARMA]]
         ),
     ):
@@ -322,16 +359,27 @@ def make_experiments(
         mc = item[3]
         p = item[4:] if len(item) > 4 else []
 
+        # 非 SignDyGFormer 家族的模型不支持模块消融
+        if m not in (SignDyGFormer.NAME, DirectSignDyGFormer.NAME):
+            mc = []
+
         if skip_dataset is not None and d in skip_dataset:
             print(f"skip dataset {d}")
             continue
+        if exp_ty == ExpTy.Hyperparameter:
+            param = p
+        elif exp_ty == ExpTy.Patch:
+            # E-3: patch size 扫描 + 其余超参沿用最佳配置
+            param = list(p) + params_fn(d, s)
+        else:
+            param = params_fn(d, s)
         yield Exp(
             script=(s),
             dataset=d,
             model=m,
             extra=SCRIPT_EXTRA.get(s),
             modules=mc,
-            param=p if exp_ty == ExpTy.Hyperparameter else params_fn(d, s),
+            param=param,
             dataset_extra=DATASET_EXTRA.get(d, []),
             gpu=gpu,
             ablation=exp_ty == ExpTy.Ablation,
@@ -398,13 +446,21 @@ def main():
     )
     ap.add_argument("-r", "--ignore-dataset", nargs="+", required=False, default=None)
     ap.add_argument(
+        "-m",
+        "--models",
+        nargs="+",
+        required=False,
+        default=None,
+        help="只运行指定模型（默认全部）",
+    )
+    ap.add_argument(
         "-t",
         "--exp-type",
         default=ExpTy.Main.value,
         choices=list([v.value for v in ExpTy.__members__.values()]),
         help="参数实验类型",
     )
-    ap.add_argument("-e","--seed_expm",action="store_true",help="开启随机种子实验")
+    ap.add_argument("-e", "--seed_expm", action="store_true", help="开启随机种子实验")
 
     args = ap.parse_args()
 
@@ -412,6 +468,7 @@ def main():
         gpu=args.gpu,
         script_type=args.script,
         skip_dataset=args.ignore_dataset,
+        models=args.models,
         exp_ty=ExpTy(args.exp_type),
         seed_expm=args.seed_expm
     ):

@@ -428,3 +428,126 @@ def evaluate_model_sign_prediction(
             )
 
     return evaluate_losses, evaluate_metrics, thr
+
+
+def _eval_compute_embeddings(model, src, dst, times, sign, model_name, num_neighbors, time_gap):
+    """evaluate 函数内的模型前向 dispatch。"""
+    if model_name in ["TGAT"]:
+        return model.compute_src_dst_node_temporal_embeddings(
+            src, dst, times, num_neighbors=num_neighbors)
+    elif model_name in ["GraphMixer"]:
+        return model.compute_src_dst_node_temporal_embeddings(
+            src, dst, times, num_neighbors=num_neighbors, time_gap=time_gap)
+    elif model_name in [DyGFormer.NAME]:
+        return model.compute_src_dst_node_temporal_embeddings(src, dst, times)
+    elif model_name in [SignDyGFormer.NAME, DirectSignDyGFormer.NAME]:
+        return model.compute_src_dst_node_temporal_embeddings(src, dst, times, sign)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
+
+
+def evaluate_directed_link_prediction(
+    model: nn.Module,
+    neighbor_sampler: NeighborSampler,
+    evaluate_idx_data_loader: DataLoader,
+    evaluate_data: Data,
+    loss_fn: nn.Module,
+    neg_sampler: NegativeEdgeSampler,
+    *,
+    model_name: str = "",
+    num_neighbors: int = 20,
+    time_gap: int = 2000,
+    thr: Optional[float] = None,
+    device: str = "cpu",
+):
+    """
+    有向链路预测评估: pos / rev / neg 三组样本自适应阈值。
+    """
+    from utils.metrics.binary_classification import get_binary_classification_metrics
+
+    model.eval()
+    model[0].set_neighbor_sampler(neighbor_sampler)
+
+    all_logits, all_labels, evaluate_losses = [], [], []
+
+    with torch.no_grad():
+        for batch_indices in tqdm(evaluate_idx_data_loader, ncols=120, desc="Eval"):
+            idx = batch_indices.numpy()
+            batch_src = evaluate_data.src_node_ids[idx]
+            batch_dst = evaluate_data.dst_node_ids[idx]
+            batch_times = evaluate_data.node_interact_times[idx]
+            batch_sign = evaluate_data.node_interact_sign[idx]
+
+            # ---- pos ----
+            pos_src_emb, pos_dst_emb = _eval_compute_embeddings(
+                model[0], batch_src, batch_dst, batch_times, batch_sign,
+                model_name, num_neighbors, time_gap,
+            )
+            pos_logits = model[1](input_1=pos_src_emb, input_2=pos_dst_emb)
+
+            # ---- rev ----
+            edge_idx = {}
+            for i, (s, d) in enumerate(zip(batch_src, batch_dst)):
+                edge_idx.setdefault((int(s), int(d)), []).append(i)
+            rev_src_list, rev_dst_list, rev_time_list = [], [], []
+            seen = set()
+            for i, (s, d) in enumerate(zip(batch_src, batch_dst)):
+                k, rk = (int(s), int(d)), (int(d), int(s))
+                if rk in edge_idx and k not in seen:
+                    seen.add(k); seen.add(rk)
+                    rev_src_list.append(d); rev_dst_list.append(s)
+                    rev_time_list.append(batch_times[i])
+            if rev_src_list:
+                rev_src = np.array(rev_src_list, dtype=np.longlong)
+                rev_dst = np.array(rev_dst_list, dtype=np.longlong)
+                rev_times = np.array(rev_time_list, dtype=np.float32)
+                rev_src_emb, rev_dst_emb = _eval_compute_embeddings(
+                    model[0], rev_src, rev_dst, rev_times,
+                    np.zeros(len(rev_src), dtype=np.int8),
+                    model_name, num_neighbors, time_gap,
+                )
+                rev_logits = model[1](input_1=rev_src_emb, input_2=rev_dst_emb)
+            else:
+                rev_logits = None
+
+            # ---- neg ----
+            n_neg = len(rev_src_list) if rev_src_list else len(batch_src)
+            _, neg_dst = neg_sampler.sample(size=n_neg)
+            neg_src = batch_src[:n_neg]
+            neg_src_emb, neg_dst_emb = _eval_compute_embeddings(
+                model[0], neg_src, neg_dst, batch_times[:n_neg],
+                np.zeros(n_neg, dtype=np.int8),
+                model_name, num_neighbors, time_gap,
+            )
+            neg_logits = model[1](input_1=neg_src_emb, input_2=neg_dst_emb)
+
+            # ---- loss + 收集 logits/labels ----
+            loss, batch_logits, batch_labels = loss_fn(
+                pos_logits=pos_logits,
+                neg_logits=neg_logits,
+                rev_logits=rev_logits,
+                return_logits=True,
+            )
+
+            evaluate_losses.append(loss.item())
+            all_logits.append(batch_logits)
+            all_labels.append(batch_labels)
+
+    # ---- 自适应阈值 ----
+    all_logits_cat = torch.cat(all_logits)
+    all_labels_cat = torch.cat(all_labels)
+    all_probs = all_logits_cat.sigmoid().cpu().numpy()
+    all_labels_np = all_labels_cat.cpu().numpy()
+
+    if thr is None:
+        thr = best_thr(all_probs, all_labels_np)
+
+    # ---- 全量拼接后统一算指标 ----
+    metrics = get_binary_classification_metrics(
+        predicts=torch.from_numpy(all_probs),
+        labels=torch.from_numpy(all_labels_np),
+        thr=thr,
+        is_logits=False,
+    )
+
+    return evaluate_losses, [metrics], thr
