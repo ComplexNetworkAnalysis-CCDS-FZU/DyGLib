@@ -66,7 +66,11 @@ class Profiler:
             if len(values) == 0:
                 continue
             warmup = max(1, int(len(values) * warmup_ratio))
-            data = np.array(values[warmup:])
+            if len(values) <= warmup:
+                # 数据量不足 warmup 时退化为使用全部数据，避免空数组崩溃
+                data = np.array(values)
+            else:
+                data = np.array(values[warmup:])
             result[name] = {
                 'mean_ns':   float(np.mean(data)),
                 'std_ns':    float(np.std(data)),
