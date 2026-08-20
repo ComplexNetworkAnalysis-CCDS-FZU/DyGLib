@@ -192,6 +192,9 @@ if __name__ == "__main__":
         logger.addHandler(ch)
 
         run_start_time = time.time()
+        # E-1: 每次 run 重置峰值显存统计，确保峰值反映本次 run
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         logger.info(f"********** Run {run + 1} starts. **********")
 
         logger.info(f"configuration is {args}")
@@ -226,6 +229,9 @@ if __name__ == "__main__":
                 device=args.device,
                 module_repeat_aware_sign_encoder=args.module_repeat_aware_sign_encoder,
                 module_balance_theory_encoder=args.module_balance_theory_encoder,
+                time_decay_lambda=args.time_decay_lambda,
+                time_decay_gap_mode=args.time_decay_gap_mode,
+                time_scaling_factor=args.time_scaling_factor,
             )
         else:
             raise ValueError(f"Wrong value for model_name {args.model_name}!")
@@ -490,9 +496,13 @@ if __name__ == "__main__":
         hyper_param = early_stopping.load_hyper_param()
         best_thr = 0.5 if hyper_param is not None else hyper_param.get("thr", 0.5)
 
+        # E-1: 训练阶段耗时（不含最终测试评估）
+        training_time = time.time() - run_start_time
+
         # evaluate the best model
         logger.info(f"get final performance on dataset {args.dataset_name}...")
         model[0].profiler.enable()  # 开启模型内部的Profiler以记录测试阶段的时间
+        inference_start_time = time.time()
         test_losses, test_metrics, _ = evaluate_model_sign_prediction(
             model_name=args.model_name,
             model=model,
@@ -517,6 +527,9 @@ if __name__ == "__main__":
             time_gap=args.time_gap,
             thr=best_thr,
         )
+        # E-1: 推理阶段耗时（test + new node test）
+        inference_time = time.time() - inference_start_time
+
         # store the evaluation metrics at the current run
         (
             val_metric_dict,
@@ -548,6 +561,13 @@ if __name__ == "__main__":
 
         single_run_time = time.time() - run_start_time
         logger.info(f"Run {run + 1} cost {single_run_time:.2f} seconds.")
+        # E-1: 峰值显存
+        peak_memory_mb = (
+            torch.cuda.max_memory_allocated() / 1024 ** 2
+            if torch.cuda.is_available()
+            else 0.0
+        )
+        logger.info(f"Run {run + 1} peak memory: {peak_memory_mb:.2f} MB.")
 
         test_metric_all_runs.append(test_metric_dict)
         new_node_test_metric_all_runs.append(new_node_test_metric_dict)
@@ -568,6 +588,12 @@ if __name__ == "__main__":
                 metric_name: f"{new_node_test_metric_dict[metric_name]:.4f}"
                 for metric_name in new_node_test_metric_dict
             },
+            # E-1 效率数据
+            "single run time (s)": single_run_time,
+            "training time (s)": training_time,
+            "inference time (s)": inference_time,
+            "peak memory (MB)": peak_memory_mb,
+            "parameter count": get_parameter_sizes(model),
         }
         result_json = json.dumps(result_json, indent=4)
 
