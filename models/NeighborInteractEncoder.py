@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 from torch import nn
 import torch
 import numpy as np
@@ -12,6 +12,15 @@ class EncodeType(Enum):
     InteractSignEffect = 1
 
 
+class TimeDecayGapMode(str, Enum):
+    """E-4 时间衰减 Δt 的定义方式（使用枚举避免 typo 导致实验错误）"""
+
+    # A: 证据陈旧度 t_query - max(t_uk, t_kv)（较新事件相对查询时刻的间隔）
+    STALENESS = "staleness"
+    # B: 两条历史事件的时间间隔 |t_uk - t_kv|
+    GAP = "gap"
+
+
 class NeighborCooccurrenceEncoder(nn.Module):
 
     def __init__(
@@ -21,17 +30,32 @@ class NeighborCooccurrenceEncoder(nn.Module):
         *,
         module_repeat_aware_sign_encoder: bool = False,
         module_balance_theory_encoder: bool = True,
+        time_decay_lambda: Optional[float] = None,
+        time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
+        time_scaling_factor: float = 1e-6,
     ):
         """
         Neighbor co-occurrence encoder.
         :param neighbor_co_occurrence_feat_dim: int, dimension of neighbor co-occurrence features (encodings)
         :param device: str, device
+        :param time_decay_lambda: Optional[float], 时间衰减系数 λ；None 表示不启用时间衰减 (E-4)
+        :param time_decay_gap_mode: TimeDecayGapMode, Δt 定义: STALENESS=A(证据陈旧度), GAP=B(事件间隔)
+        :param time_scaling_factor: float, 时间归一化因子（与采样器一致）
         """
         super(NeighborCooccurrenceEncoder, self).__init__()
         self.neighbor_co_occurrence_feat_dim = neighbor_co_occurrence_feat_dim
         self.device = device
         self.module_repeat_aware_sign_encoder = module_repeat_aware_sign_encoder
         self.module_balance_theory_encoder = module_balance_theory_encoder
+        # 时间衰减：lambda 为 None 即不启用（用 Optional 判断）
+        self.time_decay_mode = time_decay_lambda is not None
+        self.time_decay_lambda = time_decay_lambda
+        # 仅接受枚举项，避免 typo 静默产生错误实验
+        assert isinstance(time_decay_gap_mode, TimeDecayGapMode), (
+            f"time_decay_gap_mode 必须是 TimeDecayGapMode 枚举项，收到: {time_decay_gap_mode!r}"
+        )
+        self.time_decay_gap_mode = time_decay_gap_mode
+        self.time_scaling_factor = time_scaling_factor
 
         self.neighbor_co_occurrence_encode_layer = nn.Sequential(
             nn.Linear(in_features=1, out_features=self.neighbor_co_occurrence_feat_dim),
@@ -84,6 +108,9 @@ class NeighborCooccurrenceEncoder(nn.Module):
         src_node_neighbor_sign: np.ndarray,
         dst_node_neighbor_sign: np.ndarray,
         dst_node_neighbor_ids: np.ndarray,
+        src_node_neighbor_times: Optional[np.ndarray] = None,
+        dst_node_neighbor_times: Optional[np.ndarray] = None,
+        query_time: Optional[float] = None,
     ):
         """
         计算src-dst 之间的共同邻居对符号的影响
@@ -92,6 +119,9 @@ class NeighborCooccurrenceEncoder(nn.Module):
           - u - k  k - v = 正边影响 +1
           - u - k  k + v = 负边影响 +1
           - u + k  k - v = 负边影响 +1
+        - 时间衰减模式（time_decay_mode）下，每条三元组证据的贡献由 exp(-λ·Δt) 加权：
+          - gap_mode='staleness' (A): Δt = t_query - max(t_uk, t_kv)，证据陈旧度
+          - gap_mode='gap' (B):      Δt = |t_uk - t_kv|，两条历史事件的时间间隔
 
         :param common_neighbor: src dst 节点之间的共同邻居列表
         :type common_neighbor: np.ndarray
@@ -110,9 +140,19 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
         src_common_neighbor_ids = src_node_neighbor_ids[src_common_idx]
         src_common_neighbor_sign = src_node_neighbor_sign[src_common_idx]
+        src_common_neighbor_times = (
+            src_node_neighbor_times[src_common_idx]
+            if src_node_neighbor_times is not None
+            else None
+        )
 
         dst_common_neighbor_ids = dst_node_neighbor_ids[dst_common_idx]
         dst_common_neighbor_sign = dst_node_neighbor_sign[dst_common_idx]
+        dst_common_neighbor_times = (
+            dst_node_neighbor_times[dst_common_idx]
+            if dst_node_neighbor_times is not None
+            else None
+        )
 
         src_idx = np.arange(len(src_common_neighbor_ids))
         dst_idx = np.arange(len(dst_common_neighbor_ids))
@@ -140,14 +180,56 @@ class NeighborCooccurrenceEncoder(nn.Module):
         pos_suggest_mask = suggest_sign == 1
         neg_suggest_mask = suggest_sign == -1
 
+        # 时间衰减权重（可选）：每条三元组证据 × exp(-λ·Δt)
+        triad_weights = None
+        if (
+            self.time_decay_mode
+            and src_common_neighbor_times is not None
+            and dst_common_neighbor_times is not None
+            and query_time is not None
+        ):
+            src_time_flat = src_common_neighbor_times[src_idx_flat]
+            dst_time_flat = dst_common_neighbor_times[dst_idx_flat]
+            if self.time_decay_gap_mode == TimeDecayGapMode.GAP:
+                # B: 两条历史事件的时间间隔
+                dt = np.abs(src_time_flat - dst_time_flat)
+            else:
+                # A (default): 证据陈旧度（较新事件相对查询时刻的间隔）
+                dt = query_time - np.maximum(src_time_flat, dst_time_flat)
+                dt = np.maximum(dt, 0.0)
+            dt = dt[mask]
+            dt_scaled = dt * self.time_scaling_factor
+            triad_weights = np.exp(-self.time_decay_lambda * dt_scaled)
+
         #
         pos_effect = src_common_neighbor_ids[src_idx_flat[mask][pos_suggest_mask]]
         neg_effect = src_common_neighbor_ids[src_idx_flat[mask][neg_suggest_mask]]
 
-        pos_keys, pos_count = np.unique(pos_effect, return_counts=True)
-        neg_keys, neg_count = np.unique(neg_effect, return_counts=True)
-        pos_effect = dict(zip(pos_keys, pos_count))
-        neg_effect = dict(zip(neg_keys, neg_count))
+        if triad_weights is None:
+            pos_keys, pos_count = np.unique(pos_effect, return_counts=True)
+            neg_keys, neg_count = np.unique(neg_effect, return_counts=True)
+            pos_effect = dict(zip(pos_keys, pos_count))
+            neg_effect = dict(zip(neg_keys, neg_count))
+        else:
+            # 加权聚合：加权和替代整数计数
+            pos_keys, pos_inverse = np.unique(pos_effect, return_inverse=True)
+            neg_keys, neg_inverse = np.unique(neg_effect, return_inverse=True)
+            pos_effect = dict(
+                zip(
+                    pos_keys,
+                    np.bincount(
+                        pos_inverse, weights=triad_weights[pos_suggest_mask]
+                    ),
+                )
+            )
+            neg_effect = dict(
+                zip(
+                    neg_keys,
+                    np.bincount(
+                        neg_inverse, weights=triad_weights[neg_suggest_mask]
+                    ),
+                )
+            )
 
         return pos_effect, neg_effect
 
@@ -170,25 +252,33 @@ class NeighborCooccurrenceEncoder(nn.Module):
         dst_padded_nodes_neighbor_ids: np.ndarray,
         src_padded_nodes_neighbor_sign: np.ndarray,
         dst_padded_nodes_neighbor_sign: np.ndarray,
+        node_interact_times: Optional[np.ndarray] = None,
+        src_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
+        dst_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
     ):
         src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = [], []
         # 对每个节点对（单个批次的每个节点）
         # src_padded_node_neighbor_ids, ndarray, shape (src_max_seq_length, )
         # dst_padded_node_neighbor_ids, ndarray, shape (dst_max_seq_length, )
         for (
-            src_id,
-            dst_id,
-            src_padded_node_neighbor_ids,
-            dst_padded_node_neighbor_ids,
-            src_padded_node_neighbor_sign,
-            dst_padded_node_neighbor_sign,
-        ) in zip(
-            src_nodes,
-            dst_nodes,
-            src_padded_nodes_neighbor_ids,
-            dst_padded_nodes_neighbor_ids,
-            src_padded_nodes_neighbor_sign,
-            dst_padded_nodes_neighbor_sign,
+            node_idx,
+            (
+                src_id,
+                dst_id,
+                src_padded_node_neighbor_ids,
+                dst_padded_node_neighbor_ids,
+                src_padded_node_neighbor_sign,
+                dst_padded_node_neighbor_sign,
+            ),
+        ) in enumerate(
+            zip(
+                src_nodes,
+                dst_nodes,
+                src_padded_nodes_neighbor_ids,
+                dst_padded_nodes_neighbor_ids,
+                src_padded_nodes_neighbor_sign,
+                dst_padded_nodes_neighbor_sign,
+            )
         ):
             src_unique_keys = np.unique(
                 src_padded_node_neighbor_ids,
@@ -203,7 +293,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
             if self.module_repeat_aware_sign_encoder:
                 # 同时感知当前交互节点对的信息
                 # 假定节点不会自己和自己交互
-                np.append(common_neighbor, [src_id, dst_id])
+                # 修复: np.append 需赋值回 common_neighbor，否则 RAE 逻辑实际不生效
+                common_neighbor = np.append(common_neighbor, [src_id, dst_id])
 
             pos_effect, neg_effect = self.sign_effect_count(
                 common_neighbor=common_neighbor,
@@ -211,6 +302,21 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 src_node_neighbor_sign=src_padded_node_neighbor_sign,
                 dst_node_neighbor_ids=dst_padded_node_neighbor_ids,
                 dst_node_neighbor_sign=dst_padded_node_neighbor_sign,
+                src_node_neighbor_times=(
+                    src_padded_nodes_neighbor_times[node_idx]
+                    if src_padded_nodes_neighbor_times is not None
+                    else None
+                ),
+                dst_node_neighbor_times=(
+                    dst_padded_nodes_neighbor_times[node_idx]
+                    if dst_padded_nodes_neighbor_times is not None
+                    else None
+                ),
+                query_time=(
+                    node_interact_times[node_idx]
+                    if node_interact_times is not None
+                    else None
+                ),
             )
             # TODO: 重复信息：
             # 对于节点对 u， v , 如果历史上出现了重复的u,v
@@ -405,6 +511,9 @@ class NeighborCooccurrenceEncoder(nn.Module):
         dst_padded_nodes_neighbor_sign: np.ndarray,
         *,
         sample_type: EncodeType,
+        node_interact_times: Optional[np.ndarray] = None,
+        src_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
+        dst_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
     ):
         """
         compute the neighbor co-occurrence features of nodes in src_padded_nodes_neighbor_ids and dst_padded_nodes_neighbor_ids
@@ -453,6 +562,9 @@ class NeighborCooccurrenceEncoder(nn.Module):
                         dst_padded_nodes_neighbor_ids=dst_padded_nodes_neighbor_ids,
                         src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
                         dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
+                        node_interact_times=node_interact_times,
+                        src_padded_nodes_neighbor_times=src_padded_nodes_neighbor_times,
+                        dst_padded_nodes_neighbor_times=dst_padded_nodes_neighbor_times,
                     )
                 )
 

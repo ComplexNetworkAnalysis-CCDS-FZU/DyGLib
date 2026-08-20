@@ -7,6 +7,7 @@ from pydantic.v1 import BaseModel, Field
 from models.DyGFormer import DyGFormer
 from models.SignDyGFormer import SignDyGFormer
 from models.DirectSignDyGFormer import DirectSignDyGFormer
+from models.NeighborInteractEncoder import TimeDecayGapMode
 
 EarlyStopLiteral = Literal[
     "exist_recall",
@@ -39,6 +40,8 @@ class SignPredictArgs(BaseModel):
         "DyGFormer",
         "SignDyGFormer",
         "DirectSignDyGFormer",
+        "TGAT",
+        "GraphMixer",
     ] = Field("SignDyGFormer", description="name of the model")
 
     gpu: int = Field(0, description="number of gpu to use")
@@ -117,6 +120,15 @@ class SignPredictArgs(BaseModel):
 
     module_balance_theory_encoder: bool = Field(True, description="平衡理论编码模块")
 
+    # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
+    time_decay_lambda: Optional[float] = Field(
+        None, description="时间衰减系数 λ；不提供(None)则不启用时间衰减"
+    )
+    time_decay_gap_mode: TimeDecayGapMode = Field(
+        TimeDecayGapMode.STALENESS,
+        description="Δt 定义: staleness=证据陈旧度(A), gap=事件间隔(B)",
+    )
+
     module_status_theory_encoder: bool = Field(
         True, description="状态理论编码模块 (DirectSignDyGFormer)"
     )
@@ -154,11 +166,14 @@ class SignPredictArgs(BaseModel):
 
         bool2str = lambda x: "E" if x else "D"
 
-        
+        # E-4: 时间编码(TE) / 时间衰减(TD) 标记，避免两者结果覆盖
+        td_tag = "TD" if self.time_decay_lambda is not None else "TE"
+
         return (
             f"{self.save_model_name}{param_fmt}"
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
+            f".{td_tag}"
         )
     @property
     def num_runs(self):

@@ -6,10 +6,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import MultiheadAttention
 
-from models.NeighborInteractEncoder import NeighborCooccurrenceEncoder, EncodeType
+from models.NeighborInteractEncoder import (
+    NeighborCooccurrenceEncoder,
+    EncodeType,
+    TimeDecayGapMode,
+)
 from models.modules import AutoClassName, TimeEncoder
 from utils.direct_neighbor_sampler import DirectedNeighborSampler as NeighborSampler
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 
 from utils.profiler import Profiler
 
@@ -31,7 +35,10 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         device: str = "cpu",
         *,
         module_repeat_aware_sign_encoder: bool = False,
-        module_balance_theory_encoder: bool = True
+        module_balance_theory_encoder: bool = True,
+        time_decay_lambda: Optional[float] = None,
+        time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
+        time_scaling_factor: float = 1e-6,
     ):
         """
         DyGFormer model.
@@ -50,6 +57,15 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         super(SignDyGFormer, self).__init__()
 
         self.module_balance_theory_encoder = module_balance_theory_encoder
+
+        self.time_decay_mode = time_decay_lambda is not None
+        self.time_decay_lambda = time_decay_lambda
+        # 仅接受枚举项，避免 typo 静默产生错误实验
+        assert isinstance(time_decay_gap_mode, TimeDecayGapMode), (
+            f"time_decay_gap_mode 必须是 TimeDecayGapMode 枚举项，收到: {time_decay_gap_mode!r}"
+        )
+        self.time_decay_gap_mode = time_decay_gap_mode
+        self.time_scaling_factor = time_scaling_factor
 
         self.node_raw_features = torch.from_numpy(
             node_raw_features.astype(np.float32)
@@ -78,6 +94,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             neighbor_co_occurrence_feat_dim=self.neighbor_co_occurrence_feat_dim,
             device=self.device,
             module_repeat_aware_sign_encoder=module_repeat_aware_sign_encoder,
+            time_decay_lambda=time_decay_lambda,
+            time_decay_gap_mode=time_decay_gap_mode,
+            time_scaling_factor=time_scaling_factor,
         )
 
         self.projection_layer = nn.ModuleDict(
@@ -234,6 +253,9 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
                 src_padded_nodes_neighbor_sign=src_padded_nodes_neighbor_sign,
                 dst_padded_nodes_neighbor_sign=dst_padded_nodes_neighbor_sign,
                 sample_type=EncodeType.InteractSignEffect,
+                node_interact_times=node_interact_times,
+                src_padded_nodes_neighbor_times=src_padded_nodes_neighbor_times,
+                dst_padded_nodes_neighbor_times=dst_padded_nodes_neighbor_times,
             )
 
         with pf.timer("Node, Edge and Time Encoding"):
