@@ -1,5 +1,14 @@
-torch>=1.8.1
+# ===== SignDyG 修订实验运行依赖（按代码实际 import 整理）=====
+# 说明：
+#   - torch 请按服务器 CUDA 版本安装，例如：
+#     pip install torch --index-url https://download.pytorch.org/whl/cu121
+#   - 本机 torch_venv 仅作逻辑验证参考，非正式实验环境。
+torch>=2.0.0
 numpy
 pandas
 tqdm
+scikit-learn
+pydantic>=2.0
+pydantic-argparse
 tabulate
+scipy
