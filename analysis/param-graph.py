@@ -1,10 +1,25 @@
 import itertools
-from typing import Literal
+from typing import Literal, Dict
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+
+# 数据集名称映射：CSV原始名 → 热力图显示名
+DATASET_NAME_MAP: Dict[str, str] = {
+    "BitcoinAlpha": "BitcoinAlpha",
+    "BitcoinOTC": "BitcoinOTC",
+    "WikiVote": "WikiRfA",
+    "RedditHyperlinkBody": "RedditBody",
+    "RedditHyperlinkTitle": "RedditTitle",
+}
+
+# 指标名称映射：CSV列名 → 热力图显示名
+METRIC_NAME_MAP: Dict[str, str] = {
+    "AUC": "AUC",
+    "F1_W": r"$F1_{wt}$",
+}
 
 
 def print_heatmap(
@@ -44,7 +59,7 @@ def dataset_collect(data: pd.Series,org_df, metric):
     
     # 创建结果数组
     array = np.zeros((len(lf_values), len(nn_values)), np.float64)
-    mask = np.zeros((len(lf_values), len(nn_values)), np.bool)
+    mask = np.zeros((len(lf_values), len(nn_values)), bool)
     gs = data.groupby(["NN", "LF"])
 
     # array = np.zeros((5, 6), np.float64)
@@ -81,13 +96,18 @@ def load_collect_result(file_name, task):
     grouped = df.groupby("Dataset")
 
     for k, idxes in grouped.groups.items():
-        print(f"now collect dataset {k}")
+        # 通过映射表转换为显示名，找不到则用原名
+        display_name = DATASET_NAME_MAP.get(k, k)
+        print(f"now collect dataset {k} -> {display_name}")
         rr = df.iloc[idxes]
 
-        metrix = "AUC" if task =="sign" else "F1_W"
-        data,mask, ylabel, xlabel = dataset_collect(rr,df,metrix)
+        # 数据列查找名（CSV中的列名）
+        lookup_metric = "AUC" if task =="sign" else "F1_W"
+        # 显示名（用于热力图标题）
+        display_metric = METRIC_NAME_MAP.get(lookup_metric, lookup_metric)
+        data,mask, ylabel, xlabel = dataset_collect(rr,df,lookup_metric)
 
-        print_heatmap(data,mask, xlabel, ylabel, "Number Neighbor", "Sampling-aware Node Looking Forward", dataset_name=k, task=task,metric=metrix)
+        print_heatmap(data,mask, xlabel, ylabel, "Number Neighbor", "Sampling-aware Node Looking Forward", dataset_name=display_name, task=task,metric=display_metric)
 
 from pydantic.v1 import BaseModel,Field
 from pydantic_argparse import ArgumentParser,argparse
