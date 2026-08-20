@@ -8,6 +8,7 @@ from models.DyGFormer import DyGFormer
 from models.SignDyGFormer import SignDyGFormer
 from models.DirectSignDyGFormer import DirectSignDyGFormer
 from models.NeighborInteractEncoder import TimeDecayGapMode
+from utils.noise import NoiseScope
 
 EarlyStopLiteral = Literal[
     "exist_recall",
@@ -137,6 +138,15 @@ class SignPredictArgs(BaseModel):
         True, description="状态理论不确定时退避到平衡理论 (DirectSignDyGFormer)"
     )
 
+    # ---- E-7: 噪声鲁棒性（可插拔噪声模块，与 SEMBA 仓库共用 seed 保证公平）----
+    noise_ratio: Optional[float] = Field(
+        None, description="符号翻转噪声比例（0-1）；None 表示不加噪"
+    )
+    noise_seed: int = Field(0, description="噪声翻转随机种子（与 SEMBA 仓库一致）")
+    noise_scope: NoiseScope = Field(
+        NoiseScope.TRAIN, description="噪声施加范围: TRAIN=仅训练集加噪, ALL=全数据加噪"
+    )
+
     module_common_neighbor_aware_sampler: bool = Field(
         True, description="历史共邻居采样感知模块"
     )
@@ -169,11 +179,19 @@ class SignPredictArgs(BaseModel):
         # E-4: 时间编码(TE) / 时间衰减(TD) 标记，避免两者结果覆盖
         td_tag = "TD" if self.time_decay_lambda is not None else "TE"
 
+        # E-7: 噪声标记（比例+范围），避免与干净结果覆盖
+        noise_tag = ""
+        if self.noise_ratio is not None and self.noise_ratio > 0:
+            noise_tag = (
+                f".N{int(round(self.noise_ratio * 100))}"
+                f"{'T' if self.noise_scope == NoiseScope.TRAIN else 'A'}"
+            )
+
         return (
             f"{self.save_model_name}{param_fmt}"
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
-            f".{td_tag}"
+            f".{td_tag}{noise_tag}"
         )
     @property
     def num_runs(self):

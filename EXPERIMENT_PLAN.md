@@ -95,6 +95,34 @@ python compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignD
    注：BitcoinAlpha/BitcoinOTC 很快，WikiVote/RedditBody@20000 中等，RedditTitle 已被 E-5 覆盖。
    重跑后主表数值以新结果为准，供 Agent A 更新表格。
 
+### E-7 噪声鲁棒性（P6，E-5 与主表重跑之后，时间充裕才做）
+> 回应审稿人 R2 #6。方案：**可插拔噪声模块 `utils/noise.py`**（已实现，可迁移到 SEMBA 仓库），
+> 两边用同一份数据、同一 seed → 翻转的边集合完全一致，保证公平对比。
+
+**已实现的能力**：
+- `SignFlipNoise(noise_ratio, seed)`：`flip_mask` 基于【全局边顺序+seed】确定性生成；
+- 本仓库侧 `--noise-ratio/--noise-seed/--noise-scope(train|all)`（结果文件名带 `.N{比例}{T|A}` 标记）；
+- SEMBA 侧：`apply_temporal(train_data)` 翻转 `y`（y∈{0,1}，1=正 0=负 → `1-y`；与 msg 不重叠，只翻 y）。
+
+**SEMBA 迁移用法**：
+```python
+from utils.noise import SignFlipNoise  # 把 utils/noise.py 拷到 SEMBA 仓库
+data = dataset[0].to(device)
+train_data, val_data, test_data = data.train_val_test_split(val_ratio=0.15, test_ratio=0.15)
+SignFlipNoise(0.1, seed=0).apply_temporal(train_data)   # train-only 加噪
+# 全数据加噪: dataset = SEMBADataset(..., pre_transform=SignFlipNoise(0.1, seed=0))
+```
+
+**本仓库执行**（数据集：BitcoinAlpha + WikiVote@20000；噪声级别 0.1/0.3；对比 SignDyG vs DyGFormer）：
+```bash
+# SignDyG 完整模型，train-only 噪声，0.1 / 0.3，5 种子
+python run_experiments.py -s sign -t main -m SignDyGFormer \
+    -r BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody WikiVote -g 0 -e --extra-noise 0.1   # 待封装
+```
+> 说明：当前 run_experiments 尚无噪声透传参数，若用 run_experiments 批量跑需先加 `--noise-*` 透传；
+> 否则直接用训练脚本单条命令（含 `--noise-ratio 0.1 --noise-seed 0 --noise-scope train`）。
+> 噪声结果与干净结果文件名不同（`.N10T` 等），不会互相覆盖。
+
 ## 2. 结果位置与交付
 
 | 内容 | 路径 |

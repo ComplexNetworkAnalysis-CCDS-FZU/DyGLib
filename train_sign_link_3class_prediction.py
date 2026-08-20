@@ -54,6 +54,9 @@ if __name__ == "__main__":
         val_ratio=args.val_ratio,
         test_ratio=args.test_ratio,
         tail_num=args.tail_num,
+        noise_ratio=args.noise_ratio,
+        noise_seed=args.noise_seed,
+        noise_scope=args.noise_scope,
     )
 
     # initialize training neighbor sampler to retrieve temporal graph

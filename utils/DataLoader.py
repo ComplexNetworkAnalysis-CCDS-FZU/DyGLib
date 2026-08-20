@@ -4,6 +4,8 @@ import numpy as np
 import random
 import pandas as pd
 
+from utils.noise import NoiseScope, SignFlipNoise
+
 
 class CustomizedDataset(Dataset):
     def __init__(self, indices_list: list):
@@ -86,15 +88,24 @@ def get_link_prediction_data(
     test_ratio: float,
     *,
     tail_num: Optional[int] = None,
+    noise_ratio: Optional[float] = None,
+    noise_seed: int = 0,
+    noise_scope: NoiseScope = NoiseScope.TRAIN,
 ):
     """
     generate data for link prediction task (inductive & transductive settings)
     :param dataset_name: str, dataset name
     :param val_ratio: float, validation data ratio
     :param test_ratio: float, test data ratio
+    :param noise_ratio: Optional[float], E-7 符号翻转噪声比例（0-1），None 不加噪
+    :param noise_seed: int, 噪声翻转随机种子（与 SEMBA 仓库一致）
+    :param noise_scope: NoiseScope, 噪声范围: TRAIN=仅训练集, ALL=全数据
     :return: node_raw_features, edge_raw_features, (np.ndarray),
             full_data, train_data, val_data, test_data, new_node_val_data, new_node_test_data, (Data object)
     """
+    assert isinstance(noise_scope, NoiseScope), (
+        f"noise_scope 必须是 NoiseScope 枚举项，收到: {noise_scope!r}"
+    )
     tail_mark = "" if tail_num is None or tail_num == 0 else f"_tail{tail_num}"
     # Load data and train val test split
     graph_df = pd.read_csv(
@@ -149,6 +160,12 @@ def get_link_prediction_data(
     edge_ids = graph_df.idx.values.astype(np.longlong)
     labels = graph_df.label.values
 
+    # E-7 噪声：全数据加噪（train/val/test 全部翻转符号，模型在噪声环境下训练与评估）
+    if noise_ratio is not None and noise_scope == NoiseScope.ALL:
+        SignFlipNoise(noise_ratio=noise_ratio, seed=noise_seed).apply_numpy(
+            node_interact_sign
+        )
+
     full_data = Data(
         src_node_ids=src_node_ids,
         dst_node_ids=dst_node_ids,
@@ -194,6 +211,12 @@ def get_link_prediction_data(
         node_interact_sign=node_interact_sign[train_mask],
         labels=labels[train_mask],
     )
+
+    # E-7 噪声：仅训练集加噪（污染训练标签与平衡证据，val/test 保持干净）
+    if noise_ratio is not None and noise_scope == NoiseScope.TRAIN:
+        SignFlipNoise(noise_ratio=noise_ratio, seed=noise_seed).apply_numpy(
+            train_data.node_interact_sign
+        )
 
     # define the new nodes sets for testing inductiveness of the model
     train_node_set = set(train_data.src_node_ids).union(train_data.dst_node_ids)
