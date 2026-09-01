@@ -21,7 +21,7 @@ echo "== [1/5] 代码检查 =="
 for f in \
   models/SignDyGFormer.py utils/DataLoader.py utils/load_configs.py utils/noise.py \
   train_link_sign_prediction.py train_sign_link_3class_prediction.py \
-  run_experiments.py compute_stats.py preprocess_data/preprocess_data.py; do
+  run_experiments.py dataset_analysis/compute_stats.py preprocess_data/preprocess_data.py; do
   if [ -f "$ROOT/$f" ]; then echo "  [OK] $f"; else echo "  [MISSING] $f"; exit 1; fi
 done
 

@@ -68,12 +68,12 @@ python run_experiments.py -s linksign -t main -m SignDyGFormer \
 ```
 结果汇总 + 配对 t 检验 p 值（对比基线模型需其 5 种子结果文件已存在）：
 ```bash
-python compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+python dataset_analysis/compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
     --pattern "RAS-E.RASE-E.BTE-E.CNAS-E.TE"
-python compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+python dataset_analysis/compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
     --pattern "RAS-E.RASE-E.BTE-E.CNAS-E.TE"
 # 与消融基线（全模块关闭）对比显著性:
-python compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+python dataset_analysis/compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
     --pattern "RAS-E.RASE-E.BTE-E.CNAS-E.TE" --compare "RAS-D.RASE-D.BTE-D.CNAS-D.TE"
 ```
 
@@ -130,7 +130,7 @@ python run_experiments.py -s sign -t main -m SignDyGFormer \
 | 每个 run 的结果 JSON（含 E-1 效率 4 项） | `./saved_results/{LinkSign\|SignLinkPrediction}/{model}/{dataset}/{result_save_name}.json` |
 | profiler 推理时间明细 | 同目录 `{...}-profiler.json` |
 | run_experiments 运行日志 | `./expm-YYYY-MM-DD-logs/{task}/...log` |
-| E-5 统计汇总 | `compute_stats.py` 输出（可 `--output x.csv`） |
+| E-5 统计汇总 | `dataset_analysis/compute_stats.py` 输出（可 `--output x.csv`） |
 
 ## 3. 优化建议
 

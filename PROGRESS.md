@@ -52,7 +52,7 @@
 | run_experiments 批量日志 | `expm-YYYY-MM-DD-logs/{任务}/` |
 | 结果 JSON（含 E-1 效率 4 项） | `saved_results/{LinkSign\|SignLinkPrediction}/{model}/{dataset}/` |
 | profiler 推理明细 | 同目录 `{...}-profiler.json` |
-| 统计汇总（mean±std + p 值） | `compute_stats.py` 输出 |
+| 统计汇总（mean±std + p 值） | `dataset_analysis/compute_stats.py` 输出 |
 
 ## 最近更新记录
 

@@ -16,19 +16,19 @@ result_save_name 形如:
 
 用法示例:
   # 1) 汇总完整模型在 RedditTitle 上的 5 种子结果
-  python compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+  python dataset_analysis/compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
       --pattern "RAS-E.RASE-E.BTE-E.CNAS-E"
 
   # 2) 完整模型 vs 消融基线（同模型不同配置），输出配对 t 检验 p 值
-  python compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+  python dataset_analysis/compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
       --pattern "RAS-E.RASE-E.BTE-E.CNAS-E" --compare "RAS-D.RASE-D.BTE-D.CNAS-D"
 
   # 3) 完整模型 vs 基线模型（如 DyGFormer），输出配对 t 检验 p 值
-  python compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+  python dataset_analysis/compute_stats.py --task linksign --dataset RedditHyperlinkTitle --model SignDyGFormer \
       --pattern "RAS-E.RASE-E.BTE-E.CNAS-E" --compare-model DyGFormer
 
   # 4) 只汇总不比较，并输出 CSV
-  python compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
+  python dataset_analysis/compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignDyGFormer \
       --pattern "RAS-E.RASE-E.BTE-E.CNAS-E" --output stats_summary.csv
 """
 
