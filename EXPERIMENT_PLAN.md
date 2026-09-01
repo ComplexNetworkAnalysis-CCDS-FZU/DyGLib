@@ -95,9 +95,9 @@ python compute_stats.py --task sign --dataset RedditHyperlinkTitle --model SignD
    注：BitcoinAlpha/BitcoinOTC 很快，WikiVote/RedditBody@20000 中等，RedditTitle 已被 E-5 覆盖。
    重跑后主表数值以新结果为准，供 Agent A 更新表格。
 
-### E-7 噪声鲁棒性（P6，E-5 与主表重跑之后，时间充裕才做）
-> 回应审稿人 R2 #6。方案：**可插拔噪声模块 `utils/noise.py`**（已实现，可迁移到 SEMBA 仓库），
-> 两边用同一份数据、同一 seed → 翻转的边集合完全一致，保证公平对比。
+### E-7 噪声鲁棒性（P6）—— 本轮（9 月）不执行，方案与模块已保留
+> 决定：本轮不执行 E-7。`utils/noise.py` 可插拔模块已实现（可迁移 SEMBA 仓库），
+> `--noise-ratio/--noise-seed/--noise-scope` 参数已接入，后续如需补充实验直接启用即可。
 
 **已实现的能力**：
 - `SignFlipNoise(noise_ratio, seed)`：`flip_mask` 基于【全局边顺序+seed】确定性生成；
