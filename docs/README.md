@@ -12,6 +12,7 @@
 | `REVIEWER_COMMENTS.md` | 两位审稿人**完整意见归档** + 应对映射 | 参考（原始意见） | 一次性归档 |
 | `EXPERIMENT_PLAN.md` | **实验运行计划**（顺序、命令、数据集） | 执行依据（随决策更新） | 计划变化时 |
 | `PROGRESS.md` | **进度状态**（各实验状态、结果、更新日志） | 状态记录 | 每次实验后 |
+| `HANDOFF.md` | **双 Agent 交接信箱**（消息中转，勿放长文） | 消息记录（非权威） | 任务结束/有新请求时 |
 | `REPORT_TO_ADVISOR.md` | 导师汇报（2026-09-01 版） | 历史快照 | 低频 |
 
 ## 决策流向（更新顺序）
@@ -27,6 +28,13 @@ EXPERIMENT_PLAN.md → 执行实验
                        ↓ 汇总
                     交付 Agent A
 ```
+
+## 双 Agent 协作（2026-09-05 起）
+
+> 仓库根 `AGENTS.md` = 协作契约（本工作区会话自动加载）；Agent A 工作区
+> `D:\Sign_DygFormer` 根有 `copilot-instructions.md` 指针（绝对路径指向本目录）。
+> 信息流：`agent → HANDOFF.md / PROGRESS.md → agent`，无需用户逐条转述。
+> 单一事实源 = 本目录；同机绝对路径读写即时互见。
 
 ## 常用路径备忘
 
