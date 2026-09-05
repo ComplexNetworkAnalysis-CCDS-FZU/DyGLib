@@ -59,6 +59,7 @@ python train_sign_link_3class_prediction.py --dataset-name WikiVote --model Sign
 说明：`--time-decay-lambda` 不提供 = 时间编码（结果文件带 `.TE` 标记）；提供 = 时间衰减（`.TD` 标记），两者不会互相覆盖。
 
 ### E-5 统计显著性（P4，双任务 × 5 种子 = 10 次 run）
+> **决策 2026-09-05（用户）**：先跑 **5 种子**（42,123,456,789,1024）；若时间充裕（GPU/CPU 余量允许）再扩至 10 种子补跑（审稿人 R2 #8 原文为 10）。
 RedditTitle@20000 完整模型（**修复后代码**），sign 与 link&sign **各 5 个种子**（42,123,456,789,1024）。
 既满足审稿人 R2 #8"Reddit Sign Prediction 和 all Link&Sign metrics"都要 p 值的要求，也产出 RedditTitle 修复后主表数据（E-1 效率取自 sign 的 seed42）。
 

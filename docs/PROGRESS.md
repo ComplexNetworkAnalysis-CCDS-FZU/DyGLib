@@ -25,7 +25,7 @@
 | E-2 消融 | linksign | **全部 5 数据集** | 🔄 补跑中 | 导师方案 4 组（CNAS+BTE 基座，RAS/RAE 解绑）；旧 E-2（2 数据集旧方案）已跑完 |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 运行中 | P∈{1,3,5,7}，8 runs |
 | E-4 时序 | linksign | WikiVote@20000 | ⬜ 待执行 | TE vs TD，2 runs |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行 | 各 5 种子，10 runs |
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行 | 各 5 种子，10 runs（09-05 定案：先 5，时间充裕再扩 10） |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行 | 先 BitcoinAlpha 影响评估 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
