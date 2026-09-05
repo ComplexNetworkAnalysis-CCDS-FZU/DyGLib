@@ -19,14 +19,19 @@ conda activate signdyg
 RedditTitle@20000 完整模型（**修复后代码**），记录 4 项：训练总时间 / 推理时间 / 参数量 / 峰值显存
 （E-5 中 sign 任务的 seed42 结果 JSON 已含全部 4 项，直接提取即可）
 
-### E-2 增量式消融（P1，5 组 × 2 数据集 = 10 次 run）
-任务：**link&sign**（3 分类）；数据集：RedditTitle@20000 + WikiVote@20000；模型：仅 SignDyGFormer
+### E-2 消融（P1，导师方案 R1-5：4 组 × 全 5 数据集）
+任务：**link&sign**（3 分类）；数据集：**全部 5 个**（BitcoinAlpha/BitcoinOTC 全量，RedditTitle/RedditBody/WikiVote tail20000）；模型：仅 SignDyGFormer
 
 ```bash
+# 全 5 数据集 × 4 组（新跑数据集：BitcoinAlpha/BitcoinOTC/RedditBody 全 4 组 + RedditTitle/WikiVote 需 3 组）
+# ① 新数据集（BitcoinAlpha/BitcoinOTC/RedditBody@20000）跑全部 4 组：
 python run_experiments.py -s linksign -t ablation -m SignDyGFormer \
-    -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody -g 0
+    -r RedditHyperlinkTitle WikiVote -g 0
+# ② RedditTitle/WikiVote@20000：旧 E-2 已跑过"全开"[T,T,T,T]，只补基座/+RAS/+RAE（idx 0,1,2）：
+python run_experiments.py -s linksign -t ablation -m SignDyGFormer \
+    -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody --module-idx 0 1 2 -g 0
 ```
-5 组配置（RAS,RAE,BTE,CNAS）：基线 → +CNAS → +RAS → +RAE → +BTE(全开)
+4 组配置（导师方案，顺序 RAS,RAE,BTE,CNAS）：基座[CNAS+BTE] → +RAS → +RAE → 全开
 
 ### E-3 Patch size 消融（P2，2 数据集 × 4 P = 8 次 run）
 数据集：WikiVote@20000 + RedditHyperlinkBody@20000；P ∈ {1, 3, 5, 7}；其余超参用最佳配置

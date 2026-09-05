@@ -199,16 +199,15 @@ MODULE_CTRL = [
 ]
 #
 MODULE_GROUP = [
-    # ===== E-2 增量式消融（顺序: RAS, RAE, BTE, CNAS） =====
-    # 1. 基线（最简可用模型，无符号模块）
-    [False, False, False, False],
-    # 2. +CNAS: 采样策略贡献
-    [False, False, False, True],
-    # 3. +RAS: 重复感知贡献
-    [True, False, False, True],
-    # 4. +RAE: 关系感知编码贡献
-    [True, True, False, True],
-    # 5. +BTE: 完整模型（最终性能）
+    # ===== E-2 消融（导师方案 R1-5）：CNAS+BTE 固定基座，RAS/RAE 解绑 =====
+    # 顺序: [RAS, RAE, BTE, CNAS]
+    # 1. 基座 CNAS+BTE
+    [False, False, True, True],
+    # 2. +RAS
+    [True, False, True, True],
+    # 3. +RAE
+    [False, True, True, True],
+    # 4. 全开（完整模型）
     [True, True, True, True],
 ]
 
@@ -331,10 +330,17 @@ def make_experiments(
     models: list = None,
     exp_ty: ExpTy = ExpTy.Main,
     seed_expm: bool = False,
+    module_idx: list = None,
 ):
-    ablation = ModuleCtrl.arg_sets(
-        MODULE_CTRL, [[True, True, True, True]] if exp_ty != ExpTy.Ablation else MODULE_GROUP
-    )
+    if exp_ty == ExpTy.Ablation:
+        group = (
+            MODULE_GROUP
+            if module_idx is None
+            else [MODULE_GROUP[i] for i in module_idx]
+        )
+        ablation = ModuleCtrl.arg_sets(MODULE_CTRL, group)
+    else:
+        ablation = ModuleCtrl.arg_sets(MODULE_CTRL, [[True, True, True, True]])
 
     params_fn = lambda dataset, script: TASK_DATASET_BEST_PARAMS[
         SCRIPTS_TO_TASK[script].value
@@ -460,6 +466,14 @@ def main():
         choices=list([v.value for v in ExpTy.__members__.values()]),
         help="参数实验类型",
     )
+    ap.add_argument(
+        "--module-idx",
+        nargs="+",
+        type=int,
+        required=False,
+        default=None,
+        help="消融模式只运行指定 MODULE_GROUP 行号（0-based），默认全部",
+    )
     ap.add_argument("-e", "--seed_expm", action="store_true", help="开启随机种子实验")
 
     args = ap.parse_args()
@@ -470,7 +484,8 @@ def main():
         skip_dataset=args.ignore_dataset,
         models=args.models,
         exp_ty=ExpTy(args.exp_type),
-        seed_expm=args.seed_expm
+        seed_expm=args.seed_expm,
+        module_idx=args.module_idx
     ):
         if args.dry_run:
             print(run(exp, dry_run=True))

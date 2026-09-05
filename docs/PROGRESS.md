@@ -20,8 +20,8 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ⬜ 待执行 | 并入 E-5 seed42，不单独跑 |
-| E-2 消融 | linksign | RedditTitle@20000 + WikiVote@20000 | ⬜ 待执行 | 5 组增量，10 runs |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ⬜ 待执行 | P∈{1,3,5,7}，8 runs |
+| E-2 消融 | linksign | **全部 5 数据集** | 🔄 补跑中 | 导师方案 4 组（CNAS+BTE 基座，RAS/RAE 解绑）；旧 E-2（2 数据集旧方案）已跑完 |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 运行中 | P∈{1,3,5,7}，8 runs |
 | E-4 时序 | linksign | WikiVote@20000 | ⬜ 待执行 | TE vs TD，2 runs |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行 | 各 5 种子，10 runs |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行 | 先 BitcoinAlpha 影响评估 |
@@ -37,12 +37,14 @@
 - **结果文件路径**（`saved_results/...`）与关键指标
 - 更新上方"实验状态总览"表格
 
-## 已确认决策（2026-08-20）
+## 已确认决策（2026-09-05 更新，以 ADVISOR_DECISIONS.md 为准）
 
-- 数据集统一 **tail 20000**（RedditTitle / RedditBody / WikiVote；BitcoinAlpha/BitcoinOTC 用全量）
-- E-2/E-3/E-4 用 **link&sign** 任务；E-5 用 **sign + link&sign 双任务 × 5 种子**（满足审稿人 R2#8）
+- 数据集设置**保持 tail 现状**：RedditTitle / RedditBody / WikiVote tail20000；BitcoinAlpha/BitcoinOTC 全量
+- **E-2 消融 = 导师方案 4 组 × 全部 5 数据集**（CNAS+BTE 基座，RAS/RAE 解绑；link&sign）；配置已固化
+- E-2 旧方案（基线全关→逐加）在 RedditTitle/WikiVote 已跑完，其中"全开"配置可复用，新跑用 `--module-idx 0 1 2` 跳过
+- E-3/E-4 用 **link&sign** 任务；E-5 用 **sign + link&sign 双任务 × 5 种子**（满足审稿人 R2#8）
 - **RAE bug 已修复**（`np.append` 未赋值）：旧主表（sign-ms.csv/linksign_ms.csv）用旧代码跑出，须用修复后代码重跑；先 BitcoinAlpha 影响评估（阈值 0.5%）再决定全量
-- E-6（异配图）、E-7（噪声）：本轮不做
+- E-6（异配图）、E-7（噪声）：本轮不做（回复中作 future work）
 - SEMBA 在独立仓库，不在此实现
 
 ## 运行日志与结果位置
