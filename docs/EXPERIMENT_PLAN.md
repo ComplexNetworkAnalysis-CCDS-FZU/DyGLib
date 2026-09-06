@@ -2,7 +2,12 @@
 
 > 目标：完成 E-1~E-5（P0-P4），E-6/E-7 已决定跳过。
 > 服务器预计 9 月初恢复。**所有命令在 `d:\codes\DyGLib` 根目录执行**（conda 环境激活后）。
-> 时间估算是粗估，**以 E-1 实测为准**（RedditTitle@20000 单次 run 预估约 12 小时）。
+>
+> ## ⚠️ 设备基座更新（2026-09-06）
+> - 服务器 GPU 已修复（DKMS nvidia/595.84，2× RTX 2080 SUPER，CUDA 13.2 驱动）→ **最终表格统一 GPU 基座**（`-g 0`）。
+> - CPU 期结果**不进论文**（同 seed 跨设备不可比）；CPU 日志仅存档。
+> - 结果文件名新增 `.P{patch_size}` 标记（如 `...CNAS-E.P1.TE`）；结果 JSON 含 `device` 字段。
+> - 下方时间估算为 CPU 时代旧值，仅作上界参考。
 
 ## 0. 环境准备（服务器开机后一次性）
 
@@ -23,13 +28,9 @@ RedditTitle@20000 完整模型（**修复后代码**），记录 4 项：训练�
 任务：**link&sign**（3 分类）；数据集：**全部 5 个**（BitcoinAlpha/BitcoinOTC 全量，RedditTitle/RedditBody/WikiVote tail20000）；模型：仅 SignDyGFormer
 
 ```bash
-# 全 5 数据集 × 4 组（新跑数据集：BitcoinAlpha/BitcoinOTC/RedditBody 全 4 组 + RedditTitle/WikiVote 需 3 组）
-# ① 新数据集（BitcoinAlpha/BitcoinOTC/RedditBody@20000）跑全部 4 组：
-python run_experiments.py -s linksign -t ablation -m SignDyGFormer \
-    -r RedditHyperlinkTitle WikiVote -g 0
-# ② RedditTitle/WikiVote@20000：旧 E-2 已跑过"全开"[T,T,T,T]，只补基座/+RAS/+RAE（idx 0,1,2）：
-python run_experiments.py -s linksign -t ablation -m SignDyGFormer \
-    -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody --module-idx 0 1 2 -g 0
+# GPU 统一基座（2026-09-06 起）：全 5 数据集 × 4 组 = 20 runs，一次跑齐
+# 旧 CPU 期数据弃用，不再用 --module-idx 跳过 RedditTitle/WikiVote 全开
+python run_experiments.py -s linksign -t ablation -m SignDyGFormer -g 0
 ```
 4 组配置（导师方案，顺序 RAS,RAE,BTE,CNAS）：基座[CNAS+BTE] → +RAS → +RAE → 全开
 
@@ -37,6 +38,8 @@ python run_experiments.py -s linksign -t ablation -m SignDyGFormer \
 数据集：WikiVote@20000 + RedditHyperlinkBody@20000；P ∈ {1, 3, 5, 7}；其余超参用最佳配置
 
 ```bash
+# GPU 重跑（2026-09-06）：CPU 期 P1/3/5 曾因文件名缺 patch 标记被覆盖，已修复后重跑
+# -r 为排除：排除 BitcoinAlpha/BitcoinOTC/RedditTitle → 只跑 RedditBody + WikiVote
 python run_experiments.py -s linksign -t patch -m SignDyGFormer \
     -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle -g 0
 ```
