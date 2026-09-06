@@ -5,16 +5,16 @@
 > **规则**：每次实验状态变化立即更新本文件，并通过 git 同步（本地 push → 服务器 pull）。
 > 提交截止：2026-10-10。
 
-## 全局状态（2026-09-05 更新）
+## 全局状态（2026-09-06 更新）
 
 | 项目 | 状态 | 说明 |
 |---|---|---|
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问 |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
 | 数据就绪 | ✅ 完成 | `server_setup.sh` 已执行，WikiVote tail20000 已生成 |
-| 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2，**CUDA 构建但驱动未加载**） |
-| **GPU 驱动** | 🔄 管理员处理中 | 2× RTX 2080 SUPER 存在但 nvidia 驱动未加载 → 全部实验在 **CPU** 上跑；用户已联系服务器管理员（2026-09-05），待修复后可大幅提速 |
-| 耗时预期 | ⚠️ CPU 运行 | RedditTitle@20000 ≈ 12h、WikiVote 全量 ≈ 10h（CPU）；以下日志耗时均基于 CPU，勿与 GPU 基线混淆 |
+| 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2） |
+| **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590） |
+| 耗时预期 | ✅ 可切 GPU 口径 | 自 2026-09-06 起新实验可按 GPU 估算；E-3 及此前日志仍为 CPU 耗时 |
 | E-7 噪声 | ⛔ 本轮不做 | 模块 `utils/noise.py` 已实现保留 |
 
 ## 实验状态总览
