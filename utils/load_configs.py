@@ -187,10 +187,14 @@ class SignPredictArgs(BaseModel):
                 f"{'T' if self.noise_scope == NoiseScope.TRAIN else 'A'}"
             )
 
+        # E-3: patch 标记，避免不同 patch-size 结果互相覆盖（2026-09-06 修复）
+        # 注：始终带上 .P{size}，使主表/消融(.P1) 与 patch 扫描各组在文件名上互相区分；
+        #     旧 CPU 期文件无 .P 标记，天然可辨认为历史数据。
         return (
             f"{self.save_model_name}{param_fmt}"
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
+            f".P{self.patch_size}"
             f".{td_tag}{noise_tag}"
         )
     @property

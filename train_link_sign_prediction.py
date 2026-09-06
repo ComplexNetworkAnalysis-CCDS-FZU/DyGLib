@@ -597,6 +597,8 @@ if __name__ == "__main__":
             "inference time (s)": inference_time,
             "peak memory (MB)": peak_memory_mb,
             "parameter count": get_parameter_sizes(model),
+            # 设备标记（GPU 统一基座后用于核验表格数据同设备）
+            "device": str(args.device),
         }
         result_json = json.dumps(result_json, indent=4)
 
