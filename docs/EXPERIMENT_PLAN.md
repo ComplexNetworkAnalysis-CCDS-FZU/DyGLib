@@ -47,17 +47,20 @@ python run_experiments.py -s linksign -t patch -m SignDyGFormer \
 ### E-4 时序对比（P3，2 次 run）
 对比：时间编码（当前，TE） vs 时间衰减（TD，指数衰减 e^{-λΔt}）；数据集 WikiVote@20000；link&sign 任务
 
+> ⚠️ CLI 注意（2026-09-07 踩坑修正）：本脚本用 pydantic-argparse，**只有长选项无短选项**（`--gpu 0`，不能用 `-g 0`）；枚举参数用**成员名大写**（`STALENESS`/`GAP`，小写 `staleness` 会报错），或不传（默认 STALENESS）。
+> 效率点：A) TE 组与 **E-3 WikiVote P=1 完全同配置**，可引用其 `.TE` 结果，无需重跑；实际只需跑 B) TD 组（2026-09-07 已在 GPU0 运行）。
+
 ```bash
-# A) 时间编码（基线，不加 time-decay 参数即可）
+# A) 时间编码（基线，不加 time-decay 参数即可）—— 与 E-3 WikiVote P1 同配置，可引用不重跑
 python train_sign_link_3class_prediction.py --dataset-name WikiVote --model SignDyGFormer \
     --seeds 42 --batch-size 200 --num-neighbors 15 --common-neighbors-look-forward 10 \
-    --tail-num 20000 --early-stop-notice f1_wt f1_mic ap f1_mac auc -g 0
+    --tail-num 20000 --early-stop-notice f1_wt f1_mic ap f1_mac auc --gpu 0
 
-# B) 时间衰减（λ=1.0，gap_mode 默认 staleness=A；可选 gap=B）
+# B) 时间衰减（λ=1.0，gap_mode 默认 STALENESS=A；可选 GAP=B）
 python train_sign_link_3class_prediction.py --dataset-name WikiVote --model SignDyGFormer \
     --seeds 42 --batch-size 200 --num-neighbors 15 --common-neighbors-look-forward 10 \
     --tail-num 20000 --early-stop-notice f1_wt f1_mic ap f1_mac auc \
-    --time-decay-lambda 1.0 --time-decay-gap-mode staleness -g 0
+    --time-decay-lambda 1.0 --gpu 0
 ```
 说明：`--time-decay-lambda` 不提供 = 时间编码（结果文件带 `.TE` 标记）；提供 = 时间衰减（`.TD` 标记），两者不会互相覆盖。
 
