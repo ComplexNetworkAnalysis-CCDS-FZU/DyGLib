@@ -23,7 +23,12 @@
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ⬜ 待执行(GPU) | 并入 E-5 seed42，不单独跑 |
 | E-2 消融 | linksign | **全部 5 数据集** | 🔄 GPU 运行中 | GPU1；BitcoinAlpha 4/4 + BitcoinOTC 4/4 完成，RedditTitle 第 1 组进行中（09-07 18:50，9/20） |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | RedditBody + WikiVote × P1/3/5/7 全部独立落盘（`.P` 标记生效）；结果表待汇总至本文档 |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见汇总） |
+
+## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
+- RedditBody：AUC P1=0.9610 → P7=0.9400 单调下降（-0.021），大 patch 明显有损
+- WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
+- 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
 | E-4 时序 | linksign | WikiVote@20000 | 🔄 GPU 运行中 | GPU0；TD 组（λ=1.0, staleness）运行中（09-07 18:47 启动）；TE 基线引用 E-3 WikiVote P1，无需重跑 |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行(GPU) | 各 5 种子，10 runs（09-05 定案：先 5，时间充裕再扩 10） |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |

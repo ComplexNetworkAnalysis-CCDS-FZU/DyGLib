@@ -117,6 +117,9 @@ processed_data/*/*
 saved_result
 saved_models
 
+# 收集的原始结果 JSON（仅本地/服务器；汇总 .md 会被跟踪）
+results/*/raw/
+
 *.json
 *.pdf
 *.csv
