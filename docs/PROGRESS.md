@@ -22,8 +22,8 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ⬜ 待执行(GPU) | 并入 E-5 seed42，不单独跑 |
-| E-2 消融 | linksign | **全部 5 数据集** | 📋 待 GPU 全量重跑 | 导师方案 4 组 × 5 数据集 = 20 runs；旧 CPU 期数据（含 RedditTitle/WikiVote 全开）**弃用** |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ⚠️ CPU 跑完但需 **GPU 重跑** | P∈{1,3,5,7} 8 runs；**事故**：CPU 期结果文件名缺 patch 标记致 P1/3/5 被 P7 覆盖（仅剩 P=7）；已修 `.P{size}` 标记（commit `7d9a03a`） |
+| E-2 消融 | linksign | **全部 5 数据集** | � GPU 运行中 | GPU1；BitcoinAlpha 4/4 完成，BitcoinOTC 第 1 组进行中（09-07 08:50，4/20） |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 GPU 运行中 | GPU0；RedditBody P1-7 全完成，WikiVote P1/3 完成、P5 运行中（6/8）；`.P` 标记修复后各组独立落盘 ✅ |
 | E-4 时序 | linksign | WikiVote@20000 | ⬜ 待执行(GPU) | TE vs TD，2 runs |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行(GPU) | 各 5 种子，10 runs（09-05 定案：先 5，时间充裕再扩 10） |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
