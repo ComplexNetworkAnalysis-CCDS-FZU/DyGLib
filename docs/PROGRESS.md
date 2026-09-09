@@ -21,22 +21,36 @@
 
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
-| E-1 效率 | sign | RedditTitle@20000 | ⬜ 待执行(GPU) | 并入 E-5 seed42，不单独跑 |
-| E-2 消融 | linksign | **全部 5 数据集** | 🔄 GPU 运行中 | GPU1；BitcoinAlpha 4/4 + BitcoinOTC 4/4 完成，RedditTitle 第 1 组进行中（09-07 18:50，9/20） |
+| E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
+| E-2 消融 | linksign | **全部 5 数据集** | ✅ 20/20 完成(GPU) ⚠️ 结论受阻 | 见「审计发现」：RAS/RAE 实际无效果 → base≡full；是否重设计/补 BTE-CNAS 组**待决策** |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见汇总） |
 
 ## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
 - RedditBody：AUC P1=0.9610 → P7=0.9400 单调下降（-0.021），大 patch 明显有损
 - WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
 - 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
-| E-4 时序 | linksign | WikiVote@20000 | 🔄 GPU 运行中 | GPU0；TD 组（λ=1.0, staleness）运行中（09-07 18:47 启动）；TE 基线引用 E-3 WikiVote P1，无需重跑 |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | ⬜ 待执行(GPU) | 各 5 种子，10 runs（09-05 定案：先 5，时间充裕再扩 10） |
+| E-4 时序 | linksign | WikiVote@20000 | ✅ 完成(GPU) | TD(λ=1.0) AUC=0.9596 < TE 0.9634 → **时间编码 TE 更优**（保留现状）；原始在 results/E-4_time_decay/raw/ |
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ 10/10 完成(GPU) | 双任务×5 种子（42,123,456,789,1024）；原始在服务器 saved_results/{LinkSign,SignLinkPrediction}/SignDyGFormer/RedditHyperlinkTitle/；待汇总显著性/效率/主表
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
 **执行顺序（固定，不跳步）**：E-3(GPU重跑) → E-2(GPU) → E-4 → E-5 → 主表重跑
 
 **设备基座（2026-09-06）**：最终进论文表格的数据**统一 GPU**（同 seed 跨设备不可比，CPU/GPU 随机流不同）；CPU 期日志/结果仅作存档与冒烟参考，不进论文。结果 JSON 现含 `device` 字段可核验。
+
+## 审计发现（2026-09-09，subagent 只读核查 + 数据实测）
+
+> **RAS 与 RAE 实际为（近）无效果模块** —— 影响 E-2 消融结论与论文消融表述，**需与导师/Agent A 定夺**（决策入口已发 HANDOFF）。
+
+1. **RAS（repeat_aware）语义错位**：`utils/direct_neighbor_sampler.py` `common_neighbor_location`（:94-108）的 repeat 分支只**改写已有键**（要求 dst/src 出现在自己的历史邻居里 = 自环），从不把普通重复对插入锚点。实测：Bitcoin/Reddit **0 自环 → 0 触发**；WikiVote 5 条自环 → 14/20000 (0.07%) 边触发 → 与 E-2（4 数据集 base≡full、仅 WikiVote 微差）**定量吻合**。
+2. **RAE（np.append 修复）仍是 no-op**：`models/NeighborInteractEncoder.py:293-297` 修复赋值真实存在，但 append 的 src/dst 或本就在交集中（padded 序列位置 0 = 自身），或凑不成配对 → on/off 输出**逐元素等价**（单测 identical=True）。parameter count 相同因 RAE 复用 BTE 的 `neighbor_sign_effect_layer`（共享层，无新增参数）。
+3. **启动脚本参数链路正确**：run_experiments MODULE_GROUP→子进程 flag、args→sampler/model、`-r` 排除 / `-e` 5 种子均无误。
+4. **结论**：E-2 的 base≡full 是**真实恒同**（非舍入巧合）。若论文消融声称 RAS/RAE 贡献，在 4/5 数据集不成立。
+5. **连带影响**：主表「full 模型」实际等价 BTE+CNAS；**E-3/E-4/E-5（全模型）结论仍有效**（未对 RAS/RAE 归因）。主表重跑方案需先定 RAS/RAE 去留（修好 or 从消融/论文中去掉 or 重构表述）。
+
+## 待决策（阻塞主表重跑与 E-2 定稿）
+- **RAS/RAE 去留**：① 按其应有语义修好（需定义预期行为，重跑 E-2/主表）；② 论文不再声称 RAS/RAE 贡献（消融改 BTE/CNAS 维度）；③ 其他。
+- 建议先与导师确认原论文 RAS/RAE 的设计意图（git 历史/早期版本可查），再定。
 
 ## 每次运行后需记录
 
