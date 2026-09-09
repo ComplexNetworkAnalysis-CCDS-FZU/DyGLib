@@ -49,7 +49,7 @@
 5. **连带影响**：主表「full 模型」实际等价 BTE+CNAS；**E-3/E-4/E-5（全模型）结论仍有效**（未对 RAS/RAE 归因）。主表重跑方案需先定 RAS/RAE 去留（修好 or 从消融/论文中去掉 or 重构表述）。
 
 ## 待决策（阻塞主表重跑与 E-2 定稿）
-- **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。Agent A 侧 09-09 倾向 **方案②**（论文不再声称 RAS/RAE 贡献，消融改 BTE/CNAS 维度）；B 侧建议先做 git 历史溯源确认原设计意图再定。主表重跑已按 A 意见**暂缓**；E-4/E-5 汇总先行交付。
+- **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 倾向方案②（不再声称 RAS/RAE，消融改 BTE/CNAS）。主表重跑已暂缓；E-4/E-5 汇总先行交付。
 - 建议先与导师确认（含机制 A/B 与是否新增通道）。
 
 ## 每次运行后需记录
