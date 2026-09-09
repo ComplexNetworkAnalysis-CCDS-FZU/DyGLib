@@ -48,6 +48,13 @@
 4. **结论**：E-2 的 base≡full 是**真实恒同**（非舍入巧合）。若论文消融声称 RAS/RAE 贡献，在 4/5 数据集不成立。
 5. **连带影响**：主表「full 模型」实际等价 BTE+CNAS；**E-3/E-4/E-5（全模型）数据仅在 C5=方案②（不修 RAS/RAE，full:=BTE+CNAS）下为最终口径**；若 C5=方案①（修好 RAS/RAE），full 模型将改变 → E-3/E-4/E-5/主表**全部需重跑**（E-3 已被 A 写入论文 §4.5，需 A 知悉此条件性）。
 
+## 🔴 追加重大发现（2026-09-09，subagent 深挖 BTE）：**pos0 标签泄漏**
+- `models/SignDyGFormer.py:534`：padded 序列 pos0（自身 token）的 sign = **当前待预测边 (u,v) 的标签符号**；训练与**评估**都传真标签（`evaluate_models_utils.py:147` 等）。
+- BTE 共同邻居计数中，重复边 (u,v) 会使配对 `(u@seq(u)pos0 × u@seq(v)历史)`、`(v@seq(u)历史 × v@seq(v)pos0)`，`suggest_sign = 标签 × 历史符号`（`NeighborInteractEncoder.py:169-181`）→ **测试时标签泄漏**（仅重复边，Bitcoin 重复率 ~40%）。
+- **影响面**：所有 BTE 开启的运行（E-2 四行全部 BTE=True、E-3/E-4/E-5/主表、旧主表）→ 重复边上指标**虚高**；基线模型（无 BTE）不受影响 → **full 模型超基线的核心结论被泄漏系统性高估**。RAE no-op 依旧。
+- **修复方向**（subagent 建议）：计数前剔除 pos0/自身 id（indirect 只收真第三方 w∉{u,v}）+ RAE 改为在 counterpart 位置按历史符号直写 [1,0]/[0,1]（不用标签）→ 修复后需全量重跑。
+- **待处理**：C5 范围扩大（即使方案②也须先修泄漏，主表数字才可信）；需导师介入（涉及论文核心有效性）。
+
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 倾向方案②（不再声称 RAS/RAE，消融改 BTE/CNAS）。主表重跑已暂缓；E-4/E-5 汇总先行交付。
 - 建议先与导师确认（含机制 A/B 与是否新增通道）。
