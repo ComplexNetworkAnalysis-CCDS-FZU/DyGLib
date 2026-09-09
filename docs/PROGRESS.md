@@ -46,7 +46,7 @@
 2. **RAE（np.append 修复）仍是 no-op**：`models/NeighborInteractEncoder.py:293-297` 修复赋值真实存在，但 append 的 src/dst 或本就在交集中（padded 序列位置 0 = 自身），或凑不成配对 → on/off 输出**逐元素等价**（单测 identical=True）。parameter count 相同因 RAE 复用 BTE 的 `neighbor_sign_effect_layer`（共享层，无新增参数）。
 3. **启动脚本参数链路正确**：run_experiments MODULE_GROUP→子进程 flag、args→sampler/model、`-r` 排除 / `-e` 5 种子均无误。
 4. **结论**：E-2 的 base≡full 是**真实恒同**（非舍入巧合）。若论文消融声称 RAS/RAE 贡献，在 4/5 数据集不成立。
-5. **连带影响**：主表「full 模型」实际等价 BTE+CNAS；**E-3/E-4/E-5（全模型）结论仍有效**（未对 RAS/RAE 归因）。主表重跑方案需先定 RAS/RAE 去留（修好 or 从消融/论文中去掉 or 重构表述）。
+5. **连带影响**：主表「full 模型」实际等价 BTE+CNAS；**E-3/E-4/E-5（全模型）数据仅在 C5=方案②（不修 RAS/RAE，full:=BTE+CNAS）下为最终口径**；若 C5=方案①（修好 RAS/RAE），full 模型将改变 → E-3/E-4/E-5/主表**全部需重跑**（E-3 已被 A 写入论文 §4.5，需 A 知悉此条件性）。
 
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 倾向方案②（不再声称 RAS/RAE，消融改 BTE/CNAS）。主表重跑已暂缓；E-4/E-5 汇总先行交付。
