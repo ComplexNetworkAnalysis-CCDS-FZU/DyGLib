@@ -29,12 +29,13 @@ EXPERIMENT_PLAN.md → 执行实验
                     交付 Agent A
 ```
 
-## 双 Agent 协作（2026-09-05 起）
+## 多 Agent 协作（2026-09-05 起，Agent C 2026-09-09 加入）
 
-> 仓库根 `AGENTS.md` = 协作契约（本工作区会话自动加载）；Agent A 工作区
-> `D:\Sign_DygFormer` 根有 `copilot-instructions.md` 指针（绝对路径指向本目录）。
+> 仓库根 `AGENTS.md` = 协作契约（本工作区会话自动加载）；
+> Agent A 工作区 `D:\Sign_DygFormer` 与 Agent C 工作区 `D:\codes\DynamiSE_DySDGNN_repro` 根各有 `copilot-instructions.md` 指针（绝对路径指向本目录）。
 > 信息流：`agent → HANDOFF.md / PROGRESS.md → agent`，无需用户逐条转述。
 > 单一事实源 = 本目录；同机绝对路径读写即时互见。
+> **Agent C**：DynamiSE/DySDGNN 基线复现（R2-5 方案①），权威 = 其工作区 `IMPLEMENTATION_SPEC.md`，数据只读本仓库 `processed_data/`。
 
 ## 常用路径备忘
 

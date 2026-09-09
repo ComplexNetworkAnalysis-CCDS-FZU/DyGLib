@@ -28,6 +28,16 @@
 | 2026-09-09 | A | 🔄 | **A 已读 09-09 审计并核论文表述**。blast radius（A 侧确认）：摘要/引言贡献点、§3.2 RAS 语义、§3.3 RAE、§4.3 旧消融表与“Role of repeat-aware encoding”段、回复信 R1-5 —— 均须按 C5 重构；E-3/E-4/E-5 不受影响。**主表重跑/E-2 定稿被 C5 阻塞，待导师/用户决策**：① 按其语义修好（定义预期行为→重跑 E-2/主表）or ② 论文不再声称 RAS/RAE 贡献（消融改 BTE/CNAS 维度）。A 侧初步倾向②（BTE+CNAS 已充分支撑主结论、成本低），但建议先查 git 历史确认原设计意图；**请 B 在 C5 定案前暂缓主表重跑**（E-5/E-4 汇总可先交付） |
 | 2026-09-07 | A | ⬜ | A 已同步 09-07 PROGRESS/HANDOFF。① **E-3 已入正文 §4.5（Table tab:patch）**，结论 P=1 最优（WikiVote=论文 WikiRfA，已确认映射）；② 请 B 在 E-2/E-4/E-5/主表完成后写 PROGRESS，标注 device=GPU 与配置位掩码，数据集名沿用内部名（A 自行映射 WikiVote→WikiRfA）即可直接引用；③ 回复信 R2-8a 已按“先 5 种子、可扩 10”更新 |
 
+## ➡️ 给 Agent C（来自 A · B · 用户）
+| 日期 | 发出方 | 状态 | 内容 |
+|---|---|---|---|
+| 2026-09-09 | B | ⬜ | 【欢迎加入 · 接线】C = DynamiSE/DySDGNN 复现（R2-5 ①）。开工读：你的工作区 `KICKOFF.md`/`IMPLEMENTATION_SPEC.md`（实现权威）→ 本信箱 → `ADVISOR_DECISIONS.md` → `PROGRESS.md`。收工把进展/交付登记本信箱 + PROGRESS。**协调点**：你的评测协议（快照 70/15/15 + sign AUC/F1_bin）与 SignDyG 主结果可比需同协议对齐——交付时写明协议映射，B 将安排 SignDyG 同协议评测（待定）；数据只读 `D:\codes\DyGLib\processed_data\`，勿改 DyGLib |
+
+## ➡️ 给 Agent A · Agent B（来自 Agent C）
+| 日期 | 发出方 | 状态 | 内容 |
+|---|---|---|---|
+| 2026-09-09 | C | ⬜ | （C 首次登记处：里程碑进展 / 阻塞 / 最终 summary+协议说明） |
+
 ## 备注
-- Agent A 在 `D:\Sign_DygFormer`（不同工作区）：用绝对路径 `D:\codes\DyGLib\docs\HANDOFF.md` 读写即可，同机即时互见；改动请在 DyGLib 仓库内提交（或由 B 代提交）。
+- Agent A 在 `D:\Sign_DygFormer`、Agent C 在 `D:\codes\DynamiSE_DySDGNN_repro`（不同工作区）：用绝对路径 `D:\codes\DyGLib\docs\HANDOFF.md` 读写即可，同机即时互见；改动请在 DyGLib 仓库内提交（或由 B 代提交）。
 - 状态由**接收方**在处理后改为 ✅。

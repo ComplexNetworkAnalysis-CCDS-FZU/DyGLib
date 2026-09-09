@@ -5,10 +5,11 @@
 > **规则**：每次实验状态变化立即更新本文件，并通过 git 同步（本地 push → 服务器 pull）。
 > 提交截止：2026-10-10。
 
-## 全局状态（2026-09-06 更新）
+## 全局状态（2026-09-09 更新）
 
 | 项目 | 状态 | 说明 |
 |---|---|---|
+| **Agent C 加入** | ✅ 2026-09-09 | DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问 |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
 | 数据就绪 | ✅ 完成 | `server_setup.sh` 已执行，WikiVote tail20000 已生成 |
