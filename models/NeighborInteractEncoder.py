@@ -280,38 +280,38 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dst_padded_nodes_neighbor_sign,
             )
         ):
-            src_unique_keys = np.unique(
-                src_padded_node_neighbor_ids,
+            # ---- 修复 2026-09-09：封 pos0 标签泄漏 + indirect 只收真第三方 ----
+            # pos0 = 自身 token，其 sign 原为当前待预测边标签；此前经共同邻居配对(suggest=标签×历史)
+            # 造成测试时标签泄漏（重复边上指标虚高）。现在只用手历史切片 [1:] 参与交集与计数：
+            # u/v 各自只出现在自己侧 pos0，切片后不再互相配对 → 交集自动只含真第三方 w∉{u,v}，
+            # 与论文 §3.3.2 “counterpart 永不是共同邻居”的前提一致。
+            src_hist_ids = src_padded_node_neighbor_ids[1:]
+            dst_hist_ids = dst_padded_node_neighbor_ids[1:]
+            src_hist_sign = src_padded_node_neighbor_sign[1:]
+            dst_hist_sign = dst_padded_node_neighbor_sign[1:]
+            src_hist_times = (
+                src_padded_nodes_neighbor_times[node_idx][1:]
+                if src_padded_nodes_neighbor_times is not None
+                else None
+            )
+            dst_hist_times = (
+                dst_padded_nodes_neighbor_times[node_idx][1:]
+                if dst_padded_nodes_neighbor_times is not None
+                else None
             )
 
-            dst_unique_keys = np.unique(
-                dst_padded_node_neighbor_ids,
-            )
-
+            src_unique_keys = np.unique(src_hist_ids)
+            dst_unique_keys = np.unique(dst_hist_ids)
             common_neighbor = np.intersect1d(src_unique_keys, dst_unique_keys)
-
-            if self.module_repeat_aware_sign_encoder:
-                # 同时感知当前交互节点对的信息
-                # 假定节点不会自己和自己交互
-                # 修复: np.append 需赋值回 common_neighbor，否则 RAE 逻辑实际不生效
-                common_neighbor = np.append(common_neighbor, [src_id, dst_id])
 
             pos_effect, neg_effect = self.sign_effect_count(
                 common_neighbor=common_neighbor,
-                src_node_neighbor_ids=src_padded_node_neighbor_ids,
-                src_node_neighbor_sign=src_padded_node_neighbor_sign,
-                dst_node_neighbor_ids=dst_padded_node_neighbor_ids,
-                dst_node_neighbor_sign=dst_padded_node_neighbor_sign,
-                src_node_neighbor_times=(
-                    src_padded_nodes_neighbor_times[node_idx]
-                    if src_padded_nodes_neighbor_times is not None
-                    else None
-                ),
-                dst_node_neighbor_times=(
-                    dst_padded_nodes_neighbor_times[node_idx]
-                    if dst_padded_nodes_neighbor_times is not None
-                    else None
-                ),
+                src_node_neighbor_ids=src_hist_ids,
+                src_node_neighbor_sign=src_hist_sign,
+                dst_node_neighbor_ids=dst_hist_ids,
+                dst_node_neighbor_sign=dst_hist_sign,
+                src_node_neighbor_times=src_hist_times,
+                dst_node_neighbor_times=dst_hist_times,
                 query_time=(
                     node_interact_times[node_idx]
                     if node_interact_times is not None
@@ -349,12 +349,38 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 lambda neighbor_id: neg_effect.get(neighbor_id, 0.0),
             )
 
-            src_padded_node_sign_effect = torch.torch.stack(
+            src_padded_node_sign_effect = torch.stack(
                 [src_neighbor_pos_effect, src_neighbor_neg_effect], dim=1
             )
             dst_padded_node_sign_effect = torch.stack(
                 [dst_neighbor_pos_effect, dst_neighbor_neg_effect], dim=1
             )
+
+            # ---- 修复 2026-09-09：RAE = direct 证据（论文 §3.3.2）----
+            # 历史位置中 neighbor == 对方(dst_id/src_id) 的位置，按【历史符号】直写 [1,0]/[0,1]
+            # 一单位证据（不含当前标签 → 无泄漏）；与 indirect 相加进同一 [pos,neg] 2 通道。
+            # 复用 neighbor_sign_effect_layer，无新增参数。RAE 关 ⇒ direct 项为 0。
+            if self.module_repeat_aware_sign_encoder:
+                src_direct = torch.zeros_like(src_padded_node_sign_effect)
+                dst_direct = torch.zeros_like(dst_padded_node_sign_effect)
+                # src 侧：seq(u) 中 id==dst_id 的历史位置（u 与 v 的直接历史）
+                src_mask = src_padded_node_neighbor_ids == dst_id
+                src_mask[0] = False  # 排除 pos0（自身，非历史）
+                if src_mask.any():
+                    p_idx = np.where(src_mask & (src_padded_node_neighbor_sign == 1))[0]
+                    n_idx = np.where(src_mask & (src_padded_node_neighbor_sign == -1))[0]
+                    src_direct[p_idx, 0] = 1.0
+                    src_direct[n_idx, 1] = 1.0
+                # dst 侧：seq(v) 中 id==src_id 的历史位置
+                dst_mask = dst_padded_node_neighbor_ids == src_id
+                dst_mask[0] = False
+                if dst_mask.any():
+                    p_idx = np.where(dst_mask & (dst_padded_node_neighbor_sign == 1))[0]
+                    n_idx = np.where(dst_mask & (dst_padded_node_neighbor_sign == -1))[0]
+                    dst_direct[p_idx, 0] = 1.0
+                    dst_direct[n_idx, 1] = 1.0
+                src_padded_node_sign_effect = src_padded_node_sign_effect + src_direct
+                dst_padded_node_sign_effect = dst_padded_node_sign_effect + dst_direct
 
             src_padded_nodes_sign_effect.append(src_padded_node_sign_effect)
             dst_padded_nodes_sign_effect.append(dst_padded_node_sign_effect)

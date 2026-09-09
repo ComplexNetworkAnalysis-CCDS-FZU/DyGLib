@@ -53,7 +53,7 @@
 - BTE 共同邻居计数中，重复边 (u,v) 会使配对 `(u@seq(u)pos0 × u@seq(v)历史)`、`(v@seq(u)历史 × v@seq(v)pos0)`，`suggest_sign = 标签 × 历史符号`（`NeighborInteractEncoder.py:169-181`）→ **测试时标签泄漏**（仅重复边，Bitcoin 重复率 ~40%）。
 - **影响面**：所有 BTE 开启的运行（E-2 四行全部 BTE=True、E-3/E-4/E-5/主表、旧主表）→ 重复边上指标**虚高**；基线模型（无 BTE）不受影响 → **full 模型超基线的核心结论被泄漏系统性高估**。RAE no-op 依旧。
 - **修复方向**（subagent 建议）：计数前剔除 pos0/自身 id（indirect 只收真第三方 w∉{u,v}）+ RAE 改为在 counterpart 位置按历史符号直写 [1,0]/[0,1]（不用标签）→ 修复后需全量重跑。
-- **待处理**：C5 范围扩大（即使方案②也须先修泄漏，主表数字才可信）；需导师介入（涉及论文核心有效性）。
+- **修复状态（2026-09-09）**：✅ 已实现（改动 1-4，见 `docs/FIX_PLAN_RAS_RAE_LEAK.md`）+ 本地验证全绿（泄漏消除/RAE 增量/RAS 触发 31/300）；🔄 GPU 小验证（BitcoinAlpha）后全量重跑。此前 E-2/E-3/E-4/E-5/主表数字含泄漏 → 待修复后重跑替换。
 
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 倾向方案②（不再声称 RAS/RAE，消融改 BTE/CNAS）。主表重跑已暂缓；E-4/E-5 汇总先行交付。

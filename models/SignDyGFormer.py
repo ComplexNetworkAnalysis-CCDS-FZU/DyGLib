@@ -531,7 +531,10 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             padded_nodes_neighbor_ids[idx, 0] = node_ids[idx]
             padded_nodes_edge_ids[idx, 0] = 0
             padded_nodes_neighbor_times[idx, 0] = node_interact_times[idx]
-            padded_nodes_neighbor_sign[idx, 0] = node_interact_sign[idx]
+            # 修复 2026-09-09：pos0（自身 token）的 sign 不再填当前边标签——
+            # 它会被共同邻居计数当作“邻居出现”配对，造成测试时标签泄漏（重复边指标虚高）。
+            # sign 数组仅被符号效应计数消费；历史符号由 nodes_neighbor_sign_list 提供（位置≥1）。
+            padded_nodes_neighbor_sign[idx, 0] = 0
 
             # 余下元素填写剩下（低到高对齐，idx越小约靠近，idx越大越远）
             if len(nodes_neighbor_ids_list[idx]) > 0:

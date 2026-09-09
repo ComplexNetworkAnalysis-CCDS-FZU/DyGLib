@@ -405,6 +405,30 @@ class DirectedNeighborSampler:
                     src=src_node_id,
                     dst=dst_node_id,
                 )
+                # ---- RAS（论文 §3.2，修复 2026-09-09）：R 锚点扩充 ----
+                # 预测 (u,v) 时，u 与 v 的【直接历史】（v∈N(u) 或 u∈N(v)）应作为额外采样锚点，
+                # 使直接重复交互进入 CNAS 窗口。旧实现只在“自环”时改写已有键（几乎永不触发）；
+                # 此处改为：有直接历史即【新增】锚点（普通重复对即可触发）。
+                # 说明：look_forward_sampling 支持单侧锚点（src_pos 只生成 src 窗、dst_pos 只生成 dst 窗）。
+                if self.module_repeat_aware_sampler:
+                    r_src_pos = np.where(src_node_neighbor_ids == dst_node_id)[0]
+                    if len(r_src_pos) > 0:
+                        prev = common_neighbors.get(int(dst_node_id))
+                        prev_src = prev[0] if prev is not None else np.array([], dtype=int)
+                        prev_dst = prev[1] if prev is not None else np.array([], dtype=int)
+                        common_neighbors[int(dst_node_id)] = (
+                            np.union1d(prev_src, r_src_pos),
+                            prev_dst,
+                        )
+                    r_dst_pos = np.where(dst_node_neighbor_ids == src_node_id)[0]
+                    if len(r_dst_pos) > 0:
+                        prev = common_neighbors.get(int(src_node_id))
+                        prev_src = prev[0] if prev is not None else np.array([], dtype=int)
+                        prev_dst = prev[1] if prev is not None else np.array([], dtype=int)
+                        common_neighbors[int(src_node_id)] = (
+                            prev_src,
+                            np.union1d(prev_dst, r_dst_pos),
+                        )
             if len(common_neighbors) == 0:
                 # 退回普通采样
                 src_nodes_neighbor_ids_list.append(src_node_neighbor_ids)
