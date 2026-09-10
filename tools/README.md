@@ -1,0 +1,36 @@
+# tools/ — 辅助脚本统一目录（约定见下）
+
+> **约定（2026-09-11 起，用户指示）**：所有**辅助脚本、验证脚本、临时验证代码**一律放在 `tools/` 下，**不得散落在仓库根目录**。
+> 运行方式：**在仓库根目录执行**（脚本内的相对路径如 `processed_data/`、`results/` 均相对根目录），例如：
+> `python tools/verify/verify_ras_rae_leak.py`
+> 一次性临时脚本用完请删除或在此登记；正式工具请在本文件登记用途与用法。
+
+## 目录结构
+
+| 路径 | 用途 |
+|---|---|
+| `tools/queue/` | 实验队列守护进程（自动分配空闲 GPU） |
+| `tools/verify/` | 验证脚本（单测式断言、数据统计、结果核对） |
+| `tools/stats/` | （预留）统计汇总类脚本（如 p 值/显著性） |
+
+## 已登记脚本
+
+### tools/queue/
+- `queue_daemon.sh` — 队列守护进程。**用法**：把待跑命令（`run_experiments.py` 的参数，**不含 `-g`**）逐行写入 `tasks.txt`；daemon 每 60s 探测 GPU 空闲（lock 文件 PID + `nvidia-smi` 显存 > 500MiB 判忙），自动补 `-g <空闲卡>` 启动并串行推进。
+  - 日志：`tools/queue/queue.log`（调度轨迹：idle/waiting/dispatch）、`tools/queue/logs/task_<n>.log`（各任务输出）
+  - 状态：`tools/queue/running.txt`（已分发任务行号）、`/tmp/gpulock.<gpu>`
+  - 停止：`pkill -f queue_daemon.sh`
+- `tasks.txt` — 任务清单（每行一条，按顺序分发）。
+
+### tools/verify/
+- `verify_ras_rae_leak.py` — **RAS/RAE/泄漏修复的三项断言**：① 翻转 pos0 标签后 BTE 输出不变（泄漏已封）；② RAE on ≠ off（direct 证据真实生效）；③ indirect 只落在真第三方位置。
+- `check_archived_results.py` — 打印本地归档结果（`results/E-2_ablation/raw/`）的指标/耗时指纹，用于与服务器新结果对照、判定文件是否被新 run 覆盖。
+- `repeat_sign_stats.py` — 统计各数据集**重复交互率**与**重复对符号翻转率**（用于解释 RAS/RAE 的作用面；BA/OTC 重复率 ~80% 但翻转率仅 2.5%，WikiVote 翻转率 33% 但重复率仅 6.9%）。
+
+## 待议（尚未迁移的既有脚本）
+
+以下为先于本约定存在、散落其他位置的脚本，是否一并迁入 `tools/` 需与用户确认（迁移需同步更新 docs 引用）：
+- `server_setup.sh`（根目录，服务器一次性环境准备）
+- `result_collect.py`（根目录，结果收集）
+- `dataset_analysis/compute_stats.py`（结果统计：mean±std、配对 t 检验；docs 中有引用）
+- `analysis/*.py`、`dataset_analysis/*.py`、`fig/*.py`（早期数据分析/绘图脚本）
