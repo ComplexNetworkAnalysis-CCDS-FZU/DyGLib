@@ -29,12 +29,16 @@ busy() {
   return 1
 }
 
+task_count() { grep -cv '^[[:space:]]*$' "$TASKS" 2>/dev/null || echo 0; }
+nth_task()   { grep -v '^[[:space:]]*$' "$TASKS" 2>/dev/null | sed -n "${1}p"; }
+find_free_gpu() { for i in 0 1; do if ! busy "$i"; then echo "$i"; return; fi; done; }
+
 WAIT_EMPTY=0
 WAIT_GPU=0
+run_loop() {
 log "daemon start pid=$$"
 while true; do
-  tot=$(grep -cv '^[[:space:]]*$' "$TASKS" 2>/dev/null)
-  [ -z "$tot" ] && tot=0
+  tot=$(task_count)
   done_n=$(wc -l < "$RUNNING" 2>/dev/null)
   [ -z "$done_n" ] && done_n=0
   if [ "$tot" -le "$done_n" ]; then
@@ -45,12 +49,9 @@ while true; do
   WAIT_EMPTY=0
 
   n=$((done_n + 1))
-  cmd=$(grep -v '^[[:space:]]*$' "$TASKS" | sed -n "${n}p")
+  cmd=$(nth_task "$n")
 
-  gpu=""
-  for i in 0 1; do
-    if ! busy "$i"; then gpu=$i; break; fi
-  done
+  gpu=$(find_free_gpu)
   if [ -z "$gpu" ]; then
     if [ "$WAIT_GPU" -eq 0 ]; then
       log "task#$n pending, no free GPU (gpu0=$(gpu_mem 0)MiB gpu1=$(gpu_mem 1)MiB) -> waiting"
@@ -77,3 +78,9 @@ while true; do
   fi
   sleep 60
 done
+
+}
+
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  run_loop
+fi

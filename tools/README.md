@@ -21,6 +21,7 @@
   - 状态：`tools/queue/running.txt`（已分发任务行号）、`/tmp/gpulock.<gpu>`
   - 停止：`pkill -f queue_daemon.sh`
 - `tasks.txt` — 任务清单（每行一条，按顺序分发）。
+- `selftest.sh` — **自检脚本**（不启动任务）：校验任务清单解析、GPU 忙闲探测（lock + 显存）、选卡函数。用法：`bash tools/queue/selftest.sh`。
 
 ### tools/verify/
 - `verify_ras_rae_leak.py` — **RAS/RAE/泄漏修复的三项断言**：① 翻转 pos0 标签后 BTE 输出不变（泄漏已封）；② RAE on ≠ off（direct 证据真实生效）；③ indirect 只落在真第三方位置。
