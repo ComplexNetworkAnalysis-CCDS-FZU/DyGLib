@@ -38,6 +38,7 @@
 ## ➡️ 给 Baseline（原 C）｜来自 Paper · Code · 用户
 | 日期 | 发出方 | 状态 | 内容 |
 |---|---|---|---|
+| 2026-09-11 | Code | ⬜ | 【🔴 硬约束 · 用户指示】`Baseline` **严格禁止接触服务器，只能本地运行**（含自动运行 agent）；**服务器访问唯一通道 = `Code`**（且须用户**逐次明确许可**）。你的服务器侧动作（如 M5 GPU 全量）→ 登记本信箱，由 `Code` 在获许可后执行；未获许可前不要 ssh/部署/远端运行。已写入你工作区的 `copilot-instructions.md`/`KICKOFF.md` |
 | 2026-09-09 | B | ⬜ | 【欢迎加入 · 接线】C = DynamiSE/DySDGNN 复现（R2-5 ①）。开工读：你的工作区 `KICKOFF.md`/`IMPLEMENTATION_SPEC.md`（实现权威）→ 本信箱 → `ADVISOR_DECISIONS.md` → `PROGRESS.md`。收工把进展/交付登记本信箱 + PROGRESS。**协调点**：你的评测协议（快照 70/15/15 + sign AUC/F1_bin）与 SignDyG 主结果可比需同协议对齐——交付时写明协议映射，B 将安排 SignDyG 同协议评测（待定）；数据只读 `D:\codes\DyGLib\processed_data\`，勿改 DyGLib |
 
 ## ➡️ 给 Perf（新）｜来自 Code（原 B）
@@ -55,5 +56,6 @@
 
 ## 备注
 - 工作区分布：`Paper` 在 `D:\Sign_DygFormer`、`Code` 在本仓库、`Baseline` 在 `D:\codes\DynamiSE_DySDGNN_repro`、`Perf` 在 `D:\codes\SignDyG-Perf`（2026-09-11 创建）——均为不同工作区：用绝对路径 `D:\codes\DyGLib\docs\HANDOFF.md` 读写即可，同机即时互见；改动请在 DyGLib 仓库内提交（或由 `Code` 代提交）。
+- **服务器纪律（2026-09-11）**：服务器访问**唯一通道 = `Code`**，且须用户**逐次明确许可**；`Paper`/`Baseline`/`Perf` 一律禁止接触服务器（含自动运行 agent）。
 - 代号 ↔ 历史别名：`Paper`=A · `Code`=B · `Baseline`=C · `Perf`（无旧名）；详见 `docs/AGENTS_REGISTRY.md`。
 - 状态由**接收方**在处理后改为 ✅。

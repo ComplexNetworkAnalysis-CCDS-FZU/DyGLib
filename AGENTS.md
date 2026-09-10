@@ -1,7 +1,8 @@
 # SignDyG 修订协作契约（NEUCOM-D-26-13975）
 
 多 Agent 协作修订。**2026-09-11 起启用角色代号**：`Paper`=论文、`Code`=代码/实验、`Baseline`=基线复现、`Perf`=Rust+PyO3 加速。会话工作区 = 本仓库时，本文件自动加载。
-分工（互不越界）：**Paper**（原 A）= 论文正文/理论/回复信（工作区 `D:\Sign_DygFormer`）；**Code**（原 B）= 代码/实验/数据/服务器（本仓库）；**Baseline**（原 C）= DynamiSE/DySDGNN 基线复现（工作区 `D:\codes\DynamiSE_DySDGNN_repro`，R2-5 方案①）；**Perf**（新）= Rust+PyO3 内核加速（路线 C；工作区 `D:\codes\SignDyG-Perf`；⛔ **严格禁止接触服务器**——未经用户逐次明确许可只能本地运行，含自动运行 agent）。
+分工（互不越界）：**Paper**（原 A）= 论文正文/理论/回复信（工作区 `D:\Sign_DygFormer`）；**Code**（原 B）= 代码/实验/数据/服务器（本仓库）；**Baseline**（原 C）= DynamiSE/DySDGNN 基线复现（工作区 `D:\codes\DynamiSE_DySDGNN_repro`，R2-5 方案①；⛔ 禁服务器）；**Perf**（新）= Rust+PyO3 内核加速（路线 C；工作区 `D:\codes\SignDyG-Perf`；⛔ 禁服务器）。
+→ **服务器纪律（2026-09-11）**：**服务器访问唯一通道 = `Code`**，且须**用户逐次明确许可**；其他 Agent（`Paper`/`Baseline`/`Perf`，含自动运行）一律禁止接触服务器。
 → 身份/职责唯一权威：`docs/AGENTS_REGISTRY.md`（新 Agent 先登记再开工）。
 
 ## 权威层级
