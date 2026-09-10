@@ -1,15 +1,16 @@
 # SignDyG 修订实验进度记录（NEUCOM-D-26-13975）
 
-> **维护者**：Agent B（代码与实验）
-> **用途**：所有 Agent（含 Agent A 论文撰写）通过本文件了解最新进度。
+> **维护者**：`Code`（代码与实验；历史代号 B）
+> **用途**：所有 Agent（含 `Paper` 论文撰写）通过本文件了解最新进度。
 > **规则**：每次实验状态变化立即更新本文件，并通过 git 同步（本地 push → 服务器 pull）。
 > 提交截止：2026-10-10。
 
-## 全局状态（2026-09-09 更新）
+## 全局状态（2026-09-11 更新）
 
 | 项目 | 状态 | 说明 |
 |---|---|---|
-| **Agent C 加入** | ✅ 2026-09-09 | DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
+| **Agent 代号启用** | ✅ 2026-09-11 | 协作体系改用角色代号：`Paper`/`Code`/`Baseline`/`Perf`（Rust 加速，新加入）；注册表 `docs/AGENTS_REGISTRY.md`；历史条目保留字母（A=Paper、B=Code、C=Baseline） |
+| **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问 |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
 | 数据就绪 | ✅ 完成 | `server_setup.sh` 已执行，WikiVote tail20000 已生成 |
@@ -25,12 +26,7 @@
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
 | E-2 消融 | linksign | **全部 5 数据集** | 🔄 修复后重跑中（12/20） | BA 4/4、RT 4/4、RB 4/4 完成；OTC base 运行中、WV 待跑（GPU0）；结果见下方「E-2 修复后消融 部分结果」 |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见汇总） |
-
-## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
-- RedditBody：AUC P1=0.9610 → P7=0.9400 单调下降（-0.021），大 patch 明显有损
-- WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
-- 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见下方「E-3 结果摘要」） |
 | E-4 时序 | linksign | WikiVote@20000 | ✅ 完成(GPU) | TD(λ=1.0) AUC=0.9596 < TE 0.9634 → **时间编码 TE 更优**（保留现状）；原始在 results/E-4_time_decay/raw/ |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 修复后重跑中（队列自动派发） | 5 种子双任务；**09-11 00:15 由队列守护进程自动派发 sign 至 GPU1**（pre-fix 数据含泄漏，作废）；预计 09-11 午间完成 |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
@@ -39,6 +35,11 @@
 **执行顺序（固定，不跳步）**：E-3(GPU重跑) → E-2(GPU) → E-4 → E-5 → 主表重跑
 
 **设备基座（2026-09-06）**：最终进论文表格的数据**统一 GPU**（同 seed 跨设备不可比，CPU/GPU 随机流不同）；CPU 期日志/结果仅作存档与冒烟参考，不进论文。结果 JSON 现含 `device` 字段可核验。
+
+## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
+- RedditBody：AUC P1=0.9610 → P7=0.9400 单调下降（-0.021），大 patch 明显有损
+- WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
+- 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
 
 ## 审计发现（2026-09-09，subagent 只读核查 + 数据实测）
 

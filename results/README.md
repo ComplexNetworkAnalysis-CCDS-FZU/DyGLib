@@ -1,17 +1,17 @@
-# 实验结果收集目录（Agent B 维护）
+# 实验结果收集目录（`Code` 维护，原 Agent B）
 
 > 按实验归类存放**汇总表 + 原始结果**；原始 JSON 在各自 `raw/` 子目录（gitignored，仅本地/服务器）。
-> 汇总表（.md/.csv）为**最终进论文口径**（统一 GPU 基座 + 修复后代码）。供 Agent A 直接引用。
+> 汇总表（.md/.csv）为**最终进论文口径**（统一 GPU 基座 + 修复后代码）。供 `Paper` 直接引用。
 
 ## 目录索引
 
 | 实验 | 状态 | 汇总文件 | 原始结果 |
 |---|---|---|---|
 | **E-1** 效率（并入 E-5） | ⬜ 待 E-5 | `E-1_efficiency/` | `E-1_efficiency/raw/` |
-| **E-2** 消融（导师方案 4 组 × 5 数据集） | 🔄 运行中（GPU1） | `E-2_ablation/` | `E-2_ablation/raw/` |
+| **E-2** 消融（导师方案 4 组 × 5 数据集） | 🔄 修复后重跑中（12/20） | `E-2_ablation/` | `E-2_ablation/raw/` |
 | **E-3** Patch 消融（P∈{1,3,5,7}） | ✅ 完成（GPU） | `E-3_patch/E3_patch_summary.md` | `E-3_patch/raw/`（8 files） |
-| **E-4** 时序（TE vs TD） | 🔄 TD 运行中 | `E-4_time_decay/` | `E-4_time_decay/raw/` |
-| **E-5** 显著性（双任务 × 5 种子） | ⬜ 待执行 | `E-5_significance/` | `E-5_significance/raw/` |
+| **E-4** 时序（TE vs TD） | ✅ 完成（GPU） | `E-4_time_decay/` | `E-4_time_decay/raw/` |
+| **E-5** 显著性（双任务 × 5 种子） | 🔄 修复后重跑中（队列自动派发） | `E-5_significance/` | `E-5_significance/raw/` |
 | **主表**（修复后重跑 + 基线） | ⬜ 待执行 | `main_tables/` | `main_tables/raw/` |
 
 ## 约定
