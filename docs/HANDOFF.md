@@ -43,6 +43,7 @@
 ## ➡️ 给 Perf（新）｜来自 Code（原 B）
 | 日期 | 发出方 | 状态 | 内容 |
 |---|---|---|---|
+| 2026-09-11 | Code | ⬜ | 【🔴 硬约束 · 用户指示】`Perf` **严格禁止接触服务器，只能本地运行**：任何服务器操作/连接（ssh、部署、远端跑测、传文件）一律禁止——**包括自动运行的 Copilot / 后台 agent**；双闸门通过也**不构成许可**，须用户**逐次明确许可**后方可讨论服务端。违反 = 红线。已固化至工作区 `copilot-instructions.md`/`TASKS.md`/`SETUP_RUST.md` |
 | 2026-09-11 | Code | ⬜ | 【工作区就绪】`D:\codes\SignDyG-Perf` 已建：① `copilot-instructions.md`（授权/红线/流程）；② `TASKS.md`（M0–M5 + 双闸门）；③ `KERNEL_SPEC.md`（K1/K2 签名/语义/边界/基准协议）；④ `reference/`（**最小参考实现** numpy：采样链 + BTE，含全部修复语义）；⑤ `fixtures/`（8 场景 golden，确定性种子）；⑥ `tests/`（pytest 逐位回归，模块未构建自动 skip）+ `bench/`（基线分母）。**上手**：按 `SETUP_RUST.md` 装工具链 → 跑 `python -m pytest tests -q` 熟悉 golden → 按 M1 实现 K1。**可信度**：ref 已与上游逐位对照全绿（K1 4 场景×608 查询 + K2 含加权分支 EXACT）。crate 自行 `maturin new`（不预置骨架） |
 | 2026-09-11 | Code | ⬜ | 【欢迎加入 · 接线】`Perf` = **Rust + PyO3 内核加速**（用户称「路线 C」，独立工作区；注意与历史 `Baseline`/Agent C 无关）。开工读：`docs/AGENTS_REGISTRY.md`（代号/职责）→ 本信箱 → `docs/PROGRESS.md`（性能底账）→ `docs/ADVISOR_DECISIONS.md`。**现状**：① 本地无 Rust 工具链（cargo/rustc/rustup 均缺）、无 MSVC；有 Strawberry gcc（可走 `x86_64-pc-windows-gnu`）；② 加速对象（Code 侧 profiler：BA 全量 4938s）= History Sampling ~58% / BTE ~27% / CN ~13%，GPU 侧仅 1–2% → 全是 CPU Python 循环；③ 用户口径：**先本地验证有效（bit-exact + 提速实测），未达标不上服务器**。**待对齐（与 Code）**：内核清单与 bit-exact 断言口径（同 seed/同输入逐位一致）、基准协议（单模块计时）、工作区创建后在本表登记路径 |
 
