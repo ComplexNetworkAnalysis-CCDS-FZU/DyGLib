@@ -16,6 +16,7 @@
 | 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2） |
 | **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590） |
 | 耗时预期 | ✅ 可切 GPU 口径 | 自 2026-09-06 起新实验可按 GPU 估算；E-3 及此前日志仍为 CPU 耗时 |
+| **实验队列** | ✅ 运行中（2026-09-11 起） | `tools/queue/queue_daemon.sh` 常驻守护：探测空闲 GPU（lock PID + 显存）并自动派发 `tasks.txt` 中的任务；日志 `tools/queue/queue.log`；自检 `bash tools/queue/selftest.sh` 全部通过；**追加任务 = 往 `tasks.txt` 加一行**（不含 `-g`） |
 | E-7 噪声 | ⛔ 本轮不做 | 模块 `utils/noise.py` 已实现保留 |
 
 ## 实验状态总览
@@ -23,7 +24,7 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
-| E-2 消融 | linksign | **全部 5 数据集** | 🔄 修复后重跑中（11/20） | 已完成 BA 4/4、RT 4/4、RB 3/4（full 运行中）；结果见下方「E-2 修复后消融 部分结果」；剩余 OTC×4、WV×4（GPU0） |
+| E-2 消融 | linksign | **全部 5 数据集** | 🔄 修复后重跑中（12/20） | BA 4/4、RT 4/4、RB 4/4 完成；OTC base 运行中、WV 待跑（GPU0）；结果见下方「E-2 修复后消融 部分结果」 |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见汇总） |
 
 ## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
@@ -31,7 +32,7 @@
 - WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
 - 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
 | E-4 时序 | linksign | WikiVote@20000 | ✅ 完成(GPU) | TD(λ=1.0) AUC=0.9596 < TE 0.9634 → **时间编码 TE 更优**（保留现状）；原始在 results/E-4_time_decay/raw/ |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ 10/10 完成(GPU) | 双任务×5 种子（42,123,456,789,1024）；原始在服务器 saved_results/{LinkSign,SignLinkPrediction}/SignDyGFormer/RedditHyperlinkTitle/；待汇总显著性/效率/主表
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 修复后重跑中（队列自动派发） | 5 种子双任务；**09-11 00:15 由队列守护进程自动派发 sign 至 GPU1**（pre-fix 数据含泄漏，作废）；预计 09-11 午间完成 |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
@@ -65,10 +66,10 @@
 |---|---|---|---|---|---|
 | BitcoinAlpha（4/4） | 0.9524 | 0.9532 | **0.9606** | 0.9554 | 0.9649 |
 | RedditTitle（4/4） | 0.9337 | 0.9348 | 0.9366 | **0.9373** | 0.9539 |
-| RedditBody（3/4） | 0.9265 | 0.9249 | **0.9282** | 🔄运行中 | 0.9610 |
+| RedditBody（4/4） | 0.9265 | 0.9249 | 0.9282 | **0.9299** | 0.9610 |
 | BitcoinOTC / WikiVote | ⬜待跑 | | | | |
 
-**观察**：① 修复后全部低于旧值（**泄漏曾高估**，RB 最大 −0.03+）；② **RAS 一致正增益**（+0.002~+0.008）；③ **RAE 单独≈中性**（BA +0.0008 / RT +0.0011 / RB −0.0016），与 RAS 组合（full vs +RAS）在 BA/RB 略降 → "**RAS 有效、RAE 边际**"模式（待全量 + 5 种子显著性确认；影响 C5 决策）。
+**观察**：① 修复后全部低于旧值（**泄漏曾高估**，RB 最大 −0.03+）；② **RAS 一致正增益**（+0.002~+0.008）；③ **RAE 单独≈中性**（+0.0008 / +0.0011 / −0.0016）；④ **RT、RB 上均为 full 最优**（RT 0.9373、RB 0.9299），仅 BA 例外（full 0.9554 < +RAS 0.9606，单种子差 0.005，疑为噪声）→ 组合（RAS+RAE）总体有效，需多种子确认；⑤ 一致性与验证 run 交叉吻合（RB full 0.9299 = 验证值；BA full 0.9554 = 验证值）。
 
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 曾倾向方案②——其依据（"泄漏无实际影响"）已因部署事故作废；C5 定案待修复后重跑数据。主表重跑仍暂缓；E-4/E-5 汇总先行交付。
