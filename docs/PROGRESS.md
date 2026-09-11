@@ -78,6 +78,7 @@
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 曾倾向方案②——其依据（"泄漏无实际影响"）已因部署事故作废；C5 定案待修复后重跑数据。主表重跑仍暂缓；E-4/E-5 汇总先行交付。
 - 建议先与导师确认（含机制 A/B 与是否新增通道）。
+- **CN 伪交集怪癖（2026-09-11，Perf 实证 + Code 定位/量化）**：`utils/direct_neighbor_sampler.py:86` 的 `assume_unique=True` 在重复边下产生**伪共同邻居**（C_impl = C ∪ 单侧重复集合；BA/OTC 伪 CN 查询 96%+、采样输出差异 48–79%）。分析+选项：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。**待用户/导师定**：保持 vs 修复（=全量重跑）vs 先 A/B（推荐）。
 
 ## 每次运行后需记录
 
