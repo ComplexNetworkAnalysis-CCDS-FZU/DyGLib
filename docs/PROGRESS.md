@@ -11,7 +11,7 @@
 |---|---|---|
 | **Agent 代号启用** | ✅ 2026-09-11 | 协作体系改用角色代号：`Paper`/`Code`/`Baseline`/`Perf`（Rust 加速，新加入）；注册表 `docs/AGENTS_REGISTRY.md`；历史条目保留字母（A=Paper、B=Code、C=Baseline） |
 | **Perf 工作区** | ✅ 2026-09-11 | `D:\codes\SignDyG-Perf`：DyGLib 热点内核**参考实现**（K1 采样链 / K2 BTE，numpy，含全部修复语义）+ 8 场景 golden fixtures + 上游逐位对照全绿 + 基线基准/回归脚手架；`TASKS.md`（M0–M5，双闸门：bit-exact + ≥10×）；⛔ **服务器禁区**（未经用户逐次许可禁止任何服务器接触，含自动 agent） |
-| **Perf 进展** | ✅ 2026-09-11 | M0–M2 完成：Rust 工具链（GNU）+ K1/K2 内核（bit-exact 全绿；K1 25–27×、K2 15.5×；clippy/fmt 门禁绿）；M3 进行中（batch 入口/GIL）。详见 HANDOFF「给 Code」Perf 条目 |
+| **Perf 进展** | ✅ 2026-09-11 | M0–M2 完成：Rust 工具链（GNU）+ K1/K2 内核（bit-exact 全绿；K1 25–27×、K2 15.5×；clippy/fmt 门禁绿）；M3 进行中（batch 入口/GIL）。详见 HANDOFF「给 Code」Perf 条目；⚙️ 待同步：CN 伪交集修复后 K1/fixtures 需更新（见 HANDOFF 行动项） |
 | **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问；**访问纪律（09-11）：唯一通道 = `Code`（须用户逐次许可），其他 agent（含自动）禁止接触** |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
@@ -27,10 +27,10 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
-| E-2 消融 | linksign | **全部 5 数据集** | ✅ **20/20 完成（GPU，修复后）** | 汇总见 `results/E-2_ablation/E2_ablation_summary.md`；关键结论见下方「E-2 修复后消融 全量结果」 |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 **修复后重跑中（09-11 排程，队列）** | 重跑 = 8 runs（RB+WV × P{1,3,5,7}，full 配置）；pre-fix 8/8 结论（旧代码，待替换）见 `results/E-3_patch/E3_patch_summary.md` |
-| E-4 时序 | linksign | WikiVote@20000 | 🔄 **修复后重跑中（09-11 排程）** | 重跑 = TD(full, λ=1.0) 1 run，对比 E-3 WV P1 的 TE；pre-fix 结论：TD 0.9596 < TE 0.9634（⚠️ 旧 TD 为 base 配置、TE 为 full，配置不一致，本次修正为同配） |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **10/10 完成（GPU，队列自动）** | 修复后 5 种子：linksign AUC 0.9365±0.0009、sign AUC 0.6712±0.0077；汇总见 `results/E-5_significance/E5_summary.md` |
+| E-2 消融 | linksign | **全部 5 数据集** | 🔄 **重跑中（伪交集修复版；旧 20/20 作废）** | 旧（含伪交集）数据仅存档；重跑后更新下方全量表与汇总 |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 **重跑中（伪交集修复版）** | 8 runs（RB+WV × P{1,3,5,7}）；此前含伪交集运行已中止重排；完成后替换 `results/E-3_patch/` |
+| E-4 时序 | linksign | WikiVote@20000 | 🔄 **重跑中（伪交集修复版）** | TD(full, λ=1.0) 1 run（队列 @ 原生命令），对比 E-3 WV P1 的 TE（同配）；旧 TD 为 base 配置、配置不一致已修正 |
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 **重跑中（伪交集修复版；旧 10/10 作废）** | 重跑 5 种子双任务；完成后更新 `results/E-5_significance/E5_summary.md` |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
@@ -78,7 +78,7 @@
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 曾倾向方案②——其依据（"泄漏无实际影响"）已因部署事故作废；C5 定案待修复后重跑数据。主表重跑仍暂缓；E-4/E-5 汇总先行交付。
 - 建议先与导师确认（含机制 A/B 与是否新增通道）。
-- **CN 伪交集怪癖（2026-09-11，Perf 实证 + Code 定位/量化）**：`utils/direct_neighbor_sampler.py:86` 的 `assume_unique=True` 在重复边下产生**伪共同邻居**（C_impl = C ∪ 单侧重复集合；BA/OTC 伪 CN 查询 96%+、采样输出差异 48–79%）。分析+选项：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。**待用户/导师定**：保持 vs 修复（=全量重跑）vs 先 A/B（推荐）。
+- **CN 伪交集怪癖**：**已决策（用户 09-11）：✅ 修复**（真交集；RA 开/关均受影响已实证，与 RAS 无关，差异率 48–79%）。全量重跑已排程（队列 15 任务条）；**旧结果（含伪交集）全部作废，报告以重跑后为准**。分析+实证：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。
 
 ## 每次运行后需记录
 
@@ -109,6 +109,7 @@
 
 ## 最近更新记录
 
+- **2026-09-11（晚）**：用户决策**修复 CN 伪交集**（assume_unique→真交集）；受影响实验全量重排（队列 15 条，含 @ 原生命令支持）；旧结果作废，报告以重跑后为准。
 - **2026-09-11**：E-2 修复后 20/20 + E-5 修复后 10/10 完成（GPU）；归档同步本地（sha256 记录）；汇总表落盘；Perf M0–M2 完成（加速内核双闸门初步达成）。
 - **2026-09-01**：服务器恢复；代码推送至服务器；`server_setup.sh`（数据就绪脚本）+ 本进度文件建立；E-7 确定本轮不执行。
 - **2026-08-20**：E-1~E-7 全部代码实现完成（时间衰减、效率测量、消融/patch 脚本、统计脚本、噪声模块、RAE bug 修复），本地 CPU 冒烟测试全部通过；`EXPERIMENT_PLAN.md` 运行计划定稿。

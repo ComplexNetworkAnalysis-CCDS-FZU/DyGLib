@@ -1,4 +1,15 @@
--s sign -t main -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote -e
--s linksign -t main -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote -e
+@ python train_sign_link_3class_prediction.py --dataset-name WikiVote --model SignDyGFormer --seeds 42 --batch-size 200 --num-neighbors 15 --common-neighbors-look-forward 10 --tail-num 20000 --early-stop-notice f1_wt f1_mic ap f1_mac auc --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --time-decay-lambda 1.0 --gpu @GPU@
 -s linksign -t patch -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle WikiVote
 -s linksign -t patch -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote
+-s linksign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle WikiVote
+-s linksign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody
+-s linksign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody
+-s sign -t main -m SignDyGFormer -e -r BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s linksign -t main -m SignDyGFormer -e -r BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s linksign -t main -m SignDyGFormer -e -r BitcoinAlpha RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s linksign -t ablation -m SignDyGFormer -r BitcoinAlpha BitcoinOTC WikiVote
+-s linksign -t ablation -m SignDyGFormer -r RedditHyperlinkTitle RedditHyperlinkBody

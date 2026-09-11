@@ -83,7 +83,11 @@ def common_neighbor_location(
     """
 
     # 交集 & 组装
-    common_vals = np.intersect1d(src_neighbor, dst_neighbor, assume_unique=True)
+    # 修复（2026-09-11 用户决策）：真集合交集——与论文 §3.2  C=N_u∩N_v  语义对齐。
+    # 原 assume_unique=True 在历史含重复 id（重复边）时按“排序后相邻相等”计数，会把
+    # “单侧重复≥2、另一侧 0 次”的邻居误判为共同邻居（伪 CN）→ 采样锚点/窗口偏差。
+    # 量化与决策：docs/ANALYSIS_CN_PSEUDO_INTERSECT.md
+    common_vals = np.intersect1d(src_neighbor, dst_neighbor)
     # 两个分别表示在src的位置和在dst的位置
     aware_nodes = {}
     for v in common_vals:

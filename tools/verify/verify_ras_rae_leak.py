@@ -1,8 +1,16 @@
-"""临时脚本：验证 RAS 采样差异在 pad_sequences 截断（last N-1）后是否仍存在。
-结论用于解释 E-2 修复后消融 full≡base 的现象。运行完即删。"""
+"""验证 RAS 采样差异在 pad_sequences 截断（last N-1）后是否仍存在（保留为回归工具）。
+
+用法（仓库根）：python tools/verify/verify_ras_rae_leak.py
+"""
+import sys
+from pathlib import Path
+
 import numpy as np
-from utils.DataLoader import get_link_prediction_data
-from utils.direct_neighbor_sampler import get_neighbor_sampler
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from utils.DataLoader import get_link_prediction_data  # noqa: E402
+from utils.direct_neighbor_sampler import get_neighbor_sampler  # noqa: E402
 
 CASES = [
     ("BitcoinAlpha", 15, 40),

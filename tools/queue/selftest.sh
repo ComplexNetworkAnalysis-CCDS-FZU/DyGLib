@@ -6,7 +6,7 @@ QD=$(cd "$(dirname "$0")" && pwd)
 source "$QD/queue_daemon.sh"
 
 echo "== 1) 任务清单解析 =="
-echo "task_count = $(task_count)   (期望 2)"
+echo "task_count = $(task_count)   (期望 = tasks.txt 有效行数)"
 echo "task#1    = $(nth_task 1)"
 echo "task#2    = $(nth_task 2)"
 

@@ -16,7 +16,7 @@
 ## 已登记脚本
 
 ### tools/queue/
-- `queue_daemon.sh` — 队列守护进程。**用法**：把待跑命令（`run_experiments.py` 的参数，**不含 `-g`**）逐行写入 `tasks.txt`；daemon 每 60s 探测 GPU 空闲（lock 文件 PID + `nvidia-smi` 显存 > 500MiB 判忙），自动补 `-g <空闲卡>` 启动并串行推进。
+- `queue_daemon.sh` — 队列守护进程。**用法**：把待跑命令逐行写入 `tasks.txt`——① `run_experiments.py` 参数（**不含 `-g`**，daemon 自动补）；② **以 `@` 开头的原生命令**（用 `@GPU@` 占位显卡号，用于非 run_experiments 任务，如 E-4 TD）。daemon 每 60s 探测 GPU 空闲（lock 文件 PID + `nvidia-smi` 显存 > 500MiB 判忙）并串行推进。
   - 日志：`tools/queue/queue.log`（调度轨迹：idle/waiting/dispatch）、`tools/queue/logs/task_<n>.log`（各任务输出）
   - 状态：`tools/queue/running.txt`（已分发任务行号）、`/tmp/gpulock.<gpu>`
   - 停止：`pkill -f queue_daemon.sh`

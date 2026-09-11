@@ -1,7 +1,9 @@
 #!/bin/bash
 # SignDyG 实验队列守护进程（自动把 tasks.txt 中的任务分发到空闲 GPU）
 # 停止：pkill -f queue_daemon.sh
-# 任务格式：tasks.txt 每行一条 run_experiments.py 的参数（不含 -g，daemon 自动补）
+# 任务格式：tasks.txt 每行一条（空行忽略）：
+#   ① run_experiments.py 参数（不含 -g，daemon 自动补）；
+#   ② 以 @ 开头的原生命令（用 @GPU@ 占位显卡号）
 
 QD=/home/fedsa/DyGLib/tools/queue
 TASKS=$QD/tasks.txt
@@ -66,7 +68,14 @@ while true; do
   cd /home/fedsa/DyGLib || exit 1
   source /home/fedsa/anaconda3/etc/profile.d/conda.sh
   conda activate gc
-  nohup python run_experiments.py $cmd -g "$gpu" > "$LOGD/task_${n}.log" 2>&1 < /dev/null &
+  if [[ "$cmd" == @* ]]; then
+    # 原生命令：去掉 @ 前缀，替换 @GPU@ 占位符
+    raw="${cmd#@}"
+    raw="${raw//@GPU@/$gpu}"
+    nohup bash -c "$raw" > "$LOGD/task_${n}.log" 2>&1 < /dev/null &
+  else
+    nohup python run_experiments.py $cmd -g "$gpu" > "$LOGD/task_${n}.log" 2>&1 < /dev/null &
+  fi
   echo $! > "/tmp/gpulock.$gpu"
   sleep 5
   if [ -f "/tmp/gpulock.$gpu" ] && kill -0 "$(cat /tmp/gpulock.$gpu)" 2>/dev/null; then

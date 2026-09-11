@@ -116,8 +116,27 @@ def look_forward_sampling(src_neighbor_ids, dst_neighbor_ids, common_neighbors: 
     return src_idxs, dst_idxs
 
 
-def sample_variant(s_ids, d_ids, k, mode):
+def augment_repeat_anchors(common_neighbors, s_ids, d_ids, src_id, dst_id):
+    """RAS 锚点扩充（生产 get_common_neighbors 内联块；供 RA=on 对比）。"""
+    r_src_pos = np.where(s_ids == dst_id)[0]
+    if len(r_src_pos) > 0:
+        prev = common_neighbors.get(int(dst_id))
+        prev_src = prev[0] if prev is not None else np.array([], dtype=int)
+        prev_dst = prev[1] if prev is not None else np.array([], dtype=int)
+        common_neighbors[int(dst_id)] = (np.union1d(prev_src, r_src_pos), prev_dst)
+    r_dst_pos = np.where(d_ids == src_id)[0]
+    if len(r_dst_pos) > 0:
+        prev = common_neighbors.get(int(src_id))
+        prev_src = prev[0] if prev is not None else np.array([], dtype=int)
+        prev_dst = prev[1] if prev is not None else np.array([], dtype=int)
+        common_neighbors[int(src_id)] = (prev_src, np.union1d(prev_dst, r_dst_pos))
+    return common_neighbors
+
+
+def sample_variant(s_ids, d_ids, k, mode, *, ra=False, u=None, v=None):
     common = quirk_location(s_ids, d_ids) if mode == "quirk" else true_location(s_ids, d_ids)
+    if ra:
+        common = augment_repeat_anchors(common, s_ids, d_ids, int(u), int(v))
     if len(common) == 0:
         return np.arange(len(s_ids), dtype=np.int64), np.arange(len(d_ids), dtype=np.int64)
     src_idxs, dst_idxs = look_forward_sampling(s_ids, d_ids, common, k)
@@ -151,8 +170,8 @@ def main():
     toy_probe()
 
     summary = {}
-    print(f"{'数据集':<22s} {'查询':>5s} {'伪CN查询%':>9s} {'均伪CN':>7s} {'含u/v%':>7s} {'输出差异%':>9s} {'均Δ位置':>8s}")
-    print("-" * 78)
+    print(f"{'数据集':<22s} {'查询':>5s} {'伪CN查询%':>9s} {'均伪CN':>7s} {'含u/v%':>7s} {'差异%(RA关)':>11s} {'差异%(RA开)':>11s} {'均Δ位置':>8s}")
+    print("-" * 92)
     for name, cfg in DATASETS.items():
         rows = load_edges(name, cfg["tail"])
         n_nodes = max(max(r[0], r[1]) for r in rows) + 1
@@ -161,7 +180,7 @@ def main():
         rng = np.random.RandomState(20260911)
         qidx = rng.choice(len(rows), size=min(args.queries, len(rows)), replace=False)
 
-        n_q = n_sur = n_cp = n_diff = 0
+        n_q = n_sur = n_cp = n_diff = n_diff_on = 0
         sum_sur = sum_extra = 0
         for qi in qidx:
             u, v, t = rows[qi][0], rows[qi][1], rows[qi][2]
@@ -186,6 +205,11 @@ def main():
                 n_diff += 1
             sum_extra += (len(sq[0]) + len(sq[1])) - (len(st[0]) + len(st[1]))
 
+            sq_on = sample_variant(s_ids, d_ids, cfg["k"], "quirk", ra=True, u=u, v=v)
+            st_on = sample_variant(s_ids, d_ids, cfg["k"], "true", ra=True, u=u, v=v)
+            if not (np.array_equal(sq_on[0], st_on[0]) and np.array_equal(sq_on[1], st_on[1])):
+                n_diff_on += 1
+
         row = dict(
             queries=n_q,
             surplus_queries=n_sur,
@@ -195,13 +219,15 @@ def main():
             counterpart_rate=n_cp / n_q,
             diff_queries=n_diff,
             diff_rate=n_diff / n_q,
+            diff_rate_ra_on=n_diff_on / n_q,
             mean_extra_positions=sum_extra / n_q,
             k=cfg["k"],
             tail=cfg["tail"],
         )
         summary[name] = row
         print(f"{name:<22s} {n_q:5d} {100*row['surplus_rate']:8.1f}% {row['mean_surplus']:7.3f} "
-              f"{100*row['counterpart_rate']:6.1f}% {100*row['diff_rate']:8.1f}% {row['mean_extra_positions']:8.3f}")
+              f"{100*row['counterpart_rate']:6.1f}% {100*row['diff_rate']:9.1f}% {100*row['diff_rate_ra_on']:9.1f}% "
+              f"{row['mean_extra_positions']:8.3f}")
 
     OUT_JSON.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n[ok] 统计已写入 {OUT_JSON.relative_to(ROOT)}")

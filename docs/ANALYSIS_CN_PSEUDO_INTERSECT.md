@@ -51,3 +51,20 @@
 ## 7. 证据文件
 - 本次：`tools/verify/cn_quirk_analysis.py`（脚本）+ `tools/verify/cn_quirk_stats.json`（本地指标，json 按 gitignore 不入库）
 - Perf 侧：`D:\codes\SignDyG-Perf\tools\probe_numpy_quirks.py`、`tools\quirk_impact_k1.py`
+
+## 8. 决策与实施（2026-09-11 晚）
+
+- **用户决策：修复**（选项②）。实施：`utils/direct_neighbor_sampler.py` 改真交集（`np.intersect1d(src, dst)`），并全量重跑受影响实验（队列 15 任务条）。
+- **RA 开关补充实证**（2000 查询/数据集，“quirk↔真交集”输出差异率）：
+
+| 数据集 | RA 关 | RA 开 |
+|---|---|---|
+| BitcoinAlpha | 62.0% | 61.2% |
+| BitcoinOTC | 79.2% | 76.7% |
+| RedditHyperlinkBody | 52.7% | 52.3% |
+| RedditHyperlinkTitle | 69.3% | 68.7% |
+| WikiVote | 48.5% | 48.5% |
+
+→ **怪癖与 RAS 是否启用无关**（其位于 CNAS 的 CN 提取层；RAS 只是其后的锚点扩充，叠加在上述差异之上影响相同数量级的查询）。
+- 无影响面：BTE/RAE（K2 本为真交集）；基线模型（不使用 CNAS 采样器，无需重跑）；CNAS 关闭配置（无此路径；现有实验全部 CNAS=on）。
+- 后续：`Perf` 同步 Rust K1/fixtures（见 HANDOFF）；**全部报告数字以重跑后为准**。
