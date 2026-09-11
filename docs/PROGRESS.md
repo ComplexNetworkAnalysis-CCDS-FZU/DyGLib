@@ -11,6 +11,7 @@
 |---|---|---|
 | **Agent 代号启用** | ✅ 2026-09-11 | 协作体系改用角色代号：`Paper`/`Code`/`Baseline`/`Perf`（Rust 加速，新加入）；注册表 `docs/AGENTS_REGISTRY.md`；历史条目保留字母（A=Paper、B=Code、C=Baseline） |
 | **Perf 工作区** | ✅ 2026-09-11 | `D:\codes\SignDyG-Perf`：DyGLib 热点内核**参考实现**（K1 采样链 / K2 BTE，numpy，含全部修复语义）+ 8 场景 golden fixtures + 上游逐位对照全绿 + 基线基准/回归脚手架；`TASKS.md`（M0–M5，双闸门：bit-exact + ≥10×）；⛔ **服务器禁区**（未经用户逐次许可禁止任何服务器接触，含自动 agent） |
+| **Perf 进展** | ✅ 2026-09-11 | M0–M2 完成：Rust 工具链（GNU）+ K1/K2 内核（bit-exact 全绿；K1 25–27×、K2 15.5×；clippy/fmt 门禁绿）；M3 进行中（batch 入口/GIL）。详见 HANDOFF「给 Code」Perf 条目 |
 | **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问；**访问纪律（09-11）：唯一通道 = `Code`（须用户逐次许可），其他 agent（含自动）禁止接触** |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
@@ -26,10 +27,10 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
-| E-2 消融 | linksign | **全部 5 数据集** | 🔄 修复后重跑中（12/20） | BA 4/4、RT 4/4、RB 4/4 完成；OTC base 运行中、WV 待跑（GPU0）；结果见下方「E-2 修复后消融 部分结果」 |
+| E-2 消融 | linksign | **全部 5 数据集** | ✅ **20/20 完成（GPU，修复后）** | 汇总见 `results/E-2_ablation/E2_ablation_summary.md`；关键结论见下方「E-2 修复后消融 全量结果」 |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见下方「E-3 结果摘要」） |
 | E-4 时序 | linksign | WikiVote@20000 | ✅ 完成(GPU) | TD(λ=1.0) AUC=0.9596 < TE 0.9634 → **时间编码 TE 更优**（保留现状）；原始在 results/E-4_time_decay/raw/ |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 修复后重跑中（队列自动派发） | 5 种子双任务；**09-11 00:15 由队列守护进程自动派发 sign 至 GPU1**（pre-fix 数据含泄漏，作废）；预计 09-11 午间完成 |
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **10/10 完成（GPU，队列自动）** | 修复后 5 种子：linksign AUC 0.9365±0.0009、sign AUC 0.6712±0.0077；汇总见 `results/E-5_significance/E5_summary.md` |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
@@ -59,19 +60,20 @@
 - **修复方向**（subagent 建议）：计数前剔除 pos0/自身 id（indirect 只收真第三方 w∉{u,v}）+ RAE 改为在 counterpart 位置按历史符号直写 [1,0]/[0,1]（不用标签）→ 修复后需全量重跑。
 - **修复状态（2026-09-10 更正）**：代码修复已实现（改动 1-4，见 `docs/FIX_PLAN_RAS_RAE_LEAK.md`）；**本地验证全绿**（泄漏消除/RAE 增量/RAS 触发 31/300）。⚠️ **部署事故（09-09）**：服务器 `git pull` 在后台链中被中断（fetch 成功、快进未完成、静默失败且未校验）→ 服务器代码一直停留 `38322c6`；**此前所有"修复后"结果（含 09-09 验证 run 与 E-2 第 2 批）均为旧代码运行，结论全部作废**（同 seed 确定性 → 与旧结果逐位相同，仅为复现）。✅ 已重新正确部署：server HEAD=`cefb9ac`，补丁标记 + **服务器端采样差异 9/101 验证通过**。
 - **修复后验证结果（09-10 实测 · 真实影响）**：① **BA linksign full：AUC 0.9649 → 0.9554（−0.0095）**、AP −0.036、sign-F1 −0.024；② **RB linksign full：AUC 0.9610 → 0.9299（−0.0311）**、AP 0.7879→0.6948（−0.093）、sign-F1 −0.040 → **泄漏曾系统性高估，影响重大；"无影响"结论彻底推翻**；③ E-2 RT 消融（修复后部分）：base 0.9337 / +RAE 0.9348 / +RAS 0.9366 → **RAS/RAE 出现小幅非零效应**（full 运行中）。
-- **正在进行**：E-2 修复后全量重跑（双卡：GPU0=BA/OTC/WV、GPU1=RT/RB），预计 09-11 中午完成。
+- **已完成（2026-09-11）**：E-2 修复后全量 **20/20**（双卡，最后完成 17:01）+ E-5 修复后 **10/10**（队列自动）。结果已同步到本地归档（`tools/sync/fetch_results.py`；sha256 见 `results/_sync_raw_log.csv`）；汇总表 `E2_ablation_summary.md`/`E5_summary.md`。
 - **待办（影响面扩大）**：E-3/E-4/E-5/主表全量重跑；"SignDyG 仍优于基线"需以修复后主表重新验证；上报导师。
 
-## E-2 修复后消融 部分结果（2026-09-10 23:25，GPU，linksign，AUC）
+## E-2 修复后消融 全量结果（2026-09-11 17:01 完成，GPU，linksign，AUC）
 
 | 数据集 | base (RAS-,RAE-) | +RAE | +RAS | full | 旧代码（含泄漏，全配置同值） |
 |---|---|---|---|---|---|
-| BitcoinAlpha（4/4） | 0.9524 | 0.9532 | **0.9606** | 0.9554 | 0.9649 |
-| RedditTitle（4/4） | 0.9337 | 0.9348 | 0.9366 | **0.9373** | 0.9539 |
-| RedditBody（4/4） | 0.9265 | 0.9249 | 0.9282 | **0.9299** | 0.9610 |
-| BitcoinOTC / WikiVote | ⬜待跑 | | | | |
+| BitcoinAlpha | 0.9524 | 0.9532 | **0.9606** | 0.9554 | 0.9649 |
+| BitcoinOTC | 0.9676 | 0.9680 | **0.9746** | 0.9720 | — |
+| WikiVote | 0.9620 | 0.9630 | 0.9628 | 0.9629 | — |
+| RedditTitle | 0.9337 | 0.9348 | 0.9366 | **0.9373** | 0.9539 |
+| RedditBody | 0.9265 | 0.9249 | 0.9282 | **0.9299** | 0.9610 |
 
-**观察**：① 修复后全部低于旧值（**泄漏曾高估**，RB 最大 −0.03+）；② **RAS 一致正增益**（+0.002~+0.008）；③ **RAE 单独≈中性**（+0.0008 / +0.0011 / −0.0016）；④ **RT、RB 上均为 full 最优**（RT 0.9373、RB 0.9299），仅 BA 例外（full 0.9554 < +RAS 0.9606，单种子差 0.005，疑为噪声）→ 组合（RAS+RAE）总体有效，需多种子确认；⑤ 一致性与验证 run 交叉吻合（RB full 0.9299 = 验证值；BA full 0.9554 = 验证值）。
+**观察**：① 修复后全部低于旧值（**泄漏曾高估**：BA −0.010 / RT −0.017 / RB −0.031）；② **RAS 5/5 一致正增益**（+0.0008~+0.0082）；③ **RAE 单独≈中性**（−0.0016~+0.0011）；④ **full ≥ base（5/5）**，增量主要来自 RAS；Bitcoin 两数据集 full<+RAS（BA −0.005、OTC −0.003），RT/RB full 略优；⑤ 明细（AP/sign-F1/耗时）见 `results/E-2_ablation/E2_ablation_summary.md`，归档同步记录 `results/_sync_raw_log.csv`。
 
 ## 待决策（阻塞主表重跑与 E-2 定稿）
 - **RAS/RAE 去留（C5）**：语义定义见 `docs/DESIGN_RAS_RAE_FIX.md`。**用户 09-09 定案：以论文定义为准**（git 溯源跳过）；已向 Agent A 请求摘录论文中 RAS/RAE 准确定义（HANDOFF）。Agent A 曾倾向方案②——其依据（"泄漏无实际影响"）已因部署事故作废；C5 定案待修复后重跑数据。主表重跑仍暂缓；E-4/E-5 汇总先行交付。
@@ -106,5 +108,6 @@
 
 ## 最近更新记录
 
+- **2026-09-11**：E-2 修复后 20/20 + E-5 修复后 10/10 完成（GPU）；归档同步本地（sha256 记录）；汇总表落盘；Perf M0–M2 完成（加速内核双闸门初步达成）。
 - **2026-09-01**：服务器恢复；代码推送至服务器；`server_setup.sh`（数据就绪脚本）+ 本进度文件建立；E-7 确定本轮不执行。
 - **2026-08-20**：E-1~E-7 全部代码实现完成（时间衰减、效率测量、消融/patch 脚本、统计脚本、噪声模块、RAE bug 修复），本地 CPU 冒烟测试全部通过；`EXPERIMENT_PLAN.md` 运行计划定稿。

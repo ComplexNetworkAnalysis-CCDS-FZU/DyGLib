@@ -8,10 +8,10 @@
 | 实验 | 状态 | 汇总文件 | 原始结果 |
 |---|---|---|---|
 | **E-1** 效率（并入 E-5） | ⬜ 待 E-5 | `E-1_efficiency/` | `E-1_efficiency/raw/` |
-| **E-2** 消融（导师方案 4 组 × 5 数据集） | 🔄 修复后重跑中（12/20） | `E-2_ablation/` | `E-2_ablation/raw/` |
+| **E-2** 消融（导师方案 4 组 × 5 数据集） | ✅ 修复后 20/20（GPU） | `E-2_ablation/E2_ablation_summary.md` | `E-2_ablation/raw/`（20 files） |
 | **E-3** Patch 消融（P∈{1,3,5,7}） | ✅ 完成（GPU） | `E-3_patch/E3_patch_summary.md` | `E-3_patch/raw/`（8 files） |
 | **E-4** 时序（TE vs TD） | ✅ 完成（GPU） | `E-4_time_decay/` | `E-4_time_decay/raw/` |
-| **E-5** 显著性（双任务 × 5 种子） | 🔄 修复后重跑中（队列自动派发） | `E-5_significance/` | `E-5_significance/raw/` |
+| **E-5** 显著性（双任务 × 5 种子） | ✅ 修复后 10/10（GPU） | `E-5_significance/E5_summary.md` | `E-5_significance/raw/`（10 files） |
 | **主表**（修复后重跑 + 基线） | ⬜ 待执行 | `main_tables/` | `main_tables/raw/` |
 
 ## 约定
@@ -19,3 +19,4 @@
 - CPU 期数据仅存档/对照，不进本目录汇总。
 - 原始 JSON 命名即配置指纹：`{Model}_seed{N}.NN-{n}.LF-{l}.RAS-{E/D}.RASE-{E/D}.BTE-{E/D}.CNAS-{E/D}.P{p}.{TE/TD}.json`
 - 每份汇总表须含：数据集/任务/配置位/设备/seed，附一句结论。
+- 归档同步：`python tools/sync/fetch_results.py --set e2|e5|all`（只读服务器；sha256 清单见 `_sync_raw_log.csv`）。
