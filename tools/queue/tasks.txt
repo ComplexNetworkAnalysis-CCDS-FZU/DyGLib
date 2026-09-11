@@ -1,2 +1,3 @@
 -s sign -t main -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote -e
 -s linksign -t main -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote -e
+-s linksign -t patch -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle

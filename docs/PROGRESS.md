@@ -28,8 +28,8 @@
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
 | E-2 消融 | linksign | **全部 5 数据集** | ✅ **20/20 完成（GPU，修复后）** | 汇总见 `results/E-2_ablation/E2_ablation_summary.md`；关键结论见下方「E-2 修复后消融 全量结果」 |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **8/8 完成（GPU）** | 结果已汇总至 `results/E-3_patch/E3_patch_summary.md`；结论：P=1 最优/持平，大 patch 有损（详见下方「E-3 结果摘要」） |
-| E-4 时序 | linksign | WikiVote@20000 | ✅ 完成(GPU) | TD(λ=1.0) AUC=0.9596 < TE 0.9634 → **时间编码 TE 更优**（保留现状）；原始在 results/E-4_time_decay/raw/ |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 **修复后重跑中（09-11 排程，队列）** | 重跑 = 8 runs（RB+WV × P{1,3,5,7}，full 配置）；pre-fix 8/8 结论（旧代码，待替换）见 `results/E-3_patch/E3_patch_summary.md` |
+| E-4 时序 | linksign | WikiVote@20000 | 🔄 **修复后重跑中（09-11 排程）** | 重跑 = TD(full, λ=1.0) 1 run，对比 E-3 WV P1 的 TE；pre-fix 结论：TD 0.9596 < TE 0.9634（⚠️ 旧 TD 为 base 配置、TE 为 full，配置不一致，本次修正为同配） |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **10/10 完成（GPU，队列自动）** | 修复后 5 种子：linksign AUC 0.9365±0.0009、sign AUC 0.6712±0.0077；汇总见 `results/E-5_significance/E5_summary.md` |
 | 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
