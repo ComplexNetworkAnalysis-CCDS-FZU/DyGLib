@@ -11,7 +11,7 @@
 |---|---|---|
 | **Agent 代号启用** | ✅ 2026-09-11 | 协作体系改用角色代号：`Paper`/`Code`/`Baseline`/`Perf`（Rust 加速，新加入）；注册表 `docs/AGENTS_REGISTRY.md`；历史条目保留字母（A=Paper、B=Code、C=Baseline） |
 | **Perf 工作区** | ✅ 2026-09-11 | `D:\codes\SignDyG-Perf`：DyGLib 热点内核**参考实现**（K1 采样链 / K2 BTE，numpy，含全部修复语义）+ 8 场景 golden fixtures + 上游逐位对照全绿 + 基线基准/回归脚手架；`TASKS.md`（M0–M5，双闸门：bit-exact + ≥10×）；⛔ **服务器禁区**（未经用户逐次许可禁止任何服务器接触，含自动 agent） |
-| **Perf 进展** | ✅ 2026-09-12 | **M0–M3.6 全部完成**（09-11→12）：工具链（GNU）+ K1/K2 内核 + batch/GIL → **语义 v2**（CN 真交集；908 查询逐位 PASS）→ **真实数据口径复测**（BA/WV 只读派生；CN 实测 BA 1.39 / WV 9.11——合成「坦缩」为构造伪象；真实提速 **K1 4.4–5.6×（逐查询）/ 5.3–6.5×（batch）、K2 97–99×**；K1 1800 查询 + K2×2 逐位 PASS）。下一模块 = **M4 集成设计**（先出方案，待用户批准）。详见 `docs/handoff/outbox-perf.md` |
+| **Perf 进展** | ✅ 2026-09-12 | **M0–M3.6 全部完成**（09-11→12）：工具链（GNU）+ K1/K2 内核 + batch/GIL → **语义 v2**（CN 真交集；908 查询逐位 PASS）→ **真实数据口径复测**（BA/WV 只读派生；CN 实测 BA 1.39 / WV 9.11——合成「坦缩」为构造伪象；真实提速 **K1 4.4–5.6×（逐查询）/ 5.3–6.5×（batch）、K2 97–99×**；K1 1800 查询 + K2×2 逐位 PASS）。**M4 方案 v1.1 已交付**（审批①–④落定：服务器原生构建 / fail-fast / 契约串保留）；**部署编排中**：服务器只读预检 ✅（Ubuntu 22.04 / gc Py3.9.19+numpy1.26.4 / TUNA 可达）、独立仓通道获批。详见 `docs/handoff/outbox-perf.md` 与 `outbox-code.md`（09-12 行） |
 | **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问；**访问纪律（09-11）：唯一通道 = `Code`（须用户逐次许可），其他 agent（含自动）禁止接触** |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
