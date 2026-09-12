@@ -11,7 +11,7 @@
 |---|---|---|
 | **Agent 代号启用** | ✅ 2026-09-11 | 协作体系改用角色代号：`Paper`/`Code`/`Baseline`/`Perf`（Rust 加速，新加入）；注册表 `docs/AGENTS_REGISTRY.md`；历史条目保留字母（A=Paper、B=Code、C=Baseline） |
 | **Perf 工作区** | ✅ 2026-09-11 | `D:\codes\SignDyG-Perf`：DyGLib 热点内核**参考实现**（K1 采样链 / K2 BTE，numpy，含全部修复语义）+ 8 场景 golden fixtures + 上游逐位对照全绿 + 基线基准/回归脚手架；`TASKS.md`（M0–M5，双闸门：bit-exact + ≥10×）；⛔ **服务器禁区**（未经用户逐次许可禁止任何服务器接触，含自动 agent） |
-| **Perf 进展** | ✅ 2026-09-12 | **M0–M3.6 全部完成**（09-11→12）：工具链（GNU）+ K1/K2 内核 + batch/GIL → **语义 v2**（CN 真交集；908 查询逐位 PASS）→ **真实数据口径复测**（BA/WV 只读派生；CN 实测 BA 1.39 / WV 9.11——合成「坍缩」为构造伪象；真实提速 **K1 4.4–5.6×（逐查询）/ 5.3–6.5×（batch）、K2 97–99×**；K1 1800 查询 + K2×2 逐位 PASS）。**M4 方案 v1.1 已交付**（审批①–④落定）；**部署就绪**：预检 + 独立仓通道 + Rust 环境（rustup/cargo 1.98.1、maturin 1.15.0）+ **首构建 ✅**（wheel sha256 `86c2e85f…`，gc 安装 + import ✓）。详见 `docs/handoff/outbox-perf.md` 与 `outbox-code.md`（09-12 行） |
+| **Perf 进展** | ✅ 2026-09-12 | **M0–M3.6 全部完成**（09-11→12）：工具链（GNU）+ K1/K2 内核 + batch/GIL → **语义 v2**（CN 真交集；908 查询逐位 PASS）→ **真实数据口径复测**（BA/WV 只读派生；CN 实测 BA 1.39 / WV 9.11——合成「坍缩」为构造伪象；真实提速 **K1 4.4–5.6×（逐查询）/ 5.3–6.5×（batch）、K2 97–99×**；K1 1800 查询 + K2×2 逐位 PASS）。**M4 方案 v1.1 已交付**（审批①–④落定）；**部署就绪**：预检 + 独立仓通道 + Rust 环境（rustup/cargo 1.98.1、maturin 1.15.0）+ **首构建 ✅**；**第 1 批校验全绿**（cargo 21/21、check_accel 12/12、上游 1800+908 全 PASS、bench 14/14；服务器口径 K1 7–11× / K2 50–285×）。详见 `docs/handoff/outbox-perf.md` 与 `outbox-code.md`（09-12 行） |
 | **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问；**访问纪律（09-11）：唯一通道 = `Code`（须用户逐次许可），其他 agent（含自动）禁止接触** |
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
@@ -109,6 +109,7 @@
 
 ## 最近更新记录
 
+- **2026-09-12（深夜3）**：**服务器构建校验「第 1 批」全绿**（按 Perf 清单执行）：cargo test **21/21**、check_accel **12/12**（bit-exact）、check_ref **8/8**、pytest **21 passed**、上游对照真实 **K1 1800/1800 + K2×2** 与合成 **908 查询**全 PASS、bench_real **14/14**；**服务器口径提速**（Linux/40 核）：K1 7–11×、K2 50–285×（L15 267–285× → L100 50–53×）。唯一遗留：crate 侧 `__abi__` 待 Perf 补（M4 前置）。
 - **2026-09-12（深夜2）**：**Perf 服务器部署就绪**（用户批准执行）：独立仓通道 `~/git/SignDyG-Perf.git` + `~/SignDyG-Perf` @ `9b4913b`（Code URL 直推；Perf 零接触）；Rust 环境（rustup/cargo 1.98.1、maturin 1.15.0；用户态 + TUNA）；**首构建 25s 通过**（wheel `signdyg_accel-0.1.0-cp39-cp39-manylinux_2_34`，sha256 `86c2e85f…`；gc 安装 + import 校验 ✓）。剩余：crate `__abi__` + DyGLib 适配器（M4 落地，待批准）→ 门 2/3。
 - **2026-09-12（深夜）**：**信箱拆分（一人一箱）**：`docs/HANDOFF.md` 单文件 → 入口页 + `docs/handoff/outbox-{paper,code,baseline,perf}.md`（唯一写入者=箱主；收件方在自己箱内回执）——消除单文件多写者旧缓冲覆盖（本日曾 2 次）。各 Agent 工作区契约指针已同步更新。
 - **2026-09-12（晚）**：**主表第二批同步完成**（linksign RT+RB × 5 种子，sha256 已记录）→ **RT、RB 双数据集主表全部完成**（linksign RB auc **0.9235±0.0045**、ap 0.6884±0.0043、sF1 0.9361±0.0039；RT 0.9391±0.0007；RB seed42=0.9239 与 E-3 P1 独立复跑一致 ✓）。队列：WV sign ✓、BA sign ✓；WV linksign 3/5、BA linksign 2/5、OTC 排队。⚠️ NVML 仍待重启修复（建议本轮队列跑完后安排）。
