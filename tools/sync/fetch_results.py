@@ -3,7 +3,9 @@
 用法（仓库根目录）：
     python tools/sync/fetch_results.py --set e3      # E-3 修复后 8 个（RB+WV × P{1,3,5,7}）
     python tools/sync/fetch_results.py --set e4      # E-4 修复后 TD ×1（WV NN-15 LF-10）
-    python tools/sync/fetch_results.py --set main-a  # 主表第一批：sign RT+RB（10）
+    python tools/sync/fetch_results.py --set main-a  # 主表 sign RT+RB（10）
+    python tools/sync/fetch_results.py --set main-b  # 主表 linksign RT+RB（10，待 task#7 完成）
+    python tools/sync/fetch_results.py --set main-c  # 主表 WV sign+linksign（10，待 task#8/#9）
     python tools/sync/fetch_results.py --set e2      # E-2 修复后 20 个（待队列 #14/#15 完成后）
     python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
     python tools/sync/fetch_results.py --set all     # e2 + e5
@@ -43,6 +45,10 @@ E3_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RA
 E4_TD = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TD.json"
 MAIN_SIGN_RT = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/*NN-100.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_SIGN_RB = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/*NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_LINKSIGN_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/*NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_LINKSIGN_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/*NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_SIGN_WV = "saved_results/LinkSign/SignDyGFormer/WikiVote/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_LINKSIGN_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 SETS = {
     "e2": [
@@ -63,6 +69,14 @@ SETS = {
     "main-a": [
         (MAIN_SIGN_RT, "results/main_tables/raw/sign/RedditHyperlinkTitle", None, 5),
         (MAIN_SIGN_RB, "results/main_tables/raw/sign/RedditHyperlinkBody", None, 5),
+    ],
+    "main-b": [
+        (MAIN_LINKSIGN_RT, "results/main_tables/raw/linksign/RedditHyperlinkTitle", None, 5),
+        (MAIN_LINKSIGN_RB, "results/main_tables/raw/linksign/RedditHyperlinkBody", None, 5),
+    ],
+    "main-c": [
+        (MAIN_SIGN_WV, "results/main_tables/raw/sign/WikiVote", None, 5),
+        (MAIN_LINKSIGN_WV, "results/main_tables/raw/linksign/WikiVote", None, 5),
     ],
 }
 SETS["all"] = SETS["e2"] + SETS["e5"]

@@ -31,7 +31,7 @@
 - `snapshot_results.py` — **结果快照**：从本地 `results/**/raw/`（已同步归档）快速汇总 E-3/E-4/E-5sign/主表 sign 各组指标（auc/ap/sign_f1 明细 + 5 种子 mean±pstd）。用法：`python tools/verify/snapshot_results.py`（不访问服务器）。
 
 ### tools/sync/
-- `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|all`（`main-a` = 主表 sign RT+RB；其余批次随完成逐步新增）。**服务器访问须用户逐次明确许可。**
+- `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|main-b|main-c|all`（`main-*` = 主表分批次；其余批次随完成逐步新增）。**服务器访问须用户逐次明确许可。**
 
 ## 待议（尚未迁移的既有脚本）
 
