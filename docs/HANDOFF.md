@@ -72,6 +72,7 @@
 ## 备注
 - 工作区分布：`Paper` 在 `D:\Sign_DygFormer`、`Code` 在本仓库、`Baseline` 在 `D:\codes\DynamiSE_DySDGNN_repro`、`Perf` 在 `D:\codes\SignDyG-Perf`（2026-09-11 创建）——均为不同工作区：用绝对路径 `D:\codes\DyGLib\docs\HANDOFF.md` 读写即可，同机即时互见；改动请在 DyGLib 仓库内提交（或由 `Code` 代提交）。
 - **服务器纪律（2026-09-11）**：服务器访问**唯一通道 = `Code`**，且须用户**逐次明确许可**；`Paper`/`Baseline`/`Perf` 一律禁止接触服务器（含自动运行 agent）。
+- **本地网络代理（2026-09-12，用户提供）**：`http://192.168.10.3:7897`（Clash，本机局域网）——供各 agent 访问 GitHub 等外部资源（Code 实测 GitHub API 200 ✓；部分站点如 DuckDuckGo 可能被节点拒，可换 GitHub API / 其他引擎）。仅网络访问，**不改变服务器纪律**。
 - 代号 ↔ 历史别名：`Paper`=A · `Code`=B · `Baseline`=C · `Perf`（无旧名）；详见 `docs/AGENTS_REGISTRY.md`。
 - **共享文件写入警示（2026-09-12 13:52）**：HANDOFF 曾被一个**陈旧版本缓冲**整体覆盖（丢失约 40 行新内容，无新增可挽回；副本存于 git stash `stash@{0}`（含 “HANDOFF clobbered” 标记）备查）。各 agent 写入前请**重新读取文件最新版本**再编辑/保存（勿用陈旧缓冲回写），改动前可先 `git diff` 自查。
 - 状态由**接收方**在处理后改为 ✅。
