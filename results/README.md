@@ -8,15 +8,15 @@
 | 实验 | 状态 | 汇总文件 | 原始结果 |
 |---|---|---|---|
 | **E-1** 效率（并入 E-5） | ⬜ 待 E-5 | `E-1_efficiency/` | `E-1_efficiency/raw/` |
-| **E-2** 消融（导师方案 4 组 × 5 数据集） | ✅ 修复后 20/20（GPU） | `E-2_ablation/E2_ablation_summary.md` | `E-2_ablation/raw/`（20 files） |
-| **E-3** Patch 消融（P∈{1,3,5,7}） | ✅ 完成（GPU） | `E-3_patch/E3_patch_summary.md` | `E-3_patch/raw/`（8 files） |
-| **E-4** 时序（TE vs TD） | ✅ 完成（GPU） | `E-4_time_decay/` | `E-4_time_decay/raw/` |
-| **E-5** 显著性（双任务 × 5 种子） | ✅ 修复后 10/10（GPU） | `E-5_significance/E5_summary.md` | `E-5_significance/raw/`（10 files） |
-| **主表**（修复后重跑 + 基线） | ⬜ 待执行 | `main_tables/` | `main_tables/raw/` |
+| **E-2** 消融（导师方案 4 组 × 5 数据集） | 🔄 CN 修复版重跑排队中（队列 #14/#15）；旧 20/20 作废 | `E-2_ablation/E2_ablation_summary.md`（旧数字作废） | `E-2_ablation/raw/` |
+| **E-3** Patch 消融（P∈{1,3,5,7}） | ✅ CN 修复版重跑 8/8（2026-09-12） | `E-3_patch/E3_patch_summary.md` | `E-3_patch/raw/`（8 files） |
+| **E-4** 时序（TE vs TD） | ✅ CN 修复版重跑（2026-09-12） | `E-4_time_decay/E4_time_decay_summary.md` | `E-4_time_decay/raw/` |
+| **E-5** 显著性（双任务 × 5 种子） | 🔄 CN 修复版重跑：sign RT 5/5 ✅（暂存 `main_tables/raw/sign/`）；linksign RT 运行中 | `E-5_significance/E5_summary.md`（旧数字作废） | `E-5_significance/raw/` |
+| **主表**（CN 修复版重跑 + 基线） | 🔄 进行中：sign RT/RB 已同步；linksign RT/RB 运行中；WV/BA/OTC 排队 | `main_tables/` | `main_tables/raw/sign/{RT,RB}`（10 files） |
 
 ## 约定
 - 所有表格数据 = **GPU 基座 + 修复后代码**（RAE bug 已修 + `.P` 标记命名 + JSON 含 `device`）。
 - CPU 期数据仅存档/对照，不进本目录汇总。
 - 原始 JSON 命名即配置指纹：`{Model}_seed{N}.NN-{n}.LF-{l}.RAS-{E/D}.RASE-{E/D}.BTE-{E/D}.CNAS-{E/D}.P{p}.{TE/TD}.json`
 - 每份汇总表须含：数据集/任务/配置位/设备/seed，附一句结论。
-- 归档同步：`python tools/sync/fetch_results.py --set e2|e5|all`（只读服务器；sha256 清单见 `_sync_raw_log.csv`）。
+- 归档同步：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|all`（只读服务器；sha256 清单见 `_sync_raw_log.csv`）；关键指标快照：`python tools/verify/snapshot_results.py`。

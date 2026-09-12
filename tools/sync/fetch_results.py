@@ -1,9 +1,12 @@
 """tools/sync/fetch_results.py — 把服务器上已完成的实验结果 JSON 同步到本地归档。
 
 用法（仓库根目录）：
-    python tools/sync/fetch_results.py --set e2      # E-2 修复后 20 个（5 数据集 × 4 配置）
-    python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign + linksign 各 5 种子）
-    python tools/sync/fetch_results.py --set all
+    python tools/sync/fetch_results.py --set e3      # E-3 修复后 8 个（RB+WV × P{1,3,5,7}）
+    python tools/sync/fetch_results.py --set e4      # E-4 修复后 TD ×1（WV NN-15 LF-10）
+    python tools/sync/fetch_results.py --set main-a  # 主表第一批：sign RT+RB（10）
+    python tools/sync/fetch_results.py --set e2      # E-2 修复后 20 个（待队列 #14/#15 完成后）
+    python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
+    python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
 - **只读服务器**（ssh 读取；不写/不删/不 scp）；服务器访问须**用户逐次明确许可**。
@@ -35,15 +38,31 @@ REMOTE_CMD = (
 E2_BASE = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/*NN-Best.LF-Best.RAS-?.RASE-?.BTE-E.CNAS-E.P1.TE.json"
 E5_LINKSIGN = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/*NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 E5_SIGN = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/*NN-100.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+E3_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/*NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P[1357].TE.json"
+E3_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P[1357].TE.json"
+E4_TD = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TD.json"
+MAIN_SIGN_RT = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/*NN-100.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_SIGN_RB = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/*NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 SETS = {
     "e2": [
         (E2_BASE, "results/E-2_ablation/raw/{ds}",
          ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 20),
     ],
+    "e3": [
+        (E3_RB, "results/E-3_patch/raw", None, 4),
+        (E3_WV, "results/E-3_patch/raw", None, 4),
+    ],
+    "e4": [
+        (E4_TD, "results/E-4_time_decay/raw", None, 1),
+    ],
     "e5": [
         (E5_LINKSIGN, "results/E-5_significance/raw/linksign", None, 5),
         (E5_SIGN, "results/E-5_significance/raw/sign", None, 5),
+    ],
+    "main-a": [
+        (MAIN_SIGN_RT, "results/main_tables/raw/sign/RedditHyperlinkTitle", None, 5),
+        (MAIN_SIGN_RB, "results/main_tables/raw/sign/RedditHyperlinkBody", None, 5),
     ],
 }
 SETS["all"] = SETS["e2"] + SETS["e5"]

@@ -28,20 +28,20 @@
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
 | E-2 消融 | linksign | **全部 5 数据集** | 🔄 **重跑中（伪交集修复版；旧 20/20 作废）** | 旧（含伪交集）数据仅存档；重跑后更新下方全量表与汇总 |
-| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | 🔄 **重跑中（伪交集修复版）** | 8 runs（RB+WV × P{1,3,5,7}）；此前含伪交集运行已中止重排；完成后替换 `results/E-3_patch/` |
-| E-4 时序 | linksign | WikiVote@20000 | 🔄 **重跑中（伪交集修复版）** | TD(full, λ=1.0) 1 run（队列 @ 原生命令），对比 E-3 WV P1 的 TE（同配）；旧 TD 为 base 配置、配置不一致已修正 |
-| E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 **重跑中（伪交集修复版；旧 10/10 作废）** | 重跑 5 种子双任务；完成后更新 `results/E-5_significance/E5_summary.md` |
-| 主表重跑 | sign + linksign | 5 数据集 | ⬜ 待执行(GPU) | 先 BitcoinAlpha 影响评估；基线模型一并 GPU 重跑 |
+| E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **完成（CN 修复版，2026-09-12）** | 8/8：RB AUC 0.9149–0.9284（无单调趋势）、WV 0.9594–0.9619（近持平）→ patch 不敏感、默认 P=1 有据；已同步并替换 `results/E-3_patch/`（汇总已更新） |
+| E-4 时序 | linksign | WikiVote@20000 | ✅ **完成（CN 修复版，2026-09-12）** | TD 0.9565 vs TE 0.9607（ΔAUC −0.0042、ΔAP −0.0120、ΔsignF1 −0.0118）→ 同配下 TE 略优、默认 TE 保留；汇总 `results/E-4_time_decay/E4_time_decay_summary.md` |
+| E-5 显著性 | sign + linksign | RedditTitle@20000 | 🔄 **重跑中（CN 修复版）** | sign RT **5/5 完成**（auc 0.6746±0.0028、ap 0.9401±0.0019）；linksign RT 进行中（队列 #5）→ 齐全后同步 E-5 目录并更新汇总（旧 10/10 作废） |
+| 主表重跑 | sign + linksign | 5 数据集 | 🔄 **进行中（CN 修复版队列）** | sign RT/RB 已同步（auc RT 0.6746±0.0028 / RB 0.6117±0.0354）；linksign RT/RB 运行中；WV/BA/OTC 排队；基线模型不受 CN 修复影响（Baseline 线独立） |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
 **执行顺序（固定，不跳步）**：E-3(GPU重跑) → E-2(GPU) → E-4 → E-5 → 主表重跑
 
 **设备基座（2026-09-06）**：最终进论文表格的数据**统一 GPU**（同 seed 跨设备不可比，CPU/GPU 随机流不同）；CPU 期日志/结果仅作存档与冒烟参考，不进论文。结果 JSON 现含 `device` 字段可核验。
 
-## E-3 结果摘要（2026-09-07，GPU 基座，详见 results/E-3_patch/E3_patch_summary.md）
-- RedditBody：AUC P1=0.9610 → P7=0.9400 单调下降（-0.021），大 patch 明显有损
-- WikiVote：各 P 几乎持平（AUC 差 ≤0.0008），不敏感
-- 结论：默认 patch_size=1 有据可依（回应 R2#8 patch 超参），无需改模型
+## E-3 结果摘要（2026-09-12，CN 修复版重跑，详见 results/E-3_patch/E3_patch_summary.md）
+- RedditBody：AUC 区间 0.9149–0.9284（P7 略高、无单调趋势），Sign-F1 P1 最高 0.9328
+- WikiVote：AUC 0.9594–0.9619 近持平（跨度 0.0025），不敏感
+- 结论：patch size 不敏感，默认 patch_size=1 有据可依（回应 R2#8）；⚠️ 旧“P1→P7 单调下降（−0.021）”表述作废
 
 ## 审计发现（2026-09-09，subagent 只读核查 + 数据实测）
 
@@ -109,6 +109,7 @@
 
 ## 最近更新记录
 
+- **2026-09-12（上午）**：**E-3/E-4 CN 修复版重跑完成并同步归档**（E-3 8/8、E-4 1/1，sha256 见 `results/_sync_raw_log.csv`；汇总已替换）；**主表 sign RT/RB 5 种子完成同步**（auc RT 0.6746±0.0028 / RB 0.6117±0.0354）；linksign RT/RB 运行中。⚠️ **服务器 NVML 故障**：无人值守升级（06:35，新内核 6.8.0-138 + 驱动用户态 595.91）导致 `nvidia-smi` 报 driver/library mismatch（内核模块 595.84 未重载）；**CUDA 训练不受影响**（新进程 `is_available()=True`、任务正常）；建议本轮队列完成后安排重启修复（待用户定）。
 - **2026-09-11（晚）**：用户决策**修复 CN 伪交集**（assume_unique→真交集）；受影响实验全量重排（队列 15 条，含 @ 原生命令支持）；旧结果作废，报告以重跑后为准。**22:20 修复版已部署至服务器（pull→`9d658a9`），本地/服务器双层语义校验通过（keys=[2]）；新队列守护进程 pid=239314 启动，task#1 E-4 TD（GPU0 pid=239335）与 task#2 E-3 RB（GPU1 pid=239435）已上卡。**
 - **2026-09-11**：E-2 20/20 + E-5 10/10 完成（**伪交集旧语义，已作废**，重跑排程序列中）；归档同步本地（sha256 记录）；汇总表落盘（数字已被重跑取代）；Perf M0–M2 完成（加速内核双闸门初步达成）。
 - **2026-09-01**：服务器恢复；代码推送至服务器；`server_setup.sh`（数据就绪脚本）+ 本进度文件建立；E-7 确定本轮不执行。
