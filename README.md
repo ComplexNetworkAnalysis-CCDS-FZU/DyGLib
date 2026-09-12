@@ -128,6 +128,17 @@ python evaluate_node_classification.py --dataset_name wikipedia --model_name DyG
 ```
 
 
+## 加速后端（可选，默认启用）
+
+本仓库支持可选的 Rust 加速后端 `signdyg_accel`（K1 共邻采样链 / K2 BTE；与原始 Python 路径**逐位一致**，指标不受影响）：
+
+- **默认启用**；关闭用 `--no-accel`（`--accel` 可显式启用；训练脚本与 `run_experiments.py` 均支持）；
+- 环境变量兜底：`SIGNDYG_ACCEL=0` 关闭 / `=1` 启用（无显式命令行开关时生效）；
+- 启用为 **fail-fast**：未安装或契约（`__abi__`）不符会直接报错，**不会静默回退**（未装内核的机器请加 `--no-accel`）；
+- 结果 JSON 记录 `"accel": {"enabled": ..., "abi": ...}` 便于溯源；
+- 安装/构建见 Perf 工作区（`maturin build --release` → `pip install <wheel>`）。
+
+
 ## Acknowledgments
 
 We are grateful to the authors of 

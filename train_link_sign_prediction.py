@@ -27,6 +27,7 @@ from evaluate_models_utils import evaluate_model_sign_prediction
 from utils.DataLoader import get_idx_data_loader, get_link_prediction_data
 from utils.EarlyStopping import EarlyStopping
 from utils.load_configs import get_sign_prediction_args
+from utils import accel as _accel
 from torch.utils.data import WeightedRandomSampler
 
 TASK_NAME="LinkSign"
@@ -599,6 +600,8 @@ if __name__ == "__main__":
             "parameter count": get_parameter_sizes(model),
             # 设备标记（GPU 统一基座后用于核验表格数据同设备）
             "device": str(args.device),
+            # M4：加速状态（口径防混淆；默认启用）
+            "accel": _accel.status,
         }
         result_json = json.dumps(result_json, indent=4)
 

@@ -113,7 +113,8 @@ class Exp:
     param: list[Args] = None
     gpu: int = (0,)
     ablation: bool = False,
-    seeds:bool = False
+    seeds:bool = False,
+    accel: bool = None  # M4：加速开关（None=子进程默认；True/False=显式透传）
 
 
 from models.DyGFormer import DyGFormer
@@ -331,6 +332,7 @@ def make_experiments(
     exp_ty: ExpTy = ExpTy.Main,
     seed_expm: bool = False,
     module_idx: list = None,
+    accel: bool = None,
 ):
     if exp_ty == ExpTy.Ablation:
         group = (
@@ -389,7 +391,8 @@ def make_experiments(
             dataset_extra=DATASET_EXTRA.get(d, []),
             gpu=gpu,
             ablation=exp_ty == ExpTy.Ablation,
-            seeds=seed_expm
+            seeds=seed_expm,
+            accel=accel,
         )
 
 
@@ -407,6 +410,7 @@ def run(exp: Exp, dry_run: bool = False):
         "--seeds",
         *([str(TASK_SEED_VALUES[0])] if not exp.seeds else [str(s) for s in TASK_SEED_VALUES]),
         *(["--ablation"] if exp.ablation else []),
+        *(["--accel"] if exp.accel is True else (["--no-accel"] if exp.accel is False else [])),
         *exp.extra,
         *exp.dataset_extra,
         *COMMA_EXTRA,
@@ -475,6 +479,12 @@ def main():
         help="消融模式只运行指定 MODULE_GROUP 行号（0-based），默认全部",
     )
     ap.add_argument("-e", "--seed_expm", action="store_true", help="开启随机种子实验")
+    ap.add_argument(
+        "--accel",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="加速后端开关（默认启用；--no-accel 关闭）",
+    )
 
     args = ap.parse_args()
 
@@ -485,7 +495,8 @@ def main():
         models=args.models,
         exp_ty=ExpTy(args.exp_type),
         seed_expm=args.seed_expm,
-        module_idx=args.module_idx
+        module_idx=args.module_idx,
+        accel=args.accel,
     ):
         if args.dry_run:
             print(run(exp, dry_run=True))

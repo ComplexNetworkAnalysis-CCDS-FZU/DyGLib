@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from utils.DataLoader import Data
 from utils.profiler import Profiler
+from utils import accel as _accel
 
 
 class NeighborType(Enum):
@@ -373,6 +374,32 @@ class DirectedNeighborSampler:
             zip(src_node_ids, dst_node_ids, node_interact_times)
         ):
             prof = Profiler()
+            # ---- M4 加速接缝（默认启用；--no-accel / SIGNDYG_ACCEL=0 关闭）----
+            # 与下方原路径逐位一致（K1 bit-exact 门禁验证）；启用时内核内部完成
+            # searchsorted 截断 + CN + RAS + look-forward + concat/sort，返回升序下标。
+            if _accel.on:
+                _nb = self.nodes_neighbors_selector(neighbor_ty)
+                with prof.timer("Sampling: Accel K1"):
+                    src_sel, dst_sel = _accel.kernel.core_sample(
+                        np.ascontiguousarray(_nb.ids[src_node_id], dtype=np.int64),
+                        np.ascontiguousarray(_nb.times[src_node_id], dtype=np.float64),
+                        np.ascontiguousarray(_nb.ids[dst_node_id], dtype=np.int64),
+                        np.ascontiguousarray(_nb.times[dst_node_id], dtype=np.float64),
+                        float(interact_time),
+                        k=self.common_neighbors_look_forward,
+                        repeat_aware=self.module_repeat_aware_sampler,
+                        src_id=int(src_node_id),
+                        dst_id=int(dst_node_id),
+                    )
+                src_nodes_neighbor_ids_list.append(_nb.ids[src_node_id][src_sel])
+                src_nodes_edge_ids_list.append(_nb.edges_ids[src_node_id][src_sel])
+                src_nodes_neighbor_times_list.append(_nb.times[src_node_id][src_sel])
+                src_nodes_neighbor_sign_list.append(_nb.signs[src_node_id][src_sel])
+                dst_nodes_neighbor_ids_list.append(_nb.ids[dst_node_id][dst_sel])
+                dst_nodes_edge_ids_list.append(_nb.edges_ids[dst_node_id][dst_sel])
+                dst_nodes_neighbor_times_list.append(_nb.times[dst_node_id][dst_sel])
+                dst_nodes_neighbor_sign_list.append(_nb.signs[dst_node_id][dst_sel])
+                continue
             # find neighbors that interacted with node_id before time node_interact_time
 
             with prof.timer("Sampling: History Neighbor"):

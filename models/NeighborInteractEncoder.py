@@ -6,6 +6,8 @@ import numpy as np
 import torch.nn.functional as F
 from torch.nn import MultiheadAttention
 
+from utils import accel as _accel
+
 
 class EncodeType(Enum):
     CoOccurredNeighbor = 0
@@ -256,6 +258,29 @@ class NeighborCooccurrenceEncoder(nn.Module):
         src_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
         dst_padded_nodes_neighbor_times: Optional[np.ndarray] = None,
     ):
+        # ---- M4 加速接缝（默认启用；--no-accel / SIGNDYG_ACCEL=0 关闭）----
+        # 与下方原路径逐位一致（K2 bit-exact 门禁验证）；内核返回 f32[B,L,2] numpy。
+        if _accel.on:
+            src_effect, dst_effect = _accel.kernel.bte_sign_effect(
+                src_nodes=src_nodes,
+                dst_nodes=dst_nodes,
+                src_padded_ids=src_padded_nodes_neighbor_ids,
+                dst_padded_ids=dst_padded_nodes_neighbor_ids,
+                src_padded_signs=src_padded_nodes_neighbor_sign,
+                dst_padded_signs=dst_padded_nodes_neighbor_sign,
+                src_padded_times=src_padded_nodes_neighbor_times,
+                dst_padded_times=dst_padded_nodes_neighbor_times,
+                query_times=node_interact_times,
+                time_decay_lambda=self.time_decay_lambda,
+                time_decay_gap_mode=self.time_decay_gap_mode.value,
+                time_scaling_factor=self.time_scaling_factor,
+                module_repeat_aware_sign_encoder=self.module_repeat_aware_sign_encoder,
+                zero_padding=True,
+            )
+            return (
+                torch.from_numpy(src_effect).to(self.device),
+                torch.from_numpy(dst_effect).to(self.device),
+            )
         src_padded_nodes_sign_effect, dst_padded_nodes_sign_effect = [], []
         # 对每个节点对（单个批次的每个节点）
         # src_padded_node_neighbor_ids, ndarray, shape (src_max_seq_length, )

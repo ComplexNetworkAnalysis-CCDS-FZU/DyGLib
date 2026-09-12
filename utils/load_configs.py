@@ -9,6 +9,7 @@ from models.SignDyGFormer import SignDyGFormer
 from models.DirectSignDyGFormer import DirectSignDyGFormer
 from models.NeighborInteractEncoder import TimeDecayGapMode
 from utils.noise import NoiseScope
+from utils import accel
 
 EarlyStopLiteral = Literal[
     "exist_recall",
@@ -151,6 +152,12 @@ class SignPredictArgs(BaseModel):
         True, description="历史共邻居采样感知模块"
     )
 
+    # ---- M4: 加速后端开关（命令行显式控制；默认启用）----
+    accel: bool = Field(
+        True,
+        description="启用 signdyg_accel 加速后端（默认启用；--no-accel 关闭，--accel 亦可显式启用）",
+    )
+
     ablation:bool =Field(False,description="消融实验模式")
 
     @property
@@ -208,6 +215,12 @@ class SignPredictArgs(BaseModel):
 def get_sign_prediction_args(is_evaluation=False):
     import pydantic_argparse
 
+    # M4：兼容显式 `--accel`——pydantic_argparse 对默认-True 布尔只生成 `--no-accel`，
+    # 这里把 `--accel` 视为“显式启用”（优先于环境变量）并从 argv 剥离，提前于解析执行。
+    _explicit_accel = "--accel" in sys.argv
+    if _explicit_accel:
+        sys.argv = [arg for arg in sys.argv if arg != "--accel"]
+
     parser = pydantic_argparse.ArgumentParser(SignPredictArgs)
 
     try:
@@ -215,6 +228,15 @@ def get_sign_prediction_args(is_evaluation=False):
     except:
         parser.print_help()
         sys.exit()
+
+    # M4：加速开关（CLI 优先 → 环境变量 SIGNDYG_ACCEL 兜底 → 未设=默认启用；
+    #     启动即严格校验，fail-fast）
+    if not args.accel:
+        accel.configure(False)
+    elif _explicit_accel:
+        accel.configure(True)
+    else:
+        accel.configure(None)
 
     return args
 
