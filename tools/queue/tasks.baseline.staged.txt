@@ -1,0 +1,12 @@
+# tasks.baseline.staged.txt — 外部基线任务（暂存区，不参与执行）
+#
+# 用途：把「基线轨」（DynamiSE/DySDGNN 复现等外部基线）编排进服务器连续队列的候选任务行。
+# 状态：⏸ 暂存 —— 待前置条件满足后，再追加到 tools/queue/tasks.txt 末尾（经用户批准）：
+#   1) Baseline 提交接入汇报（commit hash / 依赖 / M5 命令与耗时 / 幂等性）——已发 HANDOFF 2026-09-12；
+#   2) 服务器部署 git 化：~/DynamiSE_DySDGNN_repro 现为 09-09 tar+scp 旧拷贝（无 git），需新建裸库 push/clone 替换；
+#   3) gc 环境依赖：已实测缺 torchdiffeq（ModuleNotFoundError），需安装（服务器侧改动，待用户许可）。
+#
+# 语法：daemon 支持以 @ 开头的原生命令（与 tasks.txt 同款）；@GPU@ 会被替换为当前分配的卡号（0/1）。
+# 参考行（最终以 Baseline 汇报的精确命令为准）：
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DynamiSE --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYNAMISE_OK
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DySDGNN --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYSDGNN_OK

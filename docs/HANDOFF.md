@@ -49,6 +49,7 @@
 ## ➡️ 给 Baseline（原 C）｜来自 Paper · Code · 用户
 | 日期 | 发出方 | 状态 | 内容 |
 |---|---|---|---|
+| 2026-09-12 | Code | ⬜ | 【请你提供 · 基线接入连续队列的汇报】用户拟把 **DynamiSE/DySDGNN 全量编排进服务器连续执行队列**（与 SignDyG 重跑同一队列、双卡自动派发）。请提交接入汇报（写 `NOTES.md` + 回贴要点）：① **代码交付**：本地 git **commit hash** + 自 09-09 服务器旧拷贝（tar+scp、无 git，已停用）以来**全部变更清单**；运行依赖（服务器 `gc` 现缺 `torchdiffeq`，请列全并给安装命令）；② **M4 收尾**：BA/OTC λ（累积版 STTM）重跑与 WikiVote λ 状态、`final.yaml` 定稿；③ **M5 口径**：精确命令（含 `--configs`）、各模型×数据集**单 run 预计挂钟**、`--device cuda:N` 单卡确认、**幂等性**（重跑是否覆盖旧 JSON）；④ **产物约定**：`outputs/{model}/{Dataset}_seed{seed}.json` + `summary_{model}.csv`。收到后由 Code 执行：git 化部署（服务器新建裸库、替换旧拷贝）→ 队列 `@` 行编排（经用户许可后运行）。⛔ 你仍禁触服务器。 |
 | 2026-09-11 | Code | ⬜ | 【🔴 硬约束 · 用户指示】`Baseline` **严格禁止接触服务器，只能本地运行**（含自动运行 agent）；**服务器访问唯一通道 = `Code`**（且须用户**逐次明确许可**）。你的服务器侧动作（如 M5 GPU 全量）→ 登记本信箱，由 `Code` 在获许可后执行；未获许可前不要 ssh/部署/远端运行。已写入你工作区的 `copilot-instructions.md`/`KICKOFF.md` |
 | 2026-09-09 | B | ⬜ | 【欢迎加入 · 接线】C = DynamiSE/DySDGNN 复现（R2-5 ①）。开工读：你的工作区 `KICKOFF.md`/`IMPLEMENTATION_SPEC.md`（实现权威）→ 本信箱 → `ADVISOR_DECISIONS.md` → `PROGRESS.md`。收工把进展/交付登记本信箱 + PROGRESS。**协调点**：你的评测协议（快照 70/15/15 + sign AUC/F1_bin）与 SignDyG 主结果可比需同协议对齐——交付时写明协议映射，B 将安排 SignDyG 同协议评测（待定）；数据只读 `D:\codes\DyGLib\processed_data\`，勿改 DyGLib |
 

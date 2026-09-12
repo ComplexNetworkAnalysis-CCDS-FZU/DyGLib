@@ -69,6 +69,12 @@ def main() -> int:
             if a == a and b == b:
                 print(f"  > Δ{k} (TD-TE) = {a - b:+.4f}")
     print()
+    g = show("E-5 sign RT（NN-100 LF-1, 5 seeds）", "results/E-5_significance/raw/sign/*.json")
+    mean_line("sign RT", g)
+    print()
+    g = show("E-5 linksign RT（NN-60 LF-1, 5 seeds）", "results/E-5_significance/raw/linksign/*.json")
+    mean_line("linksign RT", g)
+    print()
     g = show("主表 sign RT（NN-100 LF-1, 5 seeds）", "results/main_tables/raw/sign/RedditHyperlinkTitle/*.json")
     mean_line("sign RT", g)
     print()
