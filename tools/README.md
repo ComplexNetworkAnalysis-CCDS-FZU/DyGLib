@@ -29,6 +29,7 @@
 - `repeat_sign_stats.py` — 统计各数据集**重复交互率**与**重复对符号翻转率**（用于解释 RAS/RAE 的作用面；BA/OTC 重复率 ~80% 但翻转率仅 2.5%，WikiVote 翻转率 33% 但重复率仅 6.9%）。
 - `cn_quirk_analysis.py` — **CN 伪交集怪癖分析**（玩具探针 + 真实数据量化：伪 CN 查询占比/采样输出差异率）；结论见 `docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。用法：`python tools/verify/cn_quirk_analysis.py [--queries 2000]`。
 - `snapshot_results.py` — **结果快照**：从本地 `results/**/raw/`（已同步归档）快速汇总 E-3/E-4/E-5sign/主表 sign 各组指标（auc/ap/sign_f1 明细 + 5 种子 mean±pstd）。用法：`python tools/verify/snapshot_results.py`（不访问服务器）。
+- `split_handoff.py` — **一次性迁移（2026-09-12）**：`docs/HANDOFF.md` 单文件信箱 → `docs/handoff/outbox-*.md`「一人一箱」（按节+发出方路由；条目内容逐字保留，仅把「发出方」列改为「收件人」列）。
 
 ### tools/sync/
 - `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|main-b|main-c|all`（`main-*` = 主表分批次；其余批次随完成逐步新增）。**服务器访问须用户逐次明确许可。**

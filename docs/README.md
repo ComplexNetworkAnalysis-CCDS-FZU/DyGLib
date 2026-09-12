@@ -12,7 +12,7 @@
 | `REVIEWER_COMMENTS.md` | 两位审稿人**完整意见归档** + 应对映射 | 参考（原始意见） | 一次性归档 |
 | `EXPERIMENT_PLAN.md` | **实验运行计划**（顺序、命令、数据集） | 执行依据（随决策更新） | 计划变化时 |
 | `PROGRESS.md` | **进度状态**（各实验状态、结果、更新日志） | 状态记录 | 每次实验后 |
-| `HANDOFF.md` | **双 Agent 交接信箱**（消息中转，勿放长文） | 消息记录（非权威） | 任务结束/有新请求时 |
+| `HANDOFF.md` + `handoff/outbox-*.md` | **交接信箱**（2026-09-12 拆箱：入口页 + 一人一箱发件箱；消息中转，勿放长文） | 消息记录（非权威） | 任务结束/有新请求时 |
 | `REPORT_TO_ADVISOR.md` | 导师汇报（2026-09-01 版） | 历史快照 | 低频 |
 
 ## 决策流向（更新顺序）
@@ -33,7 +33,7 @@ EXPERIMENT_PLAN.md → 执行实验
 
 > 仓库根 `AGENTS.md` = 协作契约（本工作区会话自动加载）；
 > Agent A 工作区 `D:\Sign_DygFormer` 与 Agent C 工作区 `D:\codes\DynamiSE_DySDGNN_repro` 根各有 `copilot-instructions.md` 指针（绝对路径指向本目录）。
-> 信息流：`agent → HANDOFF.md / PROGRESS.md → agent`，无需用户逐条转述。
+> 信息流：`agent → docs/handoff/outbox-<自己>.md / PROGRESS.md → agent`（2026-09-12 拆箱：一人一箱，规则见 `HANDOFF.md` 入口页），无需用户逐条转述。
 > 单一事实源 = 本目录；同机绝对路径读写即时互见。
 > **Agent C**：DynamiSE/DySDGNN 基线复现（R2-5 方案①），权威 = 其工作区 `IMPLEMENTATION_SPEC.md`，数据只读本仓库 `processed_data/`。
 

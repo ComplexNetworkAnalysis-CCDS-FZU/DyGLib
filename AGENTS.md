@@ -10,8 +10,8 @@
 - `docs/AGENTS_REGISTRY.md` Agent 注册表（身份/职责唯一权威）；`docs/REVIEWER_COMMENTS.md` 审稿归档；`docs/EXPERIMENT_PLAN.md` 实验计划；`docs/PROGRESS.md` 进度与结果。
 
 ## 开工必读 / 收工必写
-1. 会话开始：读 `docs/HANDOFF.md`（信箱）→ `docs/ADVISOR_DECISIONS.md` → 相关 `docs/PROGRESS.md`。
-2. 任务结束：更新 `docs/PROGRESS.md`；给对方的交付/请求登记 `docs/HANDOFF.md`（【日期|发出方|状态⬜→🔄→✅】，署名用代号，接收方处理后改状态）。
+1. 会话开始：读 `docs/HANDOFF.md`（信箱**入口**+速览；**2026-09-12 起已拆箱：一人一箱**）→ 读 `docs/handoff/` 其余发件箱中「收件人=自己」的行 → `docs/ADVISOR_DECISIONS.md` → 相关 `docs/PROGRESS.md`。
+2. 任务结束：更新 `docs/PROGRESS.md`；交付/请求写到**自己的发件箱** `docs/handoff/outbox-<角色>.md`（【日期|收件人|状态⬜→🔄→✅】，署名用代号）；收件方处理后在**自己箱内发回执**，发件人把状态改 ✅（勿编辑他人文件）。
 3. `Paper` / `Baseline` / `Perf` 在其他工作区：以绝对路径 `D:\codes\DyGLib\docs\` 直接读写（同机即时互见），各自工作区根已有 `copilot-instructions.md` 指针。
 
 ## 修改纪律

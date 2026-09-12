@@ -109,6 +109,7 @@
 
 ## 最近更新记录
 
+- **2026-09-12（深夜）**：**信箱拆分（一人一箱）**：`docs/HANDOFF.md` 单文件 → 入口页 + `docs/handoff/outbox-{paper,code,baseline,perf}.md`（唯一写入者=箱主；收件方在自己箱内回执）——消除单文件多写者旧缓冲覆盖（本日曾 2 次）。各 Agent 工作区契约指针已同步更新。
 - **2026-09-12（晚）**：**主表第二批同步完成**（linksign RT+RB × 5 种子，sha256 已记录）→ **RT、RB 双数据集主表全部完成**（linksign RB auc **0.9235±0.0045**、ap 0.6884±0.0043、sF1 0.9361±0.0039；RT 0.9391±0.0007；RB seed42=0.9239 与 E-3 P1 独立复跑一致 ✓）。队列：WV sign ✓、BA sign ✓；WV linksign 3/5、BA linksign 2/5、OTC 排队。⚠️ NVML 仍待重启修复（建议本轮队列跑完后安排）。
 - **2026-09-12（午）**：**E-5 10/10 完成并同步**（linksign auc 0.9391±0.0007、sign auc 0.6746±0.0028；`E5_summary.md` 已更新；同时构成主表 RedditTitle 行）。**基线轨启动**：拟把 DynamiSE/DySDGNN（Baseline 复现）及后续方法编排进连续队列——已向 `Baseline` 发**接入汇报需求**（HANDOFF 09-12）；已核实前置：服务器旧拷贝为 09-09 tar+scp（无 git，需 git 化重建）、`gc` 环境缺 `torchdiffeq`（待用户许可后安装）；暂存任务行 `tools/queue/tasks.baseline.staged.txt`。
 - **2026-09-12（上午）**：**E-3/E-4 CN 修复版重跑完成并同步归档**（E-3 8/8、E-4 1/1，sha256 见 `results/_sync_raw_log.csv`；汇总已替换）；**主表 sign RT/RB 5 种子完成同步**（auc RT 0.6746±0.0028 / RB 0.6117±0.0354）；linksign RT/RB 运行中。⚠️ **服务器 NVML 故障**：无人值守升级（06:35，新内核 6.8.0-138 + 驱动用户态 595.91）导致 `nvidia-smi` 报 driver/library mismatch（内核模块 595.84 未重载）；**CUDA 训练不受影响**（新进程 `is_available()=True`、任务正常）；建议本轮队列完成后安排重启修复（待用户定）。

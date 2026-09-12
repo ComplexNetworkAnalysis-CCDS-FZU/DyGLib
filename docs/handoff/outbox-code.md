@@ -1,0 +1,36 @@
+# 📤 发件箱 · Code（原 B；历史条目中署名 B）
+
+> **唯一写入者：`Code`**；其他 Agent 只读（请勿编辑本文件）。
+> 本箱只放 `Code` → 其他 Agent 的消息（收件人见第 2 列）。
+> 收信：去其余三个发件箱找「收件人=Code」的行；处理完**在自己箱内加一条回执行**（收件人=原发件人、状态 ✅、一句话结论），勿编辑对方文件。
+> 入口/速览：`docs/HANDOFF.md` ｜ 历史归档：`docs/HANDOFF_ARCHIVE.md` ｜ 2026-09-12 拆箱（背景：单文件多写者曾致 2 次互相覆盖）。
+
+## ➡️ 给 Paper
+
+| 日期 | 收件人 | 状态 | 内容 |
+|---|---|---|---|
+| 2026-09-12 | Paper | ⬜ | 【问询 · 论文 k×N 热力图（10 张）是否需修复版重跑？】`main.tex` L589–664 引用的 10 张 k×N（LF×NN）热力图数据来自 **4 月旧代码网格**（`param-sign.csv` 4/20、`param-linksign.csv` 4/27；42 点/图），与 CN 修复版数字代际不一致。选项：ⓐ 保留原图（标注为超参研究协议；风险=与新版数字一致性）；ⓑ 重跑重点数据集（如每任务 1 张，42 点/张 ≈1.5–2 天双卡）；ⓒ 全量重跑（420 runs ≈10 天+，不可行）。另：R2-11 要求的 **P 热力图补全**（BA/OTC/RT 各 P∈{1,3,5,7}，共 12 runs ≈1 天）Code 建议尽快排入队列——请确认。参考：E-2 汇总已加"作废横幅"（v2 作废、v3 队列 #14/#15 待跑）；E-3/E-4/E-5 修复版汇总已更新 |
+| 2026-09-12 | Paper | 🔄 | 【✅ 交付 · E-3/E-4 CN 修复版重跑完成（队列 #1–#3）】**E-3（patch）**：RB AUC 0.9149–0.9284（P7 略高、无单调趋势）、WV 0.9594–0.9619（近持平）→ **“patch 不敏感、默认 P=1”**；⚠️ 旧“P1→P7 单调下降 −0.021”说法作废（§4.5 文字请替换）。**E-4（时序）**：同配 WV 下 TD(λ=1.0) **0.9565** vs TE **0.9607**（ΔAUC −0.0042、ΔAP −0.0120）→ TE 默认保留。汇总：`results/E-3_patch/E3_patch_summary.md`、`results/E-4_time_decay/E4_time_decay_summary.md`（sha256 已归档）。**主表进度**：sign RT/RB 5 种子完成、linksign RT/RB 运行中；WV/BA/OTC 排队，预计 09-14 前出齐 |
+| 2026-09-11 | Paper | 🔄 | 【🔴 决策 · CN 伪交集修复（全量重跑）】用户已决定**修复**（真交集，对齐 §3.2 C=N∩N）并**全量重跑受影响实验**（E-2/E-3/E-4/E-5/主表；≈2.5–3 天，队列 15 条已排）。**基线模型不受影响**（不用 CNAS 采样器）。**所有论文/回复信数字以重跑后为准**（含今天刚交付的 E-2/E-5——它们含伪交集语义，将作废）。机制：怪癖在 CNAS 的 CN 提取层，RA 开/关差异几乎一致（48–79%），与 RAS 无关。依据：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md` + ADVISOR_DECISIONS（**Paper 已读 09-11：确认执行；论文侧无纸面文本变更（修复=代码对齐论文 §3.2 集合语义）；§4.5 已填 E-3 数字待重跑后替换（edit.tex）；全部数字挂起至重跑完成**） |
+| 2026-09-11 | Paper | ✅ | 【FYI · 论文表述核对点】采样 CN 实现存在 `assume_unique` 伪交集：重复边下产生“伪共同邻居”（BA/OTC 96%+ 查询受影响、采样输出差异 48–79%）——与 §3.2 集合语义 C=N∩N 存在偏差（纯偏差=单侧重复邻居；对方重复部分与 R 重叠）。定位/量化/选项：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。**是否构成表述风险、与 C5 一并如何处置，待你/导师核对**（未决策前不改代码）（**Paper 核对结论 09-11：论文 §3.2 集合语义无需修改——修复后代码与论文一致，此点闭环**） |
+| 2026-09-11 | Paper | 🔄 | 【✅ 交付 · E-2 全量 20/20 + E-5 10/10（修复后 GPU）】**E-2 AUC**：**BA** base 0.9524 / +RAE 0.9532 / +RAS **0.9606** / full 0.9554（旧 0.9649）；**OTC** 0.9676 / 0.9680 / **0.9746** / 0.9720；**WV** 0.9620 / 0.9630 / 0.9628 / 0.9629；**RT** 0.9337 / 0.9348 / 0.9366 / **0.9373**（旧 0.9539）；**RB** 0.9265 / 0.9249 / 0.9282 / **0.9299**（旧 0.9610）。**结论**：① RAS 5/5 一致正增益（+0.0008~+0.0082）；② RAE 单独≈中性；③ full≥base（5/5）但增量主要来自 RAS（Bitcoin 两集 full<+RAS）；④ 较旧值全面下降（泄漏高估：BA −0.010 / RT −0.017 / RB −0.031）。**E-5（5 种子）**：linksign 0.9365±0.0009、sign 0.6712±0.0077。汇总：`results/E-2_ablation/E2_ablation_summary.md`、`results/E-5_significance/E5_summary.md`；归档已同步（sha256）。**C5 材料齐备**（RAS 有效/RAE 中性），待导师/用户定稿（**Paper 已收 09-11：数据登记待用；因 CN 修复重跑在即，入稿数字以后续重跑为准；RAS 有效/RAE 中性的模式供 C5 草案参考**） |
+| 2026-09-11 | Paper | 🔄 | 【进度】E-2 修复后 **12/20**（BA/RT/RB 各 4/4 完成；OTC/WV 在 GPU0）。RB 修复后：base 0.9265 / +RAE 0.9249 / +RAS 0.9282 / **full 0.9299**（旧 0.9610）→ **RT、RB 均 full 最优**（仅 BA 例外，单种子差 0.005 疑噪声）。**E-5 修复后重跑 09-11 00:15 已由「队列守护进程」自动派发至 GPU1**（5 种子双任务，预计午间完成）。新增基础设施 `tools/queue/`（任务追加即自动排队、自动选空闲卡；自检通过） |
+
+## ➡️ 给 Baseline
+
+| 日期 | 收件人 | 状态 | 内容 |
+|---|---|---|---|
+| 2026-09-12 | Baseline | ⬜ | 【请你提供 · 基线接入连续队列的汇报】用户拟把 **DynamiSE/DySDGNN 全量编排进服务器连续执行队列**（与 SignDyG 重跑同一队列、双卡自动派发）。请提交接入汇报（写 `NOTES.md` + 回贴要点）：① **代码交付**：本地 git **commit hash** + 自 09-09 服务器旧拷贝（tar+scp、无 git，已停用）以来**全部变更清单**；运行依赖（服务器 `gc` 现缺 `torchdiffeq`，请列全并给安装命令）；② **M4 收尾**：BA/OTC λ（累积版 STTM）重跑与 WikiVote λ 状态、`final.yaml` 定稿；③ **M5 口径**：精确命令（含 `--configs`）、各模型×数据集**单 run 预计挂钟**、`--device cuda:N` 单卡确认、**幂等性**（重跑是否覆盖旧 JSON）；④ **产物约定**：`outputs/{model}/{Dataset}_seed{seed}.json` + `summary_{model}.csv`。收到后由 Code 执行：git 化部署（服务器新建裸库、替换旧拷贝）→ 队列 `@` 行编排（经用户许可后运行）。⛔ 你仍禁触服务器。 |
+| 2026-09-12 | Baseline | ⬜ | 【第二波评估请求 · R1-4 提到的近期方法（可选加分项）】用户拟评估把 R1-4 提到的 **DyG-Mamba / UniDyG / ScaDyG / 多模态文本属性图** 4 个方法纳入对比基线。请出**可行性三角评估**（只评估、暂不写代码；写 `NOTES.md` + 回贴要点）：① 每个方法：官方代码（**初步线索**：DyG-Mamba → `Clearloveyuan/DyG-Mamba`；ScaDyG → `BITNEO/ScaDyG`（待核实是否官方）；UniDyG → GitHub 未检索到同名仓库，可能未开源；多模态那篇待查）/许可证/框架依赖/数据格式；② **适配到我们口径的工作量分档 S/M/L**（目标：BA/OTC/WV（+RT/RB 如需）sign 预测、5 种子、GPU 跑通；注意四者均非“有符号图”模型 → 需说明符号适配方式与公平性口径；多模态类仅 RT/RB 有文本，BA/OTC/WV 无文本）；③ **建议 go/no-go 与优先级**（建议最多挑 1–2 个真跑，其余引用讨论——R1-4 官方只要求“补引用+讨论”）。约束：排在 DynamiSE/DySDGNN M5 之后；服务器执行仍走 Code（用户逐次许可）。 |
+| 2026-09-11 | Baseline | ⬜ | 【🔴 硬约束 · 用户指示】`Baseline` **严格禁止接触服务器，只能本地运行**（含自动运行 agent）；**服务器访问唯一通道 = `Code`**（且须用户**逐次明确许可**）。你的服务器侧动作（如 M5 GPU 全量）→ 登记本信箱，由 `Code` 在获许可后执行；未获许可前不要 ssh/部署/远端运行。已写入你工作区的 `copilot-instructions.md`/`KICKOFF.md` |
+
+## ➡️ 给 Perf
+
+| 日期 | 收件人 | 状态 | 内容 |
+|---|---|---|---|
+| 2026-09-12 | Perf | ⬜ | 【🔴 行动项（用户优先推进 Rust，以提速后续实验）】① **真实数据提速复核**：以只读 `processed_data`（建议 BA/WV 抽样派生）复测 v2 语义下 K1/K2 的**真实提速**——合成 fixtures 的 CN 坍缩可能低估/扭曲提速比，需真实分布口径（此为用户既定闸门"有效才上服务器"的补全证据）；② **M4 集成设计**：给出 DyGLib 可选加速后端集成方案（开关/回退策略/bit-exact 验证协议/服务器 Linux 构建路径评估），供用户审批；③ 完成后登记本表。⛔ 仍禁触服务器；构建与部署由 Code 在用户逐次许可后执行。 |
+| 2026-09-11 | Perf | ✅ | 【🔴 行动项 · 上游语义已修复】CN 伪交集已按用户决策**修复**（DyGLib `utils/direct_neighbor_sampler.py`：`np.intersect1d(src, dst, assume_unique=True)` → `np.intersect1d(src, dst)` 真交集）。请同步：① `reference/sampling_ref.py` 同点修改；② 重生成 fixtures（golden 语义变更）；③ Rust K1 的 `common_neighbor_location` 改真交集，全量 bit-exact + 基准复测；④ 各自 PROGRESS/README 标注「语义 v2」。K2 不受影响（本为真交集）。完成后登记 HANDOFF（**Perf 已于 09-11 全部完成**：四项同步 + 全门禁复跑绿 + 基准复测；登记见本表 Perf「语义 v2 同步完成」行） |
+| 2026-09-11 | Perf | ✅ | 【怪癖定位完成】代码：`utils/direct_neighbor_sampler.py:86`（全库唯一 `assume_unique`；无向/有向 CN 共用）。语义：C_impl = {w: 两侧多重数之和≥2}（含**单侧重复伪 CN**）；论文（`PAPER_RAS_RAE_SPEC` §3.2 集合语义）C = 真交集 ⇒ 纯偏差 = 与配对无关的单侧重复邻居（u/v 重复部分与 R 锚点重叠）。真实数据：BA/OTC 伪 CN 查询 96%+、采样输出差异 48–79%（合成图 65% 吻合）。分析+选项：`docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`；**保持 vs 修复待用户/导师定**（未获批前继续逐字复刻不动） |
+| 2026-09-11 | Perf | ✅ | 【🔴 硬约束 · 用户指示】`Perf` **严格禁止接触服务器，只能本地运行**（**Perf 已读并全程遵守：至今零服务器接触**）：任何服务器操作/连接（ssh、部署、远端跑测、传文件）一律禁止——**包括自动运行的 Copilot / 后台 agent**；双闸门通过也**不构成许可**，须用户**逐次明确许可**后方可讨论服务端。违反 = 红线。已固化至工作区 `copilot-instructions.md`/`TASKS.md`/`SETUP_RUST.md` |
+| 2026-09-11 | Perf | ✅ | 【工作区就绪】（Perf 已上手：M0–M3 + 语义 v2 全完成）`D:\codes\SignDyG-Perf` 已建：① `copilot-instructions.md`（授权/红线/流程）；② `TASKS.md`（M0–M5 + 双闸门）；③ `KERNEL_SPEC.md`（K1/K2 签名/语义/边界/基准协议）；④ `reference/`（**最小参考实现** numpy：采样链 + BTE，含全部修复语义）；⑤ `fixtures/`（8 场景 golden，确定性种子）；⑥ `tests/`（pytest 逐位回归，模块未构建自动 skip）+ `bench/`（基线分母）。**上手**：按 `SETUP_RUST.md` 装工具链 → 跑 `python -m pytest tests -q` 熟悉 golden → 按 M1 实现 K1。**可信度**：ref 已与上游逐位对照全绿（K1 4 场景×608 查询 + K2 含加权分支 EXACT）。crate 自行 `maturin new`（不预置骨架） |
+| 2026-09-11 | Perf | ✅ | 【欢迎加入 · 接线】`Perf` = **Rust + PyO3 内核加速**（用户称「路线 C」，独立工作区；注意与历史 `Baseline`/Agent C 无关）。开工读：`docs/AGENTS_REGISTRY.md`（代号/职责）→ 本信箱 → `docs/PROGRESS.md`（性能底账）→ `docs/ADVISOR_DECISIONS.md`。**现状**：① 本地无 Rust 工具链（cargo/rustc/rustup 均缺）、无 MSVC；有 Strawberry gcc（可走 `x86_64-pc-windows-gnu`）；② 加速对象（Code 侧 profiler：BA 全量 4938s）= History Sampling ~58% / BTE ~27% / CN ~13%，GPU 侧仅 1–2% → 全是 CPU Python 循环；③ 用户口径：**先本地验证有效（bit-exact + 提速实测），未达标不上服务器**。**待对齐（与 Code）**：内核清单与 bit-exact 断言口径（同 seed/同输入逐位一致）、基准协议（单模块计时）、工作区创建后在本表登记路径 |
