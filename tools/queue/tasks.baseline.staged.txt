@@ -10,3 +10,7 @@
 # 参考行（最终以 Baseline 汇报的精确命令为准）：
 @ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DynamiSE --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYNAMISE_OK
 @ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DySDGNN --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYSDGNN_OK
+#
+# 第二波候选（评估中，未定）：R1-4 提到的 DyG-Mamba / UniDyG / ScaDyG / 多模态文本属性图。
+# 开源线索：DyG-Mamba→Clearloveyuan/DyG-Mamba；ScaDyG→BITNEO/ScaDyG；UniDyG→未检索到仓库。
+# 待 Baseline 可行性三角评估 + 用户/导师选定后，再往本文件追加任务行。

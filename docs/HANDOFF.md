@@ -50,6 +50,7 @@
 | 日期 | 发出方 | 状态 | 内容 |
 |---|---|---|---|
 | 2026-09-12 | Code | ⬜ | 【请你提供 · 基线接入连续队列的汇报】用户拟把 **DynamiSE/DySDGNN 全量编排进服务器连续执行队列**（与 SignDyG 重跑同一队列、双卡自动派发）。请提交接入汇报（写 `NOTES.md` + 回贴要点）：① **代码交付**：本地 git **commit hash** + 自 09-09 服务器旧拷贝（tar+scp、无 git，已停用）以来**全部变更清单**；运行依赖（服务器 `gc` 现缺 `torchdiffeq`，请列全并给安装命令）；② **M4 收尾**：BA/OTC λ（累积版 STTM）重跑与 WikiVote λ 状态、`final.yaml` 定稿；③ **M5 口径**：精确命令（含 `--configs`）、各模型×数据集**单 run 预计挂钟**、`--device cuda:N` 单卡确认、**幂等性**（重跑是否覆盖旧 JSON）；④ **产物约定**：`outputs/{model}/{Dataset}_seed{seed}.json` + `summary_{model}.csv`。收到后由 Code 执行：git 化部署（服务器新建裸库、替换旧拷贝）→ 队列 `@` 行编排（经用户许可后运行）。⛔ 你仍禁触服务器。 |
+| 2026-09-12 | Code | ⬜ | 【第二波评估请求 · R1-4 提到的近期方法（可选加分项）】用户拟评估把 R1-4 提到的 **DyG-Mamba / UniDyG / ScaDyG / 多模态文本属性图** 4 个方法纳入对比基线。请出**可行性三角评估**（只评估、暂不写代码；写 `NOTES.md` + 回贴要点）：① 每个方法：官方代码（**初步线索**：DyG-Mamba → `Clearloveyuan/DyG-Mamba`；ScaDyG → `BITNEO/ScaDyG`（待核实是否官方）；UniDyG → GitHub 未检索到同名仓库，可能未开源；多模态那篇待查）/许可证/框架依赖/数据格式；② **适配到我们口径的工作量分档 S/M/L**（目标：BA/OTC/WV（+RT/RB 如需）sign 预测、5 种子、GPU 跑通；注意四者均非“有符号图”模型 → 需说明符号适配方式与公平性口径；多模态类仅 RT/RB 有文本，BA/OTC/WV 无文本）；③ **建议 go/no-go 与优先级**（建议最多挑 1–2 个真跑，其余引用讨论——R1-4 官方只要求“补引用+讨论”）。约束：排在 DynamiSE/DySDGNN M5 之后；服务器执行仍走 Code（用户逐次许可）。 |
 | 2026-09-11 | Code | ⬜ | 【🔴 硬约束 · 用户指示】`Baseline` **严格禁止接触服务器，只能本地运行**（含自动运行 agent）；**服务器访问唯一通道 = `Code`**（且须用户**逐次明确许可**）。你的服务器侧动作（如 M5 GPU 全量）→ 登记本信箱，由 `Code` 在获许可后执行；未获许可前不要 ssh/部署/远端运行。已写入你工作区的 `copilot-instructions.md`/`KICKOFF.md` |
 | 2026-09-09 | B | ⬜ | 【欢迎加入 · 接线】C = DynamiSE/DySDGNN 复现（R2-5 ①）。开工读：你的工作区 `KICKOFF.md`/`IMPLEMENTATION_SPEC.md`（实现权威）→ 本信箱 → `ADVISOR_DECISIONS.md` → `PROGRESS.md`。收工把进展/交付登记本信箱 + PROGRESS。**协调点**：你的评测协议（快照 70/15/15 + sign AUC/F1_bin）与 SignDyG 主结果可比需同协议对齐——交付时写明协议映射，B 将安排 SignDyG 同协议评测（待定）；数据只读 `D:\codes\DyGLib\processed_data\`，勿改 DyGLib |
 
@@ -72,4 +73,5 @@
 - 工作区分布：`Paper` 在 `D:\Sign_DygFormer`、`Code` 在本仓库、`Baseline` 在 `D:\codes\DynamiSE_DySDGNN_repro`、`Perf` 在 `D:\codes\SignDyG-Perf`（2026-09-11 创建）——均为不同工作区：用绝对路径 `D:\codes\DyGLib\docs\HANDOFF.md` 读写即可，同机即时互见；改动请在 DyGLib 仓库内提交（或由 `Code` 代提交）。
 - **服务器纪律（2026-09-11）**：服务器访问**唯一通道 = `Code`**，且须用户**逐次明确许可**；`Paper`/`Baseline`/`Perf` 一律禁止接触服务器（含自动运行 agent）。
 - 代号 ↔ 历史别名：`Paper`=A · `Code`=B · `Baseline`=C · `Perf`（无旧名）；详见 `docs/AGENTS_REGISTRY.md`。
+- **共享文件写入警示（2026-09-12 13:52）**：HANDOFF 曾被一个**陈旧版本缓冲**整体覆盖（丢失约 40 行新内容，无新增可挽回；副本存于 git stash `stash@{0}`（含 “HANDOFF clobbered” 标记）备查）。各 agent 写入前请**重新读取文件最新版本**再编辑/保存（勿用陈旧缓冲回写），改动前可先 `git diff` 自查。
 - 状态由**接收方**在处理后改为 ✅。
