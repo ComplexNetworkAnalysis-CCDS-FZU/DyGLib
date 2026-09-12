@@ -31,7 +31,7 @@
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **完成（CN 修复版，2026-09-12）** | 8/8：RB AUC 0.9149–0.9284（无单调趋势）、WV 0.9594–0.9619（近持平）→ patch 不敏感、默认 P=1 有据；已同步并替换 `results/E-3_patch/`（汇总已更新） |
 | E-4 时序 | linksign | WikiVote@20000 | ✅ **完成（CN 修复版，2026-09-12）** | TD 0.9565 vs TE 0.9607（ΔAUC −0.0042、ΔAP −0.0120、ΔsignF1 −0.0118）→ 同配下 TE 略优、默认 TE 保留；汇总 `results/E-4_time_decay/E4_time_decay_summary.md` |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **完成（CN 修复版，2026-09-12）** | linksign auc **0.9391±0.0007**（ap 0.7184±0.0004、sF1 0.8779±0.0077）；sign auc **0.6746±0.0028**（ap 0.9401±0.0019）；汇总已替换；p 值待基线同口径数据（基线轨见 HANDOFF 09-12） |
-| 主表重跑 | sign + linksign | 5 数据集 | 🔄 **进行中（CN 修复版队列）** | sign RT/RB 已同步（auc RT 0.6746±0.0028 / RB 0.6117±0.0354）；linksign RT/RB 运行中；WV/BA/OTC 排队；基线模型不受 CN 修复影响（Baseline 线独立） |
+| 主表重跑 | sign + linksign | 5 数据集 | 🔄 **进行中（CN 修复版，队列 8/15 完成）** | **RT、RB 双任务完成**（sign: RT 0.6746±0.0028 / RB 0.6117±0.0354；linksign: RT 0.9391±0.0007 / **RB 0.9235±0.0045**）；WV sign✓/linksign 3/5；BA sign✓/linksign 2/5；OTC 排队；基线模型不受 CN 修复影响（Baseline 线独立） |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
 **执行顺序（固定，不跳步）**：E-3(GPU重跑) → E-2(GPU) → E-4 → E-5 → 主表重跑
@@ -109,6 +109,7 @@
 
 ## 最近更新记录
 
+- **2026-09-12（晚）**：**主表第二批同步完成**（linksign RT+RB × 5 种子，sha256 已记录）→ **RT、RB 双数据集主表全部完成**（linksign RB auc **0.9235±0.0045**、ap 0.6884±0.0043、sF1 0.9361±0.0039；RT 0.9391±0.0007；RB seed42=0.9239 与 E-3 P1 独立复跑一致 ✓）。队列：WV sign ✓、BA sign ✓；WV linksign 3/5、BA linksign 2/5、OTC 排队。⚠️ NVML 仍待重启修复（建议本轮队列跑完后安排）。
 - **2026-09-12（午）**：**E-5 10/10 完成并同步**（linksign auc 0.9391±0.0007、sign auc 0.6746±0.0028；`E5_summary.md` 已更新；同时构成主表 RedditTitle 行）。**基线轨启动**：拟把 DynamiSE/DySDGNN（Baseline 复现）及后续方法编排进连续队列——已向 `Baseline` 发**接入汇报需求**（HANDOFF 09-12）；已核实前置：服务器旧拷贝为 09-09 tar+scp（无 git，需 git 化重建）、`gc` 环境缺 `torchdiffeq`（待用户许可后安装）；暂存任务行 `tools/queue/tasks.baseline.staged.txt`。
 - **2026-09-12（上午）**：**E-3/E-4 CN 修复版重跑完成并同步归档**（E-3 8/8、E-4 1/1，sha256 见 `results/_sync_raw_log.csv`；汇总已替换）；**主表 sign RT/RB 5 种子完成同步**（auc RT 0.6746±0.0028 / RB 0.6117±0.0354）；linksign RT/RB 运行中。⚠️ **服务器 NVML 故障**：无人值守升级（06:35，新内核 6.8.0-138 + 驱动用户态 595.91）导致 `nvidia-smi` 报 driver/library mismatch（内核模块 595.84 未重载）；**CUDA 训练不受影响**（新进程 `is_available()=True`、任务正常）；建议本轮队列完成后安排重启修复（待用户定）。
 - **2026-09-11（晚）**：用户决策**修复 CN 伪交集**（assume_unique→真交集）；受影响实验全量重排（队列 15 条，含 @ 原生命令支持）；旧结果作废，报告以重跑后为准。**22:20 修复版已部署至服务器（pull→`9d658a9`），本地/服务器双层语义校验通过（keys=[2]）；新队列守护进程 pid=239314 启动，task#1 E-4 TD（GPU0 pid=239335）与 task#2 E-3 RB（GPU1 pid=239435）已上卡。**

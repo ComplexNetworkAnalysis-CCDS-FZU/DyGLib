@@ -80,6 +80,12 @@ def main() -> int:
     print()
     g = show("主表 sign RB（NN-60 LF-1, 5 seeds）", "results/main_tables/raw/sign/RedditHyperlinkBody/*.json")
     mean_line("sign RB", g)
+    print()
+    g = show("主表 linksign RT（NN-60 LF-1, 5 seeds）", "results/main_tables/raw/linksign/RedditHyperlinkTitle/*.json")
+    mean_line("linksign RT", g)
+    print()
+    g = show("主表 linksign RB（NN-80 LF-3, 5 seeds）", "results/main_tables/raw/linksign/RedditHyperlinkBody/*.json")
+    mean_line("linksign RB", g)
     return 0
 
 

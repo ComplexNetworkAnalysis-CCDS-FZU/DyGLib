@@ -12,7 +12,7 @@
 | **E-3** Patch 消融（P∈{1,3,5,7}） | ✅ CN 修复版重跑 8/8（2026-09-12） | `E-3_patch/E3_patch_summary.md` | `E-3_patch/raw/`（8 files） |
 | **E-4** 时序（TE vs TD） | ✅ CN 修复版重跑（2026-09-12） | `E-4_time_decay/E4_time_decay_summary.md` | `E-4_time_decay/raw/` |
 | **E-5** 显著性（双任务 × 5 种子） | ✅ CN 修复版重跑 10/10（2026-09-12）；汇总已更新 | `E-5_significance/E5_summary.md` | `E-5_significance/raw/`（10 files） |
-| **主表**（CN 修复版重跑 + 基线） | 🔄 进行中：sign RT/RB 已同步；linksign RT/RB 运行中；WV/BA/OTC 排队 | `main_tables/` | `main_tables/raw/sign/{RT,RB}`（10 files） |
+| **主表**（CN 修复版重跑 + 基线） | 🔄 RT、RB 双任务完成（20 files）；WV sign✓/linksign 3/5；BA sign✓/linksign 2/5；OTC 排队 | `main_tables/` | `main_tables/raw/{sign,linksign}/{RedditHyperlinkTitle,RedditHyperlinkBody}` |
 
 ## 约定
 - 所有表格数据 = **GPU 基座 + 修复后代码**（RAE bug 已修 + `.P` 标记命名 + JSON 含 `device`）。
