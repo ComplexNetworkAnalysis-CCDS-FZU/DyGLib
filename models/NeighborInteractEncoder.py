@@ -440,6 +440,18 @@ class NeighborCooccurrenceEncoder(nn.Module):
         :param dst_padded_nodes_neighbor_ids:: ndarray, shape (batch_size, dst_max_seq_length)
         :return:
         """
+        # ---- accel 接缝（默认启用；--no-accel / SIGNDYG_ACCEL=0 关闭）----
+        # numpy 全批次向量化（2026-09-14 落地，用户批准）；与下方原路径逐位一致
+        # （自检：tools/verify/test_cn_vec_seam.py；分解：tools/verify/cn_microbench.py）。
+        # K3（Rust 内核，Perf）到货后由同一接缝替换。
+        if _accel.on:
+            src_app_np, dst_app_np = _accel.cn_counts_vec(
+                src_padded_nodes_neighbor_ids, dst_padded_nodes_neighbor_ids
+            )
+            return (
+                torch.from_numpy(src_app_np).to(self.device),
+                torch.from_numpy(dst_app_np).to(self.device),
+            )
         # two lists to store the appearances of source and destination nodes
         src_padded_nodes_appearances, dst_padded_nodes_appearances = [], []
         # 对每个节点对（单个批次的每个节点）
