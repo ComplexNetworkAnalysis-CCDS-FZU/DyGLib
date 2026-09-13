@@ -20,7 +20,7 @@
 | 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2） |
 | **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590） |
 | 耗时预期 | ✅ 可切 GPU 口径 | 自 2026-09-06 起新实验可按 GPU 估算；E-3 及此前日志仍为 CPU 耗时 |
-| **实验队列** | ✅ 运行中（2026-09-11 起） | `tools/queue/queue_daemon.sh` 常驻守护：探测空闲 GPU（lock PID + 显存）并自动派发 `tasks.txt` 中的任务；日志 `tools/queue/queue.log`；自检 `bash tools/queue/selftest.sh` 全部通过；**追加任务 = 往 `tasks.txt` 加一行**（不含 `-g`） |
+| **实验队列** | ✅ 运行中（15/15 已全部派发，09-13 04:46；剩 #14/#15 两批消融在跑） | `tools/queue/queue_daemon.sh` 常驻守护：探测空闲 GPU（lock PID + 显存）并自动派发 `tasks.txt` 中的任务；日志 `tools/queue/queue.log`；自检 `bash tools/queue/selftest.sh` 全部通过；**追加任务 = 往 `tasks.txt` 加一行**（不含 `-g`） |
 | E-7 噪声 | ⛔ 本轮不做 | 模块 `utils/noise.py` 已实现保留 |
 
 ## 实验状态总览
@@ -28,11 +28,11 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
-| E-2 消融 | linksign | **全部 5 数据集** | 🔄 **待重跑（队列 #14/#15，CN 真交集版）** | 现有数据两代均作废（v1 含泄漏；v2 = 09-11 17:01、泄漏/RAE 修复但 CN 伪交集在）；CN 修复版重跑 20 runs 完成后替换汇总（`E2_ablation_summary.md` 已加作废横幅） |
+| E-2 消融 | linksign | **全部 5 数据集** | 🔄 **重跑中（队列 #14/#15，CN 真交集版；11/20）** | 已出：RT 4/4、BA 4/4、RB 3/4；进行中：OTC、WV → 预计 09-13 午后出齐；齐后替换汇总（`E2_ablation_summary.md` 已加作废横幅）。**加速后单 run 墙钟**较旧口径明显下降：BA 平均 ~88→~44 min、RT ~100→~35 min（含早停差异，待复核） |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **完成（CN 修复版，2026-09-12）** | 8/8：RB AUC 0.9149–0.9284（无单调趋势）、WV 0.9594–0.9619（近持平）→ patch 不敏感、默认 P=1 有据；已同步并替换 `results/E-3_patch/`（汇总已更新） |
 | E-4 时序 | linksign | WikiVote@20000 | ✅ **完成（CN 修复版，2026-09-12）** | TD 0.9565 vs TE 0.9607（ΔAUC −0.0042、ΔAP −0.0120、ΔsignF1 −0.0118）→ 同配下 TE 略优、默认 TE 保留；汇总 `results/E-4_time_decay/E4_time_decay_summary.md` |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **完成（CN 修复版，2026-09-12）** | linksign auc **0.9391±0.0007**（ap 0.7184±0.0004、sF1 0.8779±0.0077）；sign auc **0.6746±0.0028**（ap 0.9401±0.0019）；汇总已替换；p 值待基线同口径数据（基线轨见 HANDOFF 09-12） |
-| 主表重跑 | sign + linksign | 5 数据集 | 🔄 **进行中（CN 修复版，队列 8/15 完成）** | **RT、RB 双任务完成**（sign: RT 0.6746±0.0028 / RB 0.6117±0.0354；linksign: RT 0.9391±0.0007 / **RB 0.9235±0.0045**）；WV sign✓/linksign 3/5；BA sign✓/linksign 2/5；OTC 排队；基线模型不受 CN 修复影响（Baseline 线独立） |
+| 主表重跑 | sign + linksign | 5 数据集 | ✅ **完成（CN 修复版，2026-09-13）：50/50 runs** | **auc（5 种子）**：sign RT 0.6746±0.0028 / RB 0.6117±0.0354 / WV 0.7956±0.0020 / BA 0.7872±0.0086 / OTC 0.8696±0.0048；linksign RT 0.9391±0.0007 / RB 0.9235±0.0045 / WV 0.9612±0.0005 / BA 0.9574±0.0019 / OTC 0.9708±0.0025；raw + sha256 已归档（`results/main_tables/raw/`、`_sync_raw_log.csv`）；基线模型不受 CN 修复影响（Baseline 线独立） |
 | E-6 异配图 | — | — | ⛔ 本轮不做 | — |
 
 **执行顺序（固定，不跳步）**：E-3(GPU重跑) → E-2(GPU) → E-4 → E-5 → 主表重跑

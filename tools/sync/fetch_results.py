@@ -6,6 +6,9 @@
     python tools/sync/fetch_results.py --set main-a  # 主表 sign RT+RB（10）
     python tools/sync/fetch_results.py --set main-b  # 主表 linksign RT+RB（10，待 task#7 完成）
     python tools/sync/fetch_results.py --set main-c  # 主表 WV sign+linksign（10，待 task#8/#9）
+    python tools/sync/fetch_results.py --set main-d  # 主表 sign BA+OTC（10）
+    python tools/sync/fetch_results.py --set main-e  # 主表 linksign BA+OTC（10）
+    python tools/sync/fetch_results.py --set main-all # 主表全部 50（a+b+c+d+e）
     python tools/sync/fetch_results.py --set e2      # E-2 修复后 20 个（待队列 #14/#15 完成后）
     python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
     python tools/sync/fetch_results.py --set all     # e2 + e5
@@ -49,6 +52,10 @@ MAIN_LINKSIGN_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperli
 MAIN_LINKSIGN_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/*NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_SIGN_WV = "saved_results/LinkSign/SignDyGFormer/WikiVote/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_LINKSIGN_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_SIGN_BA = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_SIGN_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/*NN-60.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_LINKSIGN_BA = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+MAIN_LINKSIGN_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/*NN-80.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 SETS = {
     "e2": [
@@ -78,7 +85,16 @@ SETS = {
         (MAIN_SIGN_WV, "results/main_tables/raw/sign/WikiVote", None, 5),
         (MAIN_LINKSIGN_WV, "results/main_tables/raw/linksign/WikiVote", None, 5),
     ],
+    "main-d": [
+        (MAIN_SIGN_BA, "results/main_tables/raw/sign/BitcoinAlpha", None, 5),
+        (MAIN_SIGN_OTC, "results/main_tables/raw/sign/BitcoinOTC", None, 5),
+    ],
+    "main-e": [
+        (MAIN_LINKSIGN_BA, "results/main_tables/raw/linksign/BitcoinAlpha", None, 5),
+        (MAIN_LINKSIGN_OTC, "results/main_tables/raw/linksign/BitcoinOTC", None, 5),
+    ],
 }
+SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
 SETS["all"] = SETS["e2"] + SETS["e5"]
 
 
