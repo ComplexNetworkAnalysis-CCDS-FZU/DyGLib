@@ -1,0 +1,46 @@
+# ============================================================
+# 补充实验编排（Paper 09-13 圈定清单；STAGED —— 未激活）
+# ------------------------------------------------------------
+# 说明：
+#   * 激活方式：把本文件中的“非注释行”按顺序追加到 tools/queue/tasks.txt 末尾
+#     （daemon 自动接续编号，GPU 自动分配；当前 15/15 完成后自动开跑）。
+#   * 顺序按 Paper 建议：ⓐ P 补全（审稿硬需求）→ ⓑ BTE 消融 → ⓓ sign 邻域重调。
+#   * ⓒ 旧码对照：已改为“历史结果替代”（服务器 ~/wyq-exprm/SignDyG-backup 已溯源），跳过重跑。
+#   * ⓑ 前置代码改动：run_experiments.py 的 MODULE_GROUP 需追加两行——
+#         [False, False, False, True],   # 5. CNAS-only（BTE 关；Paper ⓑ）
+#         [False, False, False, False],  # 6. vanilla（全关；Paper ⓑ）
+#     之后 `--module-idx 4 5` 才有效（索引 0-based，4/5 = 新增两行）。
+#   * 预估（accel 后、双卡）：ⓐ 12 runs ≈ 6–9h；ⓑ 10 runs ≈ 5–8h；
+#     ⓓ 15 runs ≈ 8–12h；合计 ≈ 0.8–1.2 天。胜者 5 种子确认按结果另排。
+# ============================================================
+
+# ---- ⓐ P 热力图补全（BA/OTC/RT × P{1,3,5,7}；R2-11 审稿要求；seed42）----
+-s linksign -t patch -m SignDyGFormer -r RedditHyperlinkBody WikiVote RedditHyperlinkTitle
+-s linksign -t patch -m SignDyGFormer -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote
+
+# ---- ⓑ BTE 消融（CNAS-only [F,F,F,T] + vanilla [F,F,F,F]；5 数据集 × seed42）----
+-s linksign -t ablation -m SignDyGFormer --module-idx 4 5
+
+# ---- ⓓ sign 邻域重调（RT/RB/BA；现最优±邻域单点 seed42；胜者另行 5 种子）----
+# 复用：RT(100,1)/RB(60,1)/BA(40,15) 的 5 种子新结果已在主表，无需重跑。
+# RT（现最优 NN100/LF1）：
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkTitle --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 1
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkTitle --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 1
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkTitle --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 3
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkTitle --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 3
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkTitle --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 100 --common-neighbors-look-forward 3
+# RB（现最优 NN60/LF1）：
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkBody --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 1
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkBody --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 1
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkBody --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 3
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkBody --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 3
+@ python train_link_sign_prediction.py --dataset-name RedditHyperlinkBody --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 3
+# BA（现最优 NN40/LF15）：
+@ python train_link_sign_prediction.py --dataset-name BitcoinAlpha --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 20 --common-neighbors-look-forward 10
+@ python train_link_sign_prediction.py --dataset-name BitcoinAlpha --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 20 --common-neighbors-look-forward 15
+@ python train_link_sign_prediction.py --dataset-name BitcoinAlpha --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 10
+@ python train_link_sign_prediction.py --dataset-name BitcoinAlpha --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 10
+@ python train_link_sign_prediction.py --dataset-name BitcoinAlpha --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 15
+
+# ---- 胜者 5 种子（条件：若邻域点显著超过现最优，按结果另发一行；示例格式）----
+# @ python train_link_sign_prediction.py --dataset-name <DS> --model SignDyGFormer --gpu @GPU@ --seeds 42 123 456 789 1024 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors <NN> --common-neighbors-look-forward <LF>
