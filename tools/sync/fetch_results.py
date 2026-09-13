@@ -14,6 +14,7 @@
     python tools/sync/fetch_results.py --set e2b     # E-2 补：BTE-off 对照 CNAS-only/vanilla ×5（10）
     python tools/sync/fetch_results.py --set e2d     # 补充：sign 邻域网格 RT/RB/BA 各 5 点（15）
     python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
+    python tools/sync/fetch_results.py --set nh5     # 第 2 批补充：胜者 5 种子 RT/RB + OTC/WV 邻域 + RT 探边（当前 16；重跑补齐后 22）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -71,6 +72,18 @@ MAIN_SIGN_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/*NN-60.LF-10.RA
 MAIN_LINKSIGN_BA = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_LINKSIGN_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/*NN-80.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
+# ---- 第 2 批补充（2026-09-14）：胜者 5 种子 + OTC/WV 邻域探索 + RT 探边 ----
+# 注：OTC/WV 共 6 个点因并发互删模型失败待重跑（见 PROGRESS 09-14 条目）；
+#     重跑完成后将对应 spec 补齐至 5+5、期望数 16 → 22，再 --set nh5 一次。
+WIN_RT_5SEED = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-100.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+WIN_RB_5SEED = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-40.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_OTC_40_5 = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-40.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_OTC_60_15 = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-60.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_WV_20_20 = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-20.LF-20.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_WV_40_20 = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-40.LF-20.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_RT_100_5 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-100.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+NH_RT_120_3 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-120.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+
 SETS = {
     "e2": [
         (E2_BASE, "results/E-2_ablation/raw/{ds}",
@@ -124,6 +137,16 @@ SETS = {
     "main-e": [
         (MAIN_LINKSIGN_BA, "results/main_tables/raw/linksign/BitcoinAlpha", None, 5),
         (MAIN_LINKSIGN_OTC, "results/main_tables/raw/linksign/BitcoinOTC", None, 5),
+    ],
+    "nh5": [
+        (WIN_RT_5SEED, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 5),
+        (WIN_RB_5SEED, "results/sign_neighborhood/raw/RedditHyperlinkBody", None, 5),
+        (NH_OTC_40_5, "results/sign_neighborhood/raw/BitcoinOTC", None, 1),
+        (NH_OTC_60_15, "results/sign_neighborhood/raw/BitcoinOTC", None, 1),
+        (NH_WV_20_20, "results/sign_neighborhood/raw/WikiVote", None, 1),
+        (NH_WV_40_20, "results/sign_neighborhood/raw/WikiVote", None, 1),
+        (NH_RT_100_5, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 1),
+        (NH_RT_120_3, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 1),
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
