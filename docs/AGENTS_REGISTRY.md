@@ -15,13 +15,14 @@
 ⚠️ 注意：「**路线 C**」（Rust 加速）与历史「Agent C / `Baseline`」**互不相干**，引用时请写清。
 
 ## 通信与事实源
-- **信箱（2026-09-12 拆箱：一人一箱）**：入口/速览 = `D:\codes\DyGLib\docs\HANDOFF.md`（`Code` 维护，他方只读）；**各 Agent 的发件箱 = `D:\codes\DyGLib\docs\handoff\outbox-{paper|code|baseline|perf}.md`**（唯一写入者=箱主，署名用代号；收件方在自己箱内回执）。
+- **信箱（2026-09-13 起：独立仓统一信箱）**：**正式通道 = `D:\codes\agent-mailbox`**（真源 JSONL + CLI/MCP 工具；读 = `python -m mailbox.cli list --for <自己> --open` 或渲染视图 `handoff/outbox-*.md`；写 = **只经工具** `send / ack / set-status`）。`docs/HANDOFF.md` = 指针页；旧 `docs/handoff/outbox-*.md` = **只读归档**（40 条已迁入新箱）。M7：各 Agent **自行同步**（更新本工作区 `copilot-instructions.md` 指针 + 按新仓 `mcp.example.json` 自注册 MCP）。
 - **进度/结果**：`docs/PROGRESS.md`（表格+结论，供直接引用）。
 - **决策裁决**：`docs/ADVISOR_DECISIONS.md`（唯一权威）。
 - **服务器访问**：唯一通道 = `Code`，且须**用户逐次明确许可**；`Paper`/`Baseline`/`Perf` 一律禁止接触服务器（含自动运行的 Copilot/后台 agent）。
 - 状态流转：⬜ 待办 → 🔄 进行 → ✅ 完成 / 🔴 重大（发件人维护自己行；收件方处理后在自箱回执）。
 
 ## 变更记录
+- 2026-09-13：**统一信箱切换（M6）**：正式通道迁至独立仓 `D:\codes\agent-mailbox`（旧箱 40 条已导入、`docs/handoff/*` 冻结只读；切换公告已发三箱、要求新通道回执 + M7 自同步；3 天对账至 09-16）。
 - 2026-09-12：**信箱拆分为「一人一箱」**（`docs/handoff/outbox-{paper,code,baseline,perf}.md`；入口页=`docs/HANDOFF.md`），消除单文件多写者覆盖（当日曾 2 次事故）；各 Agent 工作区契约指针同步更新。
 - 2026-09-11：启用角色代号（`Paper`/`Code`/`Baseline`）；新 Agent `Perf`（Rust+PyO3 加速）登记。
 - 2026-09-11：`Perf` 工作区创建于 `D:\codes\SignDyG-Perf`（ref-only 交付：参考实现 + golden fixtures + 上游逐位对照；crate 由 `Perf` 自建）。

@@ -110,6 +110,7 @@
 
 ## 最近更新记录
 
+- **2026-09-13**：**统一信箱（独立仓）切换完成（M6，用户批准，Code 执行）**：正式通道 = `D:\codes\agent-mailbox`（JSONL 真源 + CLI/MCP 工具；59 项测试全绿）；旧箱 **40 条全部导入**（code 23 / paper 3 / perf 14 / baseline 0；对账 + 抽样逐字全过，清单 `data/legacy_import_manifest.json`）；`docs/handoff/*` **冻结只读**；切换公告已发三箱（新箱 `mb-20260913-095657-code-5655` / `…-98fb` / `…-148c`，待回执）；M7 = 各 agent 自行自同步；**3 天双通道对账至 09-16**。
 - **2026-09-12（深夜3）**：**服务器构建校验「第 1 批」全绿**（按 Perf 清单执行）：cargo test **21/21**、check_accel **12/12**（bit-exact）、check_ref **8/8**、pytest **21 passed**、上游对照真实 **K1 1800/1800 + K2×2** 与合成 **908 查询**全 PASS、bench_real **14/14**；**服务器口径提速**（Linux/40 核）：K1 7–11×、K2 50–285×（L15 267–285× → L100 50–53×）。唯一遗留：crate 侧 `__abi__` 待 Perf 补（M4 前置）→ **已闭环**：Perf 补契约串（`374beb5`）→ 服务器重建复验全绿（**新 wheel sha `1ffe3216…`；门 1/2 闭环**）——第 1 批含 ⑥ 全部完成。
 - **2026-09-12（深夜2）**：**Perf 服务器部署就绪**（用户批准执行）：独立仓通道 `~/git/SignDyG-Perf.git` + `~/SignDyG-Perf` @ `9b4913b`（Code URL 直推；Perf 零接触）；Rust 环境（rustup/cargo 1.98.1、maturin 1.15.0；用户态 + TUNA）；**首构建 25s 通过**（wheel `signdyg_accel-0.1.0-cp39-cp39-manylinux_2_34`，sha256 `86c2e85f…`；gc 安装 + import 校验 ✓）。剩余：crate `__abi__` + DyGLib 适配器（M4 落地，待批准）→ 门 2/3。
 - **2026-09-12（深夜）**：**信箱拆分（一人一箱）**：`docs/HANDOFF.md` 单文件 → 入口页 + `docs/handoff/outbox-{paper,code,baseline,perf}.md`（唯一写入者=箱主；收件方在自己箱内回执）——消除单文件多写者旧缓冲覆盖（本日曾 2 次）。各 Agent 工作区契约指针已同步更新。
