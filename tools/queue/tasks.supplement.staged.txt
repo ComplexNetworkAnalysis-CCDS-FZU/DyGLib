@@ -60,15 +60,17 @@
 @ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 20 --common-neighbors-look-forward 20
 
 # ============================================================
-# 第 2 批补跑（2026-09-14；6 点因「并发互删」缺陷失败；待批准后追加 tasks.txt）
-# 根因：train_link_sign_prediction.py L266 开局 rmtree(同数据集同 seed 模型目录)，
-#       同数据集双卡并行时后启动者删掉先启动者的 best .pkl → 结尾 load_checkpoint FileNotFound。
-# 方案：每条 @ 为「串行循环」，同数据集内部不并发；OTC 与 WV 属不同数据集，可双卡并行。
+# 第 2 批补跑（2026-09-14；已激活：修复部署后直接按原命令追加 tasks.txt #55–#60）
+# 根因：train_link_sign_prediction.py 开局 rmtree(同数据集同 seed 模型目录) → 并发互删 best。
+# 修复：已改为仅清理本 run 目标文件（提交 9956dd7，已部署服务器）；
+#       因此无需串行循环——同数据集不同 config 文件名互不冲突，可任意双卡并行。
 # ------------------------------------------------------------
-# OTC 3 点（40/15、80/5、80/15）
-@ for c in 40-15 80-5 80-15; do n=${c%-*}; l=${c#*-}; python train_link_sign_prediction.py --dataset-name BitcoinOTC --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors $n --common-neighbors-look-forward $l || exit 1; done
-# WV 3 点（20/10、60/10、60/20）
-@ for c in 20-10 60-10 60-20; do n=${c%-*}; l=${c#*-}; python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors $n --common-neighbors-look-forward $l || exit 1; done
+@ python train_link_sign_prediction.py --dataset-name BitcoinOTC --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 15
+@ python train_link_sign_prediction.py --dataset-name BitcoinOTC --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 5
+@ python train_link_sign_prediction.py --dataset-name BitcoinOTC --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --batch-size 200 --num-neighbors 80 --common-neighbors-look-forward 15
+@ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 20 --common-neighbors-look-forward 10
+@ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 10
+@ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 20
 @ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 10
 @ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 60 --common-neighbors-look-forward 20
 @ python train_link_sign_prediction.py --dataset-name WikiVote --model SignDyGFormer --gpu @GPU@ --seeds 42 --early-stop-notice f1_binary auc f1_weighted --module-repeat-aware-sampler --module-repeat-aware-sign-encoder --tail-num 20000 --batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 20
