@@ -210,6 +210,11 @@ MODULE_GROUP = [
     [False, True, True, True],
     # 4. 全开（完整模型）
     [True, True, True, True],
+    # ===== E-2b 补充（Paper 09-13；BTE 关断对照）=====
+    # 5. CNAS-only（BTE 关）
+    [False, False, False, True],
+    # 6. vanilla（全关）
+    [False, False, False, False],
 ]
 
 class ExpTy(Enum):
