@@ -11,6 +11,8 @@
     python tools/sync/fetch_results.py --set main-all # 主表全部 50（a+b+c+d+e）
     python tools/sync/fetch_results.py --set e2      # E-2 修复后 20 个（待队列 #14/#15 完成后）
     python tools/sync/fetch_results.py --set e3x     # E-3 扩展：P 补全 BA/OTC/RT（12，R2-11）
+    python tools/sync/fetch_results.py --set e2b     # E-2 补：BTE-off 对照 CNAS-only/vanilla ×5（10）
+    python tools/sync/fetch_results.py --set e2d     # 补充：sign 邻域网格 RT/RB/BA 各 5 点（15）
     python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
@@ -49,6 +51,14 @@ E3_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RA
 E3X_BA = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P[1357].TE.json"
 E3X_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-80.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P[1357].TE.json"
 E3X_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P[1357].TE.json"
+E2B = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed42.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-[ED].P1.TE.json"
+GRID_RT_A = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-[68]0.LF-[13].RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_RT_B = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-100.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_RB_A = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-[48]0.LF-[13].RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_RB_B = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-60.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_BA_A = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-20.LF-1[05].RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_BA_B = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-40.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+GRID_BA_C = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-60.LF-1[05].RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 E4_TD = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TD.json"
 MAIN_SIGN_RT = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/*NN-100.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_SIGN_RB = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/*NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
@@ -74,6 +84,19 @@ SETS = {
         (E3X_BA, "results/E-3_patch/raw", None, 4),
         (E3X_OTC, "results/E-3_patch/raw", None, 4),
         (E3X_RT, "results/E-3_patch/raw", None, 4),
+    ],
+    "e2b": [
+        (E2B, "results/E-2_ablation/raw_bte/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 10),
+    ],
+    "e2d": [
+        (GRID_RT_A, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 4),
+        (GRID_RT_B, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 1),
+        (GRID_RB_A, "results/sign_neighborhood/raw/RedditHyperlinkBody", None, 4),
+        (GRID_RB_B, "results/sign_neighborhood/raw/RedditHyperlinkBody", None, 1),
+        (GRID_BA_A, "results/sign_neighborhood/raw/BitcoinAlpha", None, 2),
+        (GRID_BA_B, "results/sign_neighborhood/raw/BitcoinAlpha", None, 1),
+        (GRID_BA_C, "results/sign_neighborhood/raw/BitcoinAlpha", None, 2),
     ],
     "e4": [
         (E4_TD, "results/E-4_time_decay/raw", None, 1),
