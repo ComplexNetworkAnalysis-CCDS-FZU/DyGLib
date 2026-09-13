@@ -18,6 +18,12 @@
 @ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DynamiSE --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYNAMISE_OK
 @ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_summary.py --model DySDGNN && python scripts/m5_summary.py --model DynamiSE && echo BASELINE_SUMMARY_OK
 #
+# ---- 2026-09-14 二次激活（用户指示：Baseline 需上 GPU）：#49/#50 实际全 skip（clone 已含本地 M5 CPU 产物；m5_run 无 --force）
+#       → 追加以下 3 行（旧产物归档 → DySDGNN GPU → DynamiSE GPU；汇总待跑完后手动执行）----
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && if [ -d outputs ]; then mv outputs outputs.cpu.bak-20260914 && echo ARCHIVED_CPU; else echo NO_OUTPUTS_DIR; fi
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DySDGNN --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYSDGNN_GPU_OK
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python scripts/m5_run.py --model DynamiSE --device cuda:@GPU@ --configs configs/datasets_server.yaml && echo BASELINE_DYNAMISE_GPU_OK
+#
 # 第二波候选（评估中，未定）：R1-4 提到的 DyG-Mamba / UniDyG / ScaDyG / 多模态文本属性图。
 # 开源线索：DyG-Mamba→Clearloveyuan/DyG-Mamba；ScaDyG→BITNEO/ScaDyG；UniDyG→未检索到仓库。
 # 待 Baseline 可行性三角评估 + 用户/导师选定后，再往本文件追加任务行。
