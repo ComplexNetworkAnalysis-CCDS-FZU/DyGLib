@@ -5,7 +5,6 @@ import os
 from tqdm import tqdm
 import numpy as np
 import warnings
-import shutil
 import json
 import torch
 import torch.nn as nn
@@ -284,8 +283,18 @@ if __name__ == "__main__":
         model = convert_to_gpu(model, device=args.device)
 
         save_model_folder = f"./saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
-        shutil.rmtree(save_model_folder, ignore_errors=True)
         os.makedirs(save_model_folder, exist_ok=True)
+        # 2026-09-14 修复（并发互删缺陷）：原为整目录 shutil.rmtree(save_model_folder)——
+        # 同数据集同 seed 的并发任务会互删对方 best 模型 → 结尾 load_checkpoint FileNotFound。
+        # 现仅清理本次 run 的目标文件（防误载同名旧文件；串行语义与原来一致）。
+        for _stale_name in (
+            f"{args.save_model_name}.pkl",
+            f"{args.save_model_name}.param.json",
+            f"{args.save_model_name}_nonparametric_data.pkl",
+        ):
+            _stale_path = os.path.join(save_model_folder, _stale_name)
+            if os.path.exists(_stale_path):
+                os.remove(_stale_path)
 
         early_stopping = EarlyStopping(
             patience=args.patience,

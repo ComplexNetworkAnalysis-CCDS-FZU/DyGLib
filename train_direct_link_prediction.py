@@ -7,7 +7,6 @@ import logging
 import json
 import time
 import os
-import shutil
 import numpy as np
 import warnings
 import torch
@@ -274,8 +273,18 @@ if __name__ == "__main__":
         optimizer = create_optimizer(model, args.optimizer, args.learning_rate, args.weight_decay)
 
         save_dir = f"./saved_models/{TASK_NAME}/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
-        shutil.rmtree(save_dir, ignore_errors=True)
         os.makedirs(save_dir, exist_ok=True)
+        # 2026-09-14 修复（并发互删缺陷）：原为整目录 shutil.rmtree(save_dir)——
+        # 同数据集同 seed 的并发任务会互删对方 best 模型 → 结尾 load_checkpoint FileNotFound。
+        # 现仅清理本次 run 的目标文件（防误载同名旧文件；串行语义与原来一致）。
+        for _stale_name in (
+            f"{args.save_model_name}.pkl",
+            f"{args.save_model_name}.param.json",
+            f"{args.save_model_name}_nonparametric_data.pkl",
+        ):
+            _stale_path = os.path.join(save_dir, _stale_name)
+            if os.path.exists(_stale_path):
+                os.remove(_stale_path)
 
         early_stopping = EarlyStopping(
             patience=args.patience, save_model_folder=save_dir,
