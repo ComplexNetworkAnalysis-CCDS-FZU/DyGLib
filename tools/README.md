@@ -33,6 +33,7 @@
 - `test_accel_seam.py` — **M4 加速接缝自检**：① CLI 开关（默认启用 / `--no-accel` / `--accel` 显式 / `SIGNDYG_ACCEL` 兜底；子进程隔离）；② K1/K2 原路径 vs 加速路径**逐位一致**（Perf 参考实现桩 + 本机真实内核复跑）。用法：`python tools/verify/test_accel_seam.py`（本地运行，不触服务器）。
 - `probe_k2_binding_dtypes.py` — **K2 Rust 绑定 dtype 契约探测**：记录 `bte_sign_effect` 的 accept/reject 矩阵（nodes / padded ids=int64、signs=int8、times=float32；query float64 或 None 均可；不符 = fail-fast TypeError）。用法：`python tools/verify/probe_k2_binding_dtypes.py`。
 - `compare_accel_runs.py` — **两次训练结果 JSON 对照**（排除计时/显存/`accel` 字段；退出码 0 = 除计时外逐位一致）。用法：`python tools/verify/compare_accel_runs.py <a.json> <b.json>`。
+- `cn_microbench.py` — **CN 共现编码细粒度微基准（K3 前置；纯 CPU，本机可跑）**：逐位复刻 `count_nodes_appearances` 并在 12 个子步骤打点（np.unique / 逐元素 `apply_` / stack / 掩码…，B=200、L≈40 口径对齐 BA 主实验），另含全向量化原型（仅评估，不落库）与逐位一致性校验。**BA 口径结论**：本机原实现 ≈37–41ms/次，逐行固定成本占 67–81%（np.unique×2 占 37–42%）、逐元素 apply_ 占 14–29%；**向量化原型 28×（L=40；14–55×@L16–100）且逐位一致**。用法：`python tools/verify/cn_microbench.py [--sweep] [--dist uniform] [--out …]`；产物 JSON：`cn_microbench_result.json` / `cn_microbench_sweep.json`。
 
 ### tools/sync/
 - `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|main-b|main-c|all`（`main-*` = 主表分批次；其余批次随完成逐步新增）。**服务器访问须用户逐次明确许可。**

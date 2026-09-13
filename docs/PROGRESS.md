@@ -15,7 +15,7 @@
 | **M4 加速适配器（Code）** | ✅ 2026-09-13 本地+服务端全绿 | `utils/accel.py` + K1/K2 接缝（sampler/BTE）+ CLI 开关：**默认启用**（用户口径；`--no-accel` 关闭 / `--accel` 显式 / `SIGNDYG_ACCEL` 环境变量兜底）；启用=fail-fast（未装/契约不符即报错，不静默回退）；结果 JSON 记录 `"accel"` 溯源。验证：接缝自检 **9/9**（参考桩+真实内核）、全量 BitcoinAlpha 冒烟**逐位一致**（CPU/L5/1ep：端到端 **1.33×**、训练 1.27×、推理 1.63×）；**服务端双短跑（⑦）PASS**（`abfe664` 已 pull；OFF/ON **逐位一致**；端到端 48.9→32.8s＝**1.49×**、训练 1.42×、推理 1.76×；CPU 口径/双卡任务并行中）。在跑批次后续子进程自动沿用新代码 |
 | **Agent C 加入** | ✅ 2026-09-09 | `Baseline`（原 C）= DynamiSE/DySDGNN 复现（R2-5 ①），工作区 `D:\codes\DynamiSE_DySDGNN_repro`，权威 = `IMPLEMENTATION_SPEC.md`；结果登记 HANDOFF/PROGRESS |
 | 服务器 | ✅ 可用 | 2026-09-01 恢复访问；**访问纪律（09-11）：唯一通道 = `Code`（须用户逐次许可），其他 agent（含自动）禁止接触** |
-| 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 分支至服务器裸仓库并 clone；`6f72c2c` 已同步 |
+| 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 至服务器裸仓库并 clone；**2026-09-13 晚批次**：M6 信箱切换 / E-2 v3 / P 补全 / CN 评估工具（`cn_microbench.py`）已提交推送，服务器 `pull --ff-only` 校验通过 |
 | 数据就绪 | ✅ 完成 | `server_setup.sh` 已执行，WikiVote tail20000 已生成 |
 | 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2） |
 | **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590） |
@@ -28,7 +28,7 @@
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
 |---|---|---|---|---|
 | E-1 效率 | sign | RedditTitle@20000 | ✅ 可提取 | E-5 sign seed42 已含 4 项效率数据，待汇总 |
-| E-2 消融 | linksign | **全部 5 数据集** | 🔄 **重跑中（队列 #14/#15，CN 真交集版；11/20）** | 已出：RT 4/4、BA 4/4、RB 3/4；进行中：OTC、WV → 预计 09-13 午后出齐；齐后替换汇总（`E2_ablation_summary.md` 已加作废横幅）。**加速后单 run 墙钟**较旧口径明显下降：BA 平均 ~88→~44 min、RT ~100→~35 min（含早停差异，待复核） |
+| E-2 消融 | linksign | **全部 5 数据集** | ✅ **完成（v3 CN 真交集，09-13）**：v3 20/20 + ⓑ BTE-off 10/10 + ⓓ 网格 15/15 均已同步 | v3 汇总 `E2_ablation_summary.md`；ⓑ（单种子）：BTE 边际 BA≈0、OTC +0.0053、RT +0.0081，WV −0.0012、RB −0.0024；**BTE 关时 CNAS-on 在 5/5 均不优于 CNAS-off**（RT −0.0110 最明显）；**vanilla ≥ full 于 4/5**（单种子，待多种子坐实） |
 | E-3 Patch | linksign | WikiVote@20000 + RedditBody@20000 | ✅ **完成（CN 修复版，2026-09-12）** | 8/8：RB AUC 0.9149–0.9284（无单调趋势）、WV 0.9594–0.9619（近持平）→ patch 不敏感、默认 P=1 有据；已同步并替换 `results/E-3_patch/`（汇总已更新） |
 | E-4 时序 | linksign | WikiVote@20000 | ✅ **完成（CN 修复版，2026-09-12）** | TD 0.9565 vs TE 0.9607（ΔAUC −0.0042、ΔAP −0.0120、ΔsignF1 −0.0118）→ 同配下 TE 略优、默认 TE 保留；汇总 `results/E-4_time_decay/E4_time_decay_summary.md` |
 | E-5 显著性 | sign + linksign | RedditTitle@20000 | ✅ **完成（CN 修复版，2026-09-12）** | linksign auc **0.9391±0.0007**（ap 0.7184±0.0004、sF1 0.8779±0.0077）；sign auc **0.6746±0.0028**（ap 0.9401±0.0019）；汇总已替换；p 值待基线同口径数据（基线轨见 HANDOFF 09-12） |
@@ -110,6 +110,8 @@
 
 ## 最近更新记录
 
+- **2026-09-13（晚·续）**：**ⓑ BTE-off 10/10 + ⓓ 邻域网格 15/15 全部完成并同步**（`--set e2b/e2d`，sha256 已入 `results/_sync_raw_log.csv`；队列 33/33 于 19:44 全部 idle）。**ⓑ（单种子 42）：BTE 边际效应 = BTE开−BTE关（同 CNAS-E）**：BA −0.0002（≈0）、OTC +0.0053、RT +0.0081、WV −0.0012、RB −0.0024；**BTE 关时 CNAS 效果**（CNAS-E−CNAS-D）：**5/5 均为负**（BA −0.0061、OTC −0.0040、WV −0.0050、RT −0.0110、RB −0.0018）；**全关 vanilla vs 全开 full**：vanilla ≥ full 于 4/5（BA +0.0031、OTC +0.0003、WV +0.0063、RB +0.0095；仅 RT full +0.0046）——单种子口径，若进论文需多种子。**ⓓ（sign 任务 NN/LF 网格，单种子）**：RT 网格最优 **NN-100/LF-3 = 0.7070**（其余点 0.6589–0.6761）、RB 最优 NN-40/LF-1 = 0.6485、BA 最优 NN-40/LF-10 = 0.7813；是否用赢家加 5 种子复核待定。
+- **2026-09-13（晚）**：**CN 共现编码细粒度评估完成（K3 前置；本机 CPU 全跑，无需服务器）**：新增 `tools/verify/cn_microbench.py`（逐位复刻 `count_nodes_appearances` + 12 子步骤分解 + 全向量化原型对照 + 逐位一致校验）。要点：① 本机 BA 口径（B=200, L≈40）原实现 **≈37–41ms/次**，**逐行固定成本占 67–81%（其中 np.unique×2 = 37–42%）**、逐元素 `apply_` 14–29%；**向量化原型 28× @L40（14–55× @L16–100），逐位一致**；② 服务器测试阶段 profiler 对账：CN ≈130–141ms/次，**不受 CNAS/BTE 等模块开关影响**（vanilla 全关仍 137.7ms）⇒ 无条件计算；每次测试轮 ≈70 次 CN 执行 ≈9.6s ≈ 测试轮墙钟 **~70%**（轮墙 12.4–13.2s；min=13ms 对应 18 条尾批，核对通过）；单 run 测试段 CN 合计 42–80s；③ 训练段：BA 训练 64 batch/epoch（12,673/200），CN 估计 ~200–260s/run ⇒ **CN 合计约 10–13% run 墙钟**（无训练期 profiler，按同实现同批次估计）；④ 本机限制：`.to(cuda)` 行级 H2D（4×B=800 次/调用）不可测，待服务器小样本标定；⑤ **队列 33/33 全部完成（19:44 idle）**：ⓑ BTE-off 与 ⓓ 邻域网格已跑完，随本轮执行全量同步。产物：`tools/verify/cn_microbench_result.json`、`cn_microbench_sweep.json`。
 - **2026-09-13（傍晚）**：**补充实验进展**：ⓐ **P 补全 12/12 完成并同步**（BA/OTC/RT × P{1,3,5,7}）；全数据集 P 表引入 `results/E-3_patch/E3_patch_summary.md`（R2-11 数据齐）。ⓑ BTE-off 对照 **5/10**（BA/OTC 完成、RT 1/2 在跑；预计 ~21:30 齐）；ⓓ 邻域网格 **7/15**（RT 5/5 完成、RB 2/5；BA 待跑；单 run 10–25 分钟，预计 ~22:00 齐）。拉取集已预备（`--set e2b / e2d`），齐后一键同步。
 - **2026-09-13（下午）**：**E-2 v3（CN 真交集修复版）20/20 完成并同步**：v1/v2 作废、**「RAS 5/5 正增益」「full≥base 5/5」表述作废**（伪交集产物）；v3（单种子 42）：full 在 RT（+0.0075 ≈10σ）与 BA（+0.0032）为正、其余 ≈ 噪声带；RAE 单独中性偏负（RB −0.0172）；RT/RB full 与 E-5/主表 seed42 逐字一致（0.9386/0.9239）。**BTE-off 对照（ⓑ）今晚跑（队列 #18）**。汇总 `results/E-2_ablation/E2_ablation_summary.md`；raw 20 个 sha256 入 `_sync_raw_log.csv`（14:27 批次）。
 - **2026-09-13**：**统一信箱（独立仓）切换完成（M6，用户批准，Code 执行）**：正式通道 = `D:\codes\agent-mailbox`（JSONL 真源 + CLI/MCP 工具；59 项测试全绿）；旧箱 **40 条全部导入**（code 23 / paper 3 / perf 14 / baseline 0；对账 + 抽样逐字全过，清单 `data/legacy_import_manifest.json`）；`docs/handoff/*` **冻结只读**；切换公告已发三箱（新箱 `mb-20260913-095657-code-5655` / `…-98fb` / `…-148c`，待回执）；M7 = 各 agent 自行自同步；**3 天双通道对账至 09-16**。
