@@ -18,7 +18,7 @@
 | 代码同步 | ✅ 完成 | 已推送 `sign-adoption` 至服务器裸仓库并 clone；**2026-09-13 晚批次**：M6 信箱切换 / E-2 v3 / P 补全 / CN 评估工具（`cn_microbench.py`）已提交推送，服务器 `pull --ff-only` 校验通过 |
 | 数据就绪 | ✅ 完成 | `server_setup.sh` 已执行，WikiVote tail20000 已生成 |
 | 环境安装 | ✅ 完成 | conda env `gc`（torch 2.2.2） |
-| **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590） |
+| **GPU 驱动** | ✅ **已修复（2026-09-06）** | DKMS `nvidia/595.84` 已装（内核 6.8.0-124/138）；`torch.cuda.is_available()=True`，设备 `NVIDIA GeForce RTX 2080 SUPER`；fedsa 免 sudo 可访问。详见 `docs/GPU_DRIVER_INSTALL.md`（实际装 595.84，非计划 590）。**2026-09-13 深夜：重启对齐 NVML 至 595.91.07**（模块/用户态一致，`nvidia-smi` 恢复；启动内核 6.8.0-138） |
 | 耗时预期 | ✅ 可切 GPU 口径 | 自 2026-09-06 起新实验可按 GPU 估算；E-3 及此前日志仍为 CPU 耗时 |
 | **实验队列** | ✅ 运行中（15/15 已全部派发，09-13 04:46；剩 #14/#15 两批消融在跑） | `tools/queue/queue_daemon.sh` 常驻守护：探测空闲 GPU（lock PID + 显存）并自动派发 `tasks.txt` 中的任务；日志 `tools/queue/queue.log`；自检 `bash tools/queue/selftest.sh` 全部通过；**追加任务 = 往 `tasks.txt` 加一行**（不含 `-g`） |
 | E-7 噪声 | ⛔ 本轮不做 | 模块 `utils/noise.py` 已实现保留 |
@@ -110,6 +110,7 @@
 
 ## 最近更新记录
 
+- **2026-09-13 深夜（NVML 修复）**：用户重启服务器完成驱动对齐（运行中 595.84 vs 用户态 595.91 错配；DKMS 595.91.07 早前已编译好，重启即生效，无需重装）。验证：`nvidia-smi` 正常（Driver 595.91.07 / CUDA 13.2 / 2× RTX 2080 SUPER 空闲，仅 Xorg 4MiB）；`/sys/module/nvidia/version`=595.91.07；`gc` 环境 torch CUDA=True×2；**队列守护已重新拉起**（`running.txt` 保留 33/33，不会重跑旧任务；`/tmp` 锁已随重启清空）；队列 idle，**可接新任务**。记录见 `docs/GPU_DRIVER_INSTALL.md` 文末。
 - **2026-09-13（晚·续）**：**ⓑ BTE-off 10/10 + ⓓ 邻域网格 15/15 全部完成并同步**（`--set e2b/e2d`，sha256 已入 `results/_sync_raw_log.csv`；队列 33/33 于 19:44 全部 idle）。**ⓑ（单种子 42）：BTE 边际效应 = BTE开−BTE关（同 CNAS-E）**：BA −0.0002（≈0）、OTC +0.0053、RT +0.0081、WV −0.0012、RB −0.0024；**BTE 关时 CNAS 效果**（CNAS-E−CNAS-D）：**5/5 均为负**（BA −0.0061、OTC −0.0040、WV −0.0050、RT −0.0110、RB −0.0018）；**全关 vanilla vs 全开 full**：vanilla ≥ full 于 4/5（BA +0.0031、OTC +0.0003、WV +0.0063、RB +0.0095；仅 RT full +0.0046）——单种子口径，若进论文需多种子。**ⓓ（sign 任务 NN/LF 网格，单种子）**：RT 网格最优 **NN-100/LF-3 = 0.7070**（其余点 0.6589–0.6761）、RB 最优 NN-40/LF-1 = 0.6485、BA 最优 NN-40/LF-10 = 0.7813；是否用赢家加 5 种子复核待定。
 - **2026-09-13（晚）**：**CN 共现编码细粒度评估完成（K3 前置；本机 CPU 全跑，无需服务器）**：新增 `tools/verify/cn_microbench.py`（逐位复刻 `count_nodes_appearances` + 12 子步骤分解 + 全向量化原型对照 + 逐位一致校验）。要点：① 本机 BA 口径（B=200, L≈40）原实现 **≈37–41ms/次**，**逐行固定成本占 67–81%（其中 np.unique×2 = 37–42%）**、逐元素 `apply_` 14–29%；**向量化原型 28× @L40（14–55× @L16–100），逐位一致**；② 服务器测试阶段 profiler 对账：CN ≈130–141ms/次，**不受 CNAS/BTE 等模块开关影响**（vanilla 全关仍 137.7ms）⇒ 无条件计算；每次测试轮 ≈70 次 CN 执行 ≈9.6s ≈ 测试轮墙钟 **~70%**（轮墙 12.4–13.2s；min=13ms 对应 18 条尾批，核对通过）；单 run 测试段 CN 合计 42–80s；③ 训练段：BA 训练 64 batch/epoch（12,673/200），CN 估计 ~200–260s/run ⇒ **CN 合计约 10–13% run 墙钟**（无训练期 profiler，按同实现同批次估计）；④ 本机限制：`.to(cuda)` 行级 H2D（4×B=800 次/调用）不可测，待服务器小样本标定；⑤ **队列 33/33 全部完成（19:44 idle）**：ⓑ BTE-off 与 ⓓ 邻域网格已跑完，随本轮执行全量同步。产物：`tools/verify/cn_microbench_result.json`、`cn_microbench_sweep.json`。
 - **2026-09-13（傍晚）**：**补充实验进展**：ⓐ **P 补全 12/12 完成并同步**（BA/OTC/RT × P{1,3,5,7}）；全数据集 P 表引入 `results/E-3_patch/E3_patch_summary.md`（R2-11 数据齐）。ⓑ BTE-off 对照 **5/10**（BA/OTC 完成、RT 1/2 在跑；预计 ~21:30 齐）；ⓓ 邻域网格 **7/15**（RT 5/5 完成、RB 2/5；BA 待跑；单 run 10–25 分钟，预计 ~22:00 齐）。拉取集已预备（`--set e2b / e2d`），齐后一键同步。

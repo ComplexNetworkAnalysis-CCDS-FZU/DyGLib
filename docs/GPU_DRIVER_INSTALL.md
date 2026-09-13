@@ -133,3 +133,13 @@ sudo 命令需密码，**密码不经 AI 传递**。两种执行方式任选：
 2. **脚本化**：把 Phase 1–5 整理成 `gpu_driver_fix.sh`，用户 `sudo bash` 执行；AI 只读验证输出。
 
 > 注：执行后如成功，建议顺手把 Phase 0.1 快照与结果写入 `docs/PROGRESS.md`（服务器环境节），并通知 Agent A 耗时预期可改为 GPU 口径。
+
+---
+
+## 更新：NVML 错配修复（2026-09-13 深夜，重启一次）
+
+- **现象**：队列运行期间 `nvidia-smi` 报 `Failed to initialize NVML: Driver/library version mismatch`（内存中内核模块 595.84 vs 用户态 NVML 595.91）；队列守护靠 lock-PID 兜底继续工作，但 GPU 忙闲探测报错。
+- **根因**：用户态驱动已升级至 595.91.07（DKMS 模块已为 6.8.0-124/138 编译安装），但运行中内核仍加载旧 595.84 模块（开机 58 天未重载）。
+- **修复**：**重启一次**（用户执行 `sudo reboot`；无需重装任何包）。启动内核 6.8.0-138，DKMS 595.91.07 模块随启动加载。
+- **验证（重启后）**：`nvidia-smi` 正常（Driver 595.91.07 / CUDA 13.2；2× RTX 2080 SUPER）；`cat /sys/module/nvidia/version` → 595.91.07；`gc` 环境 torch CUDA 可用；**队列守护已重新拉起**（`nohup bash tools/queue/queue_daemon.sh &`），`running.txt` 保留 33/33 不重跑旧任务。
+- **备注**：免重启路线（`rmmod`/`modprobe`）因桌面会话占用 `nvidia_drm`（refcount≠0）未采用；重启会断开 fedsa 桌面会话（:1）与全部 ssh。
