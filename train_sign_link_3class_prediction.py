@@ -220,6 +220,7 @@ if __name__ == "__main__":
                 device=args.device,
                 module_repeat_aware_sign_encoder=args.module_repeat_aware_sign_encoder,
                 module_balance_theory_encoder=args.module_balance_theory_encoder,
+                module_balance_theory_gate=args.module_balance_theory_gate,
                 time_decay_lambda=args.time_decay_lambda,
                 time_decay_gap_mode=args.time_decay_gap_mode,
                 time_scaling_factor=args.time_scaling_factor,

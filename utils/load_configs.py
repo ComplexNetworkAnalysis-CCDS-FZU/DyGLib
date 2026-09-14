@@ -152,6 +152,11 @@ class SignPredictArgs(BaseModel):
         True, description="历史共邻居采样感知模块"
     )
 
+    # ---- BTE 门控（预留接口，默认禁用；启用后在 SignDyGFormer 第 5 通道上加 sigmoid 门）----
+    module_balance_theory_gate: bool = Field(
+        False, description="BTE 通道门控（预留接口，默认禁用；后续或有向图实验用）"
+    )
+
     # ---- M4: 加速后端开关（命令行显式控制；默认启用）----
     accel: bool = Field(
         True,
@@ -203,6 +208,8 @@ class SignPredictArgs(BaseModel):
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
             f".{td_tag}{noise_tag}"
+            # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
+            + (".GATE" if self.module_balance_theory_gate else "")
         )
     @property
     def num_runs(self):

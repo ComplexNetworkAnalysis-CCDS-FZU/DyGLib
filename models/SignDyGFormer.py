@@ -36,6 +36,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         *,
         module_repeat_aware_sign_encoder: bool = False,
         module_balance_theory_encoder: bool = True,
+        module_balance_theory_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
         time_scaling_factor: float = 1e-6,
@@ -57,6 +58,10 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         super(SignDyGFormer, self).__init__()
 
         self.module_balance_theory_encoder = module_balance_theory_encoder
+        # ---- BTE 门控（预留接口，默认禁用；用户 2026-09-14 指示）----
+        # 启用后：第 5 通道（BTE）投影输出乘 sigmoid(gate)；gate 初始 -6 ≈ 0.0025，
+        # 使启用初期行为 ≈ 无门控基座，训练中由梯度决定是否打开（后续或有向图实验用）。
+        self.module_balance_theory_gate = module_balance_theory_gate
 
         self.time_decay_mode = time_decay_lambda is not None
         self.time_decay_lambda = time_decay_lambda
@@ -131,6 +136,13 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         )
 
         self.num_channels = 5 if self.module_balance_theory_encoder else 4
+
+        # BTE 门控参数（仅当「编码器开 + 门控开」时创建；默认 None = 完全无副作用）
+        self.balance_theory_gate_raw = (
+            nn.Parameter(torch.tensor(-6.0))
+            if (self.module_balance_theory_encoder and module_balance_theory_gate)
+            else None
+        )
 
         self.transformers = nn.ModuleList(
             [
@@ -348,6 +360,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
                 src_patches_nodes_common_neighbor_effect_features = self.projection_layer[
                     "common_neighbor_effect"
                 ](src_patches_nodes_common_neighbor_effect_features)
+                if self.balance_theory_gate_raw is not None:
+                    src_patches_nodes_common_neighbor_effect_features = (
+                        torch.sigmoid(self.balance_theory_gate_raw)
+                        * src_patches_nodes_common_neighbor_effect_features
+                    )
 
             # Tensor, shape (batch_size, dst_num_patches, channel_embedding_dim)
             dst_patches_nodes_neighbor_node_raw_features = self.projection_layer["node"](
@@ -367,6 +384,11 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
                 dst_patches_nodes_common_neighbor_effect_features = self.projection_layer[
                     "common_neighbor_effect"
                 ](dst_patches_nodes_common_neighbor_effect_features)
+                if self.balance_theory_gate_raw is not None:
+                    dst_patches_nodes_common_neighbor_effect_features = (
+                        torch.sigmoid(self.balance_theory_gate_raw)
+                        * dst_patches_nodes_common_neighbor_effect_features
+                    )
 
             batch_size = len(src_patches_nodes_neighbor_node_raw_features)
             src_num_patches = src_patches_nodes_neighbor_node_raw_features.shape[1]
