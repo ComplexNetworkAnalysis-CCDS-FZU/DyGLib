@@ -53,6 +53,7 @@
 
 > 补齐 v3 缺口（四组均 BTE=on、无 BTE-off 证据）。本批 = `RAS-D·RASE-D·BTE-D` 下 CNAS-only（`CNAS-E`）与 vanilla（`CNAS-D`）两行 × 5 数据集（10 runs）；协议同 v3（linksign、seed42、P1、TE、GPU、加速默认开）。
 > 语义：**CNAS-only = 仅开共邻居采样；vanilla = 全关**；对照列 v3 `base`（BTE+CNAS 全开）。
+> **5 种子加深进行中（2026-09-14 晚起）**：队列 #66=full、#67=vanilla（均 5 数据集×5 种子）、#65+#68=CNAS-only（全 5 数据集）——出数后本表升级为 5 种子口径（预计 09-15 早出数）。
 
 | 数据集 | CNAS-only（auc/ap/sF1） | vanilla（auc/ap/sF1） | v3 base（BTE 开） | BTE 边际（base−CNAS-only） | CNAS 边际·BTE 关时（CNAS-only−vanilla） |
 |---|---|---|---|---|---|
