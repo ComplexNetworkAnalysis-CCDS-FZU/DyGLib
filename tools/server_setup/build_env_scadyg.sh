@@ -33,7 +33,12 @@ pip install deepsnap==0.2.1 py-tgb==0.9.2 || exit 25
 echo "[5] 数值/科学计算（与 torch1.12 匹配）"
 pip install numpy==1.23.4 pandas==1.5.3 scipy==1.9.3 scikit-learn==1.5.0 einops reformer-pytorch==1.4.4 tqdm || exit 26
 
-echo "[6] 自检"
+echo "[6] 激活钩子（v3：PyG CUDA 扩展找 torch 自带 cudart）+ 自检"
+mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
+cat > "$CONDA_PREFIX/etc/conda/activate.d/torch_libpath.sh" <<'EOS'
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib/python3.9/site-packages/torch/lib:$LD_LIBRARY_PATH"
+EOS
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib/python3.9/site-packages/torch/lib:$LD_LIBRARY_PATH"
 python - <<'PY'
 import torch
 print('torch', torch.__version__, 'avail', torch.cuda.is_available())

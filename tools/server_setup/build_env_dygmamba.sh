@@ -24,12 +24,14 @@ pip install "numpy==1.26.4" "setuptools==69.5.1" wheel ninja packaging || exit 1
 pip install einops pandas scipy scikit-learn tqdm tabulate || exit 12
 python -c "import numpy, torch; print('sanity', numpy.__version__, torch.__version__, float(torch.rand(2).sum()))" || exit 12
 
-echo "[4] mamba 内核（v2：nvcc 就绪后按 pin 源码构建；cu118/arch=7.5/禁构建隔离）"
+echo "[4] mamba 内核（v3：服务器 GitHub 不可达 → 禁用官方 release 轮子探测，强制源码编译）"
 [ -x "$CONDA_PREFIX/bin/nvcc" ] || $CONDA install -y -n dygmamba -c nvidia cuda-nvcc=11.8 cuda-cudart-dev=11.8 || exit 13
 export CUDA_HOME="$CONDA_PREFIX"
 export PATH="$CONDA_PREFIX/bin:$PATH"
 export TORCH_CUDA_ARCH_LIST="7.5"
 export MAX_JOBS=6
+export CAUSAL_CONV1D_FORCE_BUILD=TRUE
+export MAMBA_FORCE_BUILD=TRUE
 pip install --no-build-isolation causal-conv1d==1.4.0 mamba-ssm==2.2.2 || pip install --no-build-isolation causal-conv1d mamba-ssm || exit 14
 
 echo "[5] 自检（import + CUDA 算子冒烟）"
