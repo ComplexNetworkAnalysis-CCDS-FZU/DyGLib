@@ -14,7 +14,7 @@
     python tools/sync/fetch_results.py --set e2b     # E-2 补：BTE-off 对照 CNAS-only/vanilla ×5（10）
     python tools/sync/fetch_results.py --set e2d     # 补充：sign 邻域网格 RT/RB/BA 各 5 点（15）
     python tools/sync/fetch_results.py --set e5      # E-5 10 个（sign RT 已可；linksign RT 待完整）
-    python tools/sync/fetch_results.py --set nh5     # 第 2 批补充：胜者 5 种子 RT/RB + OTC/WV 邻域×5+5 + RT 探边（22）
+    python tools/sync/fetch_results.py --set nh5     # 第 2 批补充：胜者 5 种子 RT/RB + 复核 5 种子 WV20/20·OTC40/15 + OTC/WV 邻域 + RT 探边（32）
     python tools/sync/fetch_results.py --set base-gpu  # Baseline GPU 产物：DySDGNN/DynamiSE 各 15 JSON + 2 summary CSV（32）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
@@ -76,6 +76,9 @@ MAIN_LINKSIGN_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/*
 # ---- 第 2 批补充（2026-09-14）：胜者 5 种子 + OTC/WV 邻域探索 + RT 探边（含补跑 6 点后完整 22）----
 WIN_RT_5SEED = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-100.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 WIN_RB_5SEED = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-40.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+# --- #61/#62 复核 5 种子（2026-09-14 晚，用户批准）---
+WIN_WV_20_20_5SEED = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed*.NN-20.LF-20.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+WIN_OTC_40_15_5SEED = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 NH_OTC_40_5 = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-40.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 NH_OTC_40_15 = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 NH_OTC_80_5 = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-80.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
@@ -152,6 +155,8 @@ SETS = {
     "nh5": [
         (WIN_RT_5SEED, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 5),
         (WIN_RB_5SEED, "results/sign_neighborhood/raw/RedditHyperlinkBody", None, 5),
+        (WIN_WV_20_20_5SEED, "results/sign_neighborhood/raw/WikiVote", None, 5),
+        (WIN_OTC_40_15_5SEED, "results/sign_neighborhood/raw/BitcoinOTC", None, 5),
         (NH_OTC_40_5, "results/sign_neighborhood/raw/BitcoinOTC", None, 1),
         (NH_OTC_40_15, "results/sign_neighborhood/raw/BitcoinOTC", None, 1),
         (NH_OTC_80_5, "results/sign_neighborhood/raw/BitcoinOTC", None, 1),
