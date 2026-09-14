@@ -46,6 +46,9 @@
 ### tools/sync/
 - `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e2b|e2d|e3|e3x|e4|e5|nh5|base-gpu|main-a|main-b|main-c|main-d|main-e|all`（`main-*` = 主表分批次；`nh5` = 第 2 批补充集（胜者 5 种子/OTC·WV 邻域/RT 探边，22）；`base-gpu` = Baseline GPU 产物（30 JSON + 2 summary CSV → `results/baseline_m5/`）；**硬校验数量**，不符即中止）。**服务器访问须用户逐次明确许可。**
 
+### tools/fig/
+- `gen_p_patch_heatmap.py` — **R2-11 P 敏感性热力图（2026-09-14）**：读 `results/E-3_patch/raw/`（E-3 v3 CN 修复版，linksign、seed42、NN/LF-Best、TE；只读）绘制 **5 数据集 × P{1,3,5,7}** 双面板热力图（AUC 主面板 + $F1_{wt}$ 副面板），运行时与 `E3_patch_summary.md` 做 84/84 交叉校验；**配色与布局对齐仓库既有热力图**（`analysis/param-graph.py`：seaborn `cmap="crest"`、`annot/fmt=".4f"`、显示名映射 WikiRfA/RedditTitle/RedditBody、轴标签 14pt）。产物：`figures/fig_p_patch_heatmap.{png,pdf,csv}`（PNG 300dpi）。用法：`python tools/fig/gen_p_patch_heatmap.py`（仓库根目录运行，不触服务器）。
+
 ## 待议（尚未迁移的既有脚本）
 
 以下为先于本约定存在、散落其他位置的脚本，是否一并迁入 `tools/` 需与用户确认（迁移需同步更新 docs 引用）：

@@ -133,3 +133,6 @@ per_node_neighbor_stats.py
 
 
 fig/
+# 例外：tools/fig/ 为脚本化绘图生成器目录（用户 2026-09-14 指示），纳入版本控制
+!tools/fig/
+!tools/fig/**
