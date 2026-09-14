@@ -19,17 +19,18 @@ python -V
 echo "[2] torch 2.1.0（官方 cu118 源 → 失败回退默认源）"
 pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu118 || pip install torch==2.1.0 || exit 11
 
-echo "[3] 基础依赖"
-pip install einops ninja packaging wheel setuptools numpy pandas scipy scikit-learn tqdm tabulate || exit 12
+echo "[3] 基础依赖（v2：pin numpy<2 + 老 setuptools，修复 torch2.1 的 numpy2/pkg_resources 问题）"
+pip install "numpy==1.26.4" "setuptools==69.5.1" wheel ninja packaging || exit 12
+pip install einops pandas scipy scikit-learn tqdm tabulate || exit 12
+python -c "import numpy, torch; print('sanity', numpy.__version__, torch.__version__, float(torch.rand(2).sum()))" || exit 12
 
-echo "[4] mamba 内核（优先预编译轮子）"
-if ! pip install causal-conv1d mamba-ssm; then
-  echo "[4b] 预编译失败 → conda cuda-nvcc=11.8 + 源码构建"
-  $CONDA install -y -n dygmamba -c nvidia cuda-nvcc=11.8 cuda-cudart-dev=11.8 || exit 13
-  export CUDA_HOME="$CONDA_PREFIX"
-  export PATH="$CONDA_PREFIX/bin:$PATH"
-  pip install --no-build-isolation causal-conv1d mamba-ssm || exit 14
-fi
+echo "[4] mamba 内核（v2：nvcc 就绪后按 pin 源码构建；cu118/arch=7.5/禁构建隔离）"
+[ -x "$CONDA_PREFIX/bin/nvcc" ] || $CONDA install -y -n dygmamba -c nvidia cuda-nvcc=11.8 cuda-cudart-dev=11.8 || exit 13
+export CUDA_HOME="$CONDA_PREFIX"
+export PATH="$CONDA_PREFIX/bin:$PATH"
+export TORCH_CUDA_ARCH_LIST="7.5"
+export MAX_JOBS=6
+pip install --no-build-isolation causal-conv1d==1.4.0 mamba-ssm==2.2.2 || pip install --no-build-isolation causal-conv1d mamba-ssm || exit 14
 
 echo "[5] 自检（import + CUDA 算子冒烟）"
 python - <<'PY'

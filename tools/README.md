@@ -25,8 +25,8 @@
 - `selftest.sh` — **自检脚本**（不启动任务）：校验任务清单解析、GPU 忙闲探测（lock + 显存）、选卡函数。用法：`bash tools/queue/selftest.sh`。
 
 ### tools/server_setup/
-- `build_env_dygmamba.sh` — **R1-4 波二 DyG-Mamba 独立 env 构建**（服务器端）：torch2.1.0(+cu118) → 预编译 causal-conv1d/mamba-ssm → 失败则 conda `cuda-nvcc=11.8` 源码构建（服务器无系统 nvcc）→ CUDA 算子自检。用法（服务器）：`cd ~/DyGLib && nohup bash tools/server_setup/build_env_dygmamba.sh > ~/envbuild_dygmamba.log 2>&1 &`
-- `build_env_scadyg.sh` — **R1-4 波二 ScaDyG 独立 env 构建**（旧栈：torch1.12.1+cu116 / PyG 轮子 / dgl 1.0.0 / deepsnap / py-tgb；含镜像回退）→ 自检。用法同上（日志 `~/envbuild_scadyg.log`）。
+- `build_env_dygmamba.sh` — **R1-4 波二 DyG-Mamba 独立 env 构建**（服务器端）：torch2.1.0(+cu118) → **v2：pin numpy<2/setuptools69** → nvcc（conda cuda-nvcc=11.8）下源码构建 `causal-conv1d==1.4.0 / mamba-ssm==2.2.2`（arch=7.5）→ CUDA 算子自检。用法（服务器）：`cd ~/DyGLib && nohup bash tools/server_setup/build_env_dygmamba.sh > ~/envbuild_dygmamba.log 2>&1 &`
+- `build_env_scadyg.sh` — **R1-4 波二 ScaDyG 独立 env 构建**（旧栈）：**v2：重建 env** + torch1.12.1+cu116 / numpy1.23.4 / **PyG 精确轮子 pin**（scatter2.1.0+pt112cu116 / sparse0.6.16 / cluster1.6.0 / spline-conv1.2.1）/ dgl1.0.0 / deepsnap / py-tgb → 自检。用法同上（日志 `~/envbuild_scadyg.log`）。
 
 ### tools/verify/
 - `verify_ras_rae_leak.py` — **RAS/RAE/泄漏修复的三项断言**：① 翻转 pos0 标签后 BTE 输出不变（泄漏已封）；② RAE on ≠ off（direct 证据真实生效）；③ indirect 只落在真第三方位置。
