@@ -39,7 +39,7 @@
 - `nh5_report.py` — **第 2 批补充集指标汇总打印**（胜者 5 种子 mean±std、OTC/WV 邻域、RT 探边 + 主表现行对照）。用法：`python tools/verify/nh5_report.py`（需已完成 `--set nh5` 同步）。
 
 ### tools/sync/
-- `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e2b|e2d|e3|e3x|e4|e5|nh5|main-a|main-b|main-c|main-d|main-e|all`（`main-*` = 主表分批次；`nh5` = 第 2 批补充集（胜者 5 种子/OTC·WV 邻域/RT 探边；**硬校验数量**，不符即中止）。**服务器访问须用户逐次明确许可。**
+- `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e2b|e2d|e3|e3x|e4|e5|nh5|base-gpu|main-a|main-b|main-c|main-d|main-e|all`（`main-*` = 主表分批次；`nh5` = 第 2 批补充集（胜者 5 种子/OTC·WV 邻域/RT 探边，22）；`base-gpu` = Baseline GPU 产物（30 JSON + 2 summary CSV → `results/baseline_m5/`）；**硬校验数量**，不符即中止）。**服务器访问须用户逐次明确许可。**
 
 ## 待议（尚未迁移的既有脚本）
 
