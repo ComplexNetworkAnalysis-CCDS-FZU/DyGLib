@@ -111,6 +111,8 @@
 
 ## 最近更新记录
 
+- **2026-09-15 凌晨（续20·图风格定调 + 体检已发 Paper）**：① 用户指示 k×N 重绘图**保持原版统一风格**——生成链：`result_collect.py`（扫 `saved_results/{SignLinkPrediction|LinkSign}/SignDyGFormer/{dataset}/*.json` → 根目录 `param-*.csv`）→ `analysis/param-graph.py`（seaborn `crest`、`fmt=".4f"`、每数据集每指标一张、输出 `figs/{task}-{dataset}-img.pdf`）；现有 10 张旧图（2026-06-24 渲染）在 `figs/`（如 `linksign-WikiRfA-img.pdf`、`Sign-BitcoinAlpha-img.pdf`），重跑后原地替换。② **BTE 离线体检结果已发 `Paper`**（`mb-20260914-220430-code-9815`；含「乐观上界」口径警示与引用注意事项）。
+
 - **2026-09-15 凌晨（续19·k×N 超参网格重跑入队＝方案甲）**：用户追问「NN 是否也要超参实验」→ 确认这正是已批的**方案甲**（Paper 下单 `fd4c` ②）：论文 k×N 热图底层网格 = `run_experiments.py -t parameter`（`PARMA_GROUPS`：LF {1,3,5,10,15,20} × NN {10,15,20,40,60,80,100} = **42 点/图**）；现有 `param-linksign.csv` / `param-sign.csv`（2026-05）为**修复前口径**（如 BA linksign 0.944–0.962），与修复后主表不同源 → 必须重跑。**已入队两行（队尾，入队文件 `tools/queue/grid_kN_20260915.txt`，tasks.txt→84 行）**：`-s linksign -t parameter -m SignDyGFormer`（210 runs）与 `-s sign -t parameter -m SignDyGFormer`（210 runs）；**单种子 42、P1/TE、加速默认**——与主表同代码口径。排期：前面批次（ⓑ→密度扫描→vanilla→CNAS-only→S1→base→RT 探边）跑完后自动接续（约 09-16），**预计 3.5–4.5 天双卡**完成。下游：重生成 `param-*.csv` + 重绘 k×N 图（脚本化、对齐库内风格）。**密度发现加持**：NN≡序列长度上限 ⇒ 该网格同时构成「采样密度敏感度」证据（BTE/CNAS 叙事的核心材料）。
 
 - **2026-09-14 深夜（续18·BTE 离线信号体检）**：新增 `tools/verify/bte_signal_check.py`（纯 CPU、读列裁剪、每数据集抽样 1200 条测试期真实边；忠实复刻 BTE 计数：pos/neg 出现对计数 + 去重投票；对照多数类/直接历史预测器；**乐观上界口径**：全历史截近 K=100 求交，模型侧还要经 CNAS 窗口 + NN 截断）。**结果**：加权证据 AUC — **OTC 0.831 / BA 0.724 / RB 0.707 / WV 0.683 / RT 0.549**（平衡准确率 0.556–0.750；覆盖率 42%–80%）；BA 分桶单调递增（[2-4] 0.860 → [5-19] 0.911 → [20-99] 0.923）。**结论：三元平衡证据在数据中真实存在（4/5 显著），BTE 的理论正确性成立；模型侧没吃到 → 归因于覆盖（模型可见面 ≪ 体检面）+ 聚合尺度/重复膨胀 + 冗余/训练动力学，而非理论错误。** 旁证：直接历史预测器在覆盖子群上很强（RB 0.908@cov 0.463、RT 0.777@cov 0.321）→ RAE 的 direct 定位有据。
