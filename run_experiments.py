@@ -215,6 +215,9 @@ MODULE_GROUP = [
     [False, False, False, True],
     # 6. vanilla（全关）
     [False, False, False, False],
+    # ===== E-2c 补充（2026-09-14 用户指示；BTE×CNAS 2×2 拆解，零架构风险）=====
+    # 7. BTE-only（BTE 开、CNAS 关、RAS/RAE 关）——分离"BTE 证据通道" vs "CNAS 采样裁剪"
+    [False, False, True, False],
 ]
 
 class ExpTy(Enum):
