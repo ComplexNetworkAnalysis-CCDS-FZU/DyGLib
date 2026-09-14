@@ -123,6 +123,7 @@ results/*/raw/
 *.json
 *.pdf
 *.csv
+*.png
 
 dataset_statistics.py
 inter_event_gap.py
