@@ -69,7 +69,8 @@ MAIN_LINKSIGN_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperli
 MAIN_SIGN_WV = "saved_results/LinkSign/SignDyGFormer/WikiVote/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_LINKSIGN_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/*NN-15.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_SIGN_BA = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
-MAIN_SIGN_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/*NN-60.LF-10.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+# 2026-09-14 OTC sign 换装（用户拍板）：NN-60/LF-10 → NN-40/LF-15（0.8775±0.0054 vs 旧 0.8696±0.0048，配对 Δ+0.0079/t=3.16）
+MAIN_SIGN_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_LINKSIGN_BA = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/*NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 MAIN_LINKSIGN_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/*NN-80.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 

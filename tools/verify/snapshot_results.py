@@ -99,7 +99,7 @@ def main() -> int:
     g = show("主表 linksign BA（NN-40 LF-15, 5 seeds）", "results/main_tables/raw/linksign/BitcoinAlpha/*.json")
     mean_line("linksign BA", g)
     print()
-    g = show("主表 sign OTC（NN-60 LF-10, 5 seeds）", "results/main_tables/raw/sign/BitcoinOTC/*.json")
+    g = show("主表 sign OTC（NN-40 LF-15, 5 seeds；2026-09-14 换装）", "results/main_tables/raw/sign/BitcoinOTC/*NN-40.LF-15*.json")
     mean_line("sign OTC", g)
     print()
     g = show("主表 linksign OTC（NN-80 LF-5, 5 seeds）", "results/main_tables/raw/linksign/BitcoinOTC/*.json")

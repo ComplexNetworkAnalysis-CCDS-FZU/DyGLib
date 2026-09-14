@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""nh5 补充集指标汇总（拉取后打印）：胜者/复核 5 种子 mean±std、邻域单点、探边 + 主表现行对照（含配对 t）。"""
+"""nh5 补充集指标汇总（拉取后打印）：胜者/复核 5 种子 mean±pstd、邻域单点、探边 + 主表现行对照（含配对 t）。
+
+注：描述统计用 **pstd（总体标准差，ddof=0）——与主表口径一致**；配对 t 内部用样本 sd（标准公式）。
+"""
 import glob
 import json
 import pathlib
@@ -39,8 +42,8 @@ def show(title, paths):
         for name, idx in (("auc", 1), ("ap", 2), ("f1b", 3), ("f1w", 4)):
             vals = [r[idx] for r in agg(paths)]
             mean = sum(vals) / len(vals)
-            sd = (sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)) ** 0.5
-            print(f"  → {name}: mean={mean:.4f} std(ddof=1)={sd:.4f}")
+            pstd = (sum((v - mean) ** 2 for v in vals) / len(vals)) ** 0.5
+            print(f"  → {name}: mean={mean:.4f} pstd={pstd:.4f} (n={len(vals)})")
     print()
 
 
