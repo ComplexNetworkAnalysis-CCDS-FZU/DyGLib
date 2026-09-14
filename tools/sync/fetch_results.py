@@ -93,6 +93,16 @@ NH_WV_40_20 = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed4
 NH_RT_100_5 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-100.LF-5.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 NH_RT_120_3 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-120.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
+# ---- ⓑ/E-2c 5 种子加深批（2026-09-14 晚起；命名 = NN-Best.LF-Best + 模块旗标）----
+# e2s（ⓑ）= full / vanilla / CNAS-only 各 5 数据集×5 种子；e2c = BTE-only / base 各 25 + RT 的 +RAS/+RAE 各 5
+E2S_FULL = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+E2S_VANILLA = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-D.P1.TE.json"
+E2S_CNASONLY = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-E.P1.TE.json"
+E2C_BTEONLY = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-E.CNAS-D.P1.TE.json"
+E2C_BASE = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-E.CNAS-E.P1.TE.json"
+E2C_PLUSRAS = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-E.RASE-D.BTE-E.CNAS-E.P1.TE.json"
+E2C_PLUSRAE = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+
 # ---- Baseline GPU 产物（2026-09-14 二波：#53/#54；路径相对 ~/DyGLib）----
 BASE_M5_DYSDGNN = "../DynamiSE_DySDGNN_repro/outputs/DySDGNN/*.json"
 BASE_M5_DYNAMISE = "../DynamiSE_DySDGNN_repro/outputs/DynamiSE/*.json"
@@ -116,6 +126,22 @@ SETS = {
     "e2b": [
         (E2B, "results/E-2_ablation/raw_bte/{ds}",
          ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 10),
+    ],
+    "e2s": [
+        (E2S_FULL, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2S_VANILLA, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2S_CNASONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+    ],
+    "e2c": [
+        (E2C_BTEONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2C_BASE, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2C_PLUSRAS, "results/E-2_ablation/raw_seeds/RedditHyperlinkTitle", None, 5),
+        (E2C_PLUSRAE, "results/E-2_ablation/raw_seeds/RedditHyperlinkTitle", None, 5),
     ],
     "e2d": [
         (GRID_RT_A, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 4),
