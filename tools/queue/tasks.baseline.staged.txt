@@ -27,3 +27,13 @@
 # 第二波候选（评估中，未定）：R1-4 提到的 DyG-Mamba / UniDyG / ScaDyG / 多模态文本属性图。
 # 开源线索：DyG-Mamba→Clearloveyuan/DyG-Mamba；ScaDyG→BITNEO/ScaDyG；UniDyG→未检索到仓库。
 # 待 Baseline 可行性三角评估 + 用户/导师选定后，再往本文件追加任务行。
+
+# ---- 2026-09-14 波二就绪（Baseline 应答 `mb-20260914-121230-baseline-de27`）：DyG-Mamba GO(P1) / ScaDyG 条件 GO(P2) / UniDyG・多模态→引用+讨论 ----
+# 前置：① 服务器 clone 已更新至 `1100ee6`（含 --force/幂等守卫，2026-09-14 已拉取✓）；
+#       ② 待用户批准建两个独立 conda env：
+#          dygmamba = torch(2.1/2.2) + causal-conv1d>=1.2.0 + mamba-ssm + einops + **conda 版 cuda-nvcc**（服务器无系统 nvcc，免 sudo）；
+#          scadyg  = py3.9 + torch1.12.1+cu116 + dgl==1.0.0 + deepsnap + py-tgb + torch-geometric 2.5.3（旧栈，独立 env）。
+# Phase A smoke（env 就绪后入队；输出隔离 outputs/_smoke/）：
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate dygmamba && python ext_baselines/dyg_mamba/prepare_data.py --src /home/fedsa/DyGLib/processed_data && python ext_baselines/dyg_mamba/train_sign_dygmamba.py --dataset_name BitcoinAlpha --device cuda:@GPU@ --seed 42 --epochs 5 --out_dir /home/fedsa/DynamiSE_DySDGNN_repro/outputs/_smoke --verbose && echo BASELINE_DYGMAMBA_SMOKE_OK
+@ cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate scadyg && python ext_baselines/scadyg/csv2npz.py --src /home/fedsa/DyGLib/processed_data --dst ext_baselines/third_party/ScaDyG && python ext_baselines/scadyg/train_sign_scadyg.py --dataset BitcoinAlpha --cuda_device @GPU@ --seed 42 --epochs 3 --out_dir /home/fedsa/DynamiSE_DySDGNN_repro/outputs/_smoke --verbose && echo BASELINE_SCADYG_SMOKE_OK
+# Phase B 全量（smoke 通过后）：3 数据集 × 5 种子 × 2 模型（双卡）。
