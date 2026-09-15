@@ -122,6 +122,7 @@ class DirectedNeighborSampler:
         time_scaling_factor: float = 0.0,
         seed: int = None,
         common_neighbor_look_forward: int = 5,
+        ras_look_forward: Optional[int] = None,
         module_repeat_aware_sampler: bool = False,
         module_common_neighbor_sampler: bool = True,
     ):
@@ -136,6 +137,12 @@ class DirectedNeighborSampler:
         self.sample_neighbor_strategy = sample_neighbor_strategy
         self.seed = seed
         self.common_neighbors_look_forward = common_neighbor_look_forward
+        # 2026-09-15 双半径（k_c/k_r）：R 锚点（RAS）窗口半径 k_r；缺省 = k_c（原公式、零行为变更）。
+        self.ras_look_forward = (
+            common_neighbor_look_forward
+            if ras_look_forward is None
+            else ras_look_forward
+        )
         self.module_repeat_aware_sampler = module_repeat_aware_sampler
         self.module_common_neighbor_sampler = module_common_neighbor_sampler
 
@@ -377,7 +384,8 @@ class DirectedNeighborSampler:
             # ---- M4 加速接缝（默认启用；--no-accel / SIGNDYG_ACCEL=0 关闭）----
             # 与下方原路径逐位一致（K1 bit-exact 门禁验证）；启用时内核内部完成
             # searchsorted 截断 + CN + RAS + look-forward + concat/sort，返回升序下标。
-            if _accel.on:
+            # 2026-09-15：K1 内核仅支持单一 k —— 双半径（k_r != k_c）时自动回退 numpy 原路径。
+            if _accel.on and self.ras_look_forward == self.common_neighbors_look_forward:
                 _nb = self.nodes_neighbors_selector(neighbor_ty)
                 with prof.timer("Sampling: Accel K1"):
                     src_sel, dst_sel = _accel.kernel.core_sample(
@@ -480,6 +488,9 @@ class DirectedNeighborSampler:
                         dst_node_neighbor_ids,
                         common_neighbors,
                         self.common_neighbors_look_forward,
+                        repeat_k=self.ras_look_forward,
+                        src_repeat_id=dst_node_id,
+                        dst_repeat_id=src_node_id,
                     )
 
                 with prof.timer("Sampling: Concat & Sort"):
@@ -601,6 +612,9 @@ class DirectedNeighborSampler:
                     dst_in_ids,
                     type_a_common,
                     self.common_neighbors_look_forward,
+                    repeat_k=self.ras_look_forward,
+                    src_repeat_id=dst_id,
+                    dst_repeat_id=src_id,
                 )
                 src_out_idxs_a = (
                     np.concatenate(src_out_idxs_a)
@@ -632,6 +646,9 @@ class DirectedNeighborSampler:
                     dst_out_ids,
                     type_b_common,
                     self.common_neighbors_look_forward,
+                    repeat_k=self.ras_look_forward,
+                    src_repeat_id=dst_id,
+                    dst_repeat_id=src_id,
                 )
                 src_in_idxs_b = (
                     np.concatenate(src_in_idxs_b)
@@ -785,8 +802,21 @@ class DirectedNeighborSampler:
 
 
 def look_forward_sampling(
-    src_neighbor_ids, dst_neighbor_ids, common_neighbors: dict, k
+    src_neighbor_ids,
+    dst_neighbor_ids,
+    common_neighbors: dict,
+    k,
+    repeat_k=None,
+    src_repeat_id=None,
+    dst_repeat_id=None,
 ):
+    """共同邻居窗口采样（look-forward）。
+
+    repeat_k / src_repeat_id / dst_repeat_id（2026-09-15 双半径扩展）：
+    当锚点位置处的邻居 id == 对应侧的“对向节点”id（即该位置是重复交互 R 锚点）时，
+    使用 repeat_k 作为其窗口半径；其余（C 锚点）使用 k。
+    三者全为 None 时退化为单一窗口半径 k（原公式，逐位向后兼容）。
+    """
     pf = Profiler()
 
     with pf.timer("LF: All Common Neighbor "):
@@ -803,7 +833,14 @@ def look_forward_sampling(
 
         for v, (src_pos, dst_pos) in common_neighbors.items():
             for idx in src_pos:
-                start = max(0, idx - k)
+                eff_k = k
+                if (
+                    repeat_k is not None
+                    and src_repeat_id is not None
+                    and int(src_neighbor_ids[idx]) == int(src_repeat_id)
+                ):
+                    eff_k = repeat_k
+                start = max(0, idx - eff_k)
                 left, right = 0, len(src_all_common)
                 # 往前找第一个公共节点或边界
                 while left < right:
@@ -817,7 +854,14 @@ def look_forward_sampling(
                 src_idxs.append(np.arange(start, idx + 1, dtype=np.int32))
 
             for idx in dst_pos:
-                start = max(0, idx - k)
+                eff_k = k
+                if (
+                    repeat_k is not None
+                    and dst_repeat_id is not None
+                    and int(dst_neighbor_ids[idx]) == int(dst_repeat_id)
+                ):
+                    eff_k = repeat_k
+                start = max(0, idx - eff_k)
 
                 left, right = 0, len(dst_all_common)
                 # 往前找第一个公共节点或边界
@@ -854,6 +898,7 @@ def get_neighbor_sampler(
     time_scaling_factor: float = 0.0,
     seed: int = None,
     common_neighbor_look_forward: int = 2,
+    ras_look_forward: Optional[int] = None,
     module_repeat_aware_sampler: bool = False,
     module_common_neighbor_sampler: bool = True,
 ):
@@ -909,6 +954,7 @@ def get_neighbor_sampler(
         time_scaling_factor=time_scaling_factor,
         seed=seed,
         common_neighbor_look_forward=common_neighbor_look_forward,
+        ras_look_forward=ras_look_forward,
         module_repeat_aware_sampler=module_repeat_aware_sampler,
         module_common_neighbor_sampler=module_common_neighbor_sampler,
     )

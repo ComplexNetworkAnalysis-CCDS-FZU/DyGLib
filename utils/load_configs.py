@@ -60,6 +60,12 @@ class SignPredictArgs(BaseModel):
     common_neighbors_look_forward: int = Field(
         1, description="每个共同邻居前向采样数量"
     )
+    # 2026-09-15 双半径（k_c/k_r）：R 锚点（RAS 重复位置）的 look-forward 半径。
+    # None = 与 common_neighbors_look_forward 相同（单一窗口，向后兼容、零行为变更）。
+    ras_look_forward: Optional[int] = Field(
+        None,
+        description="RAS 重复锚点的 look-forward 半径 k_r；None=与 k_c 相同（原公式）",
+    )
     pos_weight: float = Field(1.0, description="符号分类任务中的pos权重")
 
     # 模型参数
@@ -180,6 +186,11 @@ class SignPredictArgs(BaseModel):
             param_fmt = ".NN-Best.LF-Best"
         else:
             param_fmt = f".NN-{sample_number}.LF-{look_forward}"
+
+        # 双半径标记：显式设置 k_r 时始终带上 .RLF-{k_r}（含 k_r==k_c 的对角点），
+        # 与单窗口同配置结果在文件名上区分，避免覆盖，便于聚合脚本按标签过滤。
+        if self.ras_look_forward is not None:
+            param_fmt += f".RLF-{self.ras_look_forward}"
 
         enable_RAS = self.module_repeat_aware_sampler
         enable_RASE = self.module_repeat_aware_sign_encoder

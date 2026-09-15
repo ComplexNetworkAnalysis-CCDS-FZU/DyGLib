@@ -66,6 +66,7 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=0,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
+        ras_look_forward=args.ras_look_forward,
         module_repeat_aware_sampler=args.module_repeat_aware_sampler,
         module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
     )
@@ -77,6 +78,7 @@ if __name__ == "__main__":
         time_scaling_factor=args.time_scaling_factor,
         seed=1,
         common_neighbor_look_forward=args.common_neighbors_look_forward,
+        ras_look_forward=args.ras_look_forward,
         module_repeat_aware_sampler=args.module_repeat_aware_sampler,
         module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
     )
