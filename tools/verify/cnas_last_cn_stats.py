@@ -74,10 +74,12 @@ def build_node_histories(u, i, ts):
 
 
 def side_stats(nbrs_self, nbrs_other, k, k_ref=20, *, counterpart_id=None, repeat_aware=False):
-    """单侧统计：(has_cn, drop_tail, n_total, cov_k, cov_ref)。
+    """单侧统计：(has_anchor, drop_tail, n_total, cov_k, cov_ref, r_share, cov_k0)。
 
     nbrs_self/nbrs_other：升序历史邻居 id 数组。
     repeat_aware=True 时，锚点 = CN 位置 ∪ "与 counterpart 直接交互"的位置（RAS 语义）。
+    r_share：R 锚点窗口对并集的额外贡献占比（vs 仅 CN 窗口）；
+    cov_k0：R 锚点只保留锚点本身（k_R=0）时的覆盖率——双半径可行性参考。
     """
     n_total = len(nbrs_self)
     if n_total == 0:
@@ -86,36 +88,52 @@ def side_stats(nbrs_self, nbrs_other, k, k_ref=20, *, counterpart_id=None, repea
     for p, w in enumerate(nbrs_self):
         pos_map.setdefault(int(w), []).append(p)
     other = set(int(w) for w in nbrs_other)
-    positions = []
+    cn_positions = []
     for w in other:
         ps = pos_map.get(w)
         if ps:
-            positions.extend(ps)
+            cn_positions.extend(ps)
+    r_positions = []
     if repeat_aware and counterpart_id is not None:
-        ps = pos_map.get(int(counterpart_id))
-        if ps:
-            positions.extend(ps)
-    if not positions:
-        return (0, 0, n_total, 0.0, 0.0)
-    positions.sort()
-    last = positions[-1]
-    drop_tail = n_total - 1 - last
+        r_positions = list(pos_map.get(int(counterpart_id), []))
+    if not cn_positions and not r_positions:
+        return (0, 0, n_total, 0.0, 0.0, 0.0, 0.0)
+    all_positions = sorted(set(cn_positions) | set(r_positions))
+    drop_tail = n_total - 1 - all_positions[-1]
 
-    def coverage(k):
+    def union_size(cn_k, r_k, use_r=True):
+        anchors = sorted(
+            [(p, 0) for p in cn_positions]
+            + ([(p, 1) for p in r_positions] if use_r else [])
+        )
+        apos = [p for p, _ in anchors]
         mask = np.zeros(n_total, bool)
-        for idx in positions:
-            start = idx - k
+        for idx, is_r in anchors:
+            kk = r_k if is_r else cn_k
+            start = idx - kk
             if start < 0:
                 start = 0
-            j = bisect.bisect_left(positions, idx)  # 第一个 >= idx
+            j = bisect.bisect_left(apos, idx)  # 第一个 >= idx
             if j > 0:
-                prev = positions[j - 1]
+                prev = apos[j - 1]
                 if prev + 1 > start:
                     start = prev + 1
             mask[start : idx + 1] = True
-        return mask.sum() / n_total
+        return int(mask.sum())
 
-    return (1, drop_tail, n_total, coverage(k), coverage(k_ref))
+    base = union_size(k, k, True)
+    cn_only = union_size(k, 0, False)
+    k0 = union_size(k, 0, True)
+    r_share = (base - cn_only) / base if base > 0 else 0.0
+    return (
+        1,
+        drop_tail,
+        n_total,
+        base / n_total,
+        union_size(k_ref, k_ref, True) / n_total,
+        r_share,
+        k0 / n_total,
+    )
 
 
 def main():
@@ -138,10 +156,10 @@ def main():
     rng = np.random.default_rng(args.seed)
 
     print(
-        f"{'dataset':<22s} {'LF':>3s} {'no-CN%':>7s} {'drop_tail(mean/med/p90)':>24s} "
-        f"{'drop%':>7s} {'cov@LF':>7s} {'cov@20':>7s}"
+        f"{'dataset':<22s} {'LF':>3s} {'no-anc%':>7s} {'drop_tail(mean/med/p90)':>24s} "
+        f"{'drop%':>7s} {'cov@LF':>7s} {'cov@20':>7s} {'Rshare':>7s} {'covR(k=0)':>9s}"
     )
-    print("-" * 88)
+    print("-" * 106)
     for ds in args.datasets:
         path = ROOT / DATASETS[ds]
         u, i, ts = load_edges(path)
@@ -154,7 +172,7 @@ def main():
 
         k = LF_BEST.get(ds, 5)
         no_cn = 0
-        drops, tot, covs, cov_refs = [], [], [], []
+        drops, tot, covs, cov_refs, shares, cov0s = [], [], [], [], [], []
         for e in idx:
             a, b = int(u[e]), int(i[e])
             t = float(ts[e])
@@ -176,7 +194,7 @@ def main():
                 )
                 if st is None:
                     continue
-                has_cn, d, nt, c, cr = st
+                has_cn, d, nt, c, cr, sh, c0 = st
                 if not has_cn:
                     no_cn += 1
                     continue
@@ -184,20 +202,25 @@ def main():
                 tot.append(nt)
                 covs.append(c)
                 cov_refs.append(cr)
+                shares.append(sh)
+                cov0s.append(c0)
 
         if not drops:
-            print(f"{ds:<22s} {k:>3d}  (无 CN 样本)")
+            print(f"{ds:<22s} {k:>3d}  (无锚点样本)")
             continue
         drops = np.asarray(drops)
         tot = np.asarray(tot)
         covs = np.asarray(covs)
         cov_refs = np.asarray(cov_refs)
+        shares = np.asarray(shares)
+        cov0s = np.asarray(cov0s)
         n_sides = len(drops) + no_cn
         drop_frac = drops / np.maximum(tot, 1)
         print(
             f"{ds:<22s} {k:>3d} {100.0*no_cn/max(n_sides,1):>6.1f}% "
             f"{drops.mean():>8.1f}/{np.median(drops):>6.0f}/{np.percentile(drops, 90):>7.0f}   "
-            f"{100*drop_frac.mean():>5.1f}%   {covs.mean():>6.3f}   {cov_refs.mean():>6.3f}"
+            f"{100*drop_frac.mean():>5.1f}%   {covs.mean():>6.3f}   {cov_refs.mean():>6.3f}   "
+            f"{100*shares.mean():>5.1f}%   {cov0s.mean():>8.3f}"
         )
 
 
