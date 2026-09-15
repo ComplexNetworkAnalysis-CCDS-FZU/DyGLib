@@ -117,6 +117,8 @@
 
 ## 最近更新记录
 
+- **2026-09-15 晚（续32·CNAS 加密机制对账 + last-CN 结构统计）**：回应「CNAS 加密理论上应退化到 recent-N」疑问：① **机制核对**（`utils/direct_neighbor_sampler.py` `look_forward_sampling`:787 + 并集注入:518）：窗口=[max(0,idx−k), idx] 且**被上一个 CN 截断**；序列=窗口并集（窗外事件全部丢弃）→ **k≥CN 间距时并集≈[起点, last-CN] 连续史 → 趋近 recent-N 成立**（与 RT@NN-120 上 on≈off 的观察相符）。② **新增离线统计 `tools/verify/cnas_last_cn_stats.py`**（CPU、每数据集 2000 边、测试段）：**last-CN 截断普遍存在**——平均 **~15% 的最新事件被截**（median 1–4 条；mean 8–21 条；p90 19–53 条），**且不随 k 增大而消失**（结构性）；即使 k=20，窗口并集覆盖率也只有 **0.67–0.79**（RT@LF1 仅 0.31）→「退化」是渐近且有界的；**no-CN 率**：RT 45.6% / RB 51.2%（≈一半边 CNAS 根本不生效）vs WV 14.8%。③ **判定**：BA 反常（80/20 −0.0106）**不能**归因于截断（BA drop% 15.4% 与其他数据集相当）→ 更可能为单种子波动；如需定论可补 2–3 颗种子。
+
 - **2026-09-15 晚（续31·术语 + 结果已同步 Paper）**：已发 `Paper`（`mb-20260915-183732-code-4fef`）：① 术语规定（base≡w/o all；[F,F,T,T]→BTE+CNAS；旧记录解读规则）；② **BTE-only 5 种子结果**（5/5 胜 CNAS-only；WV 显著超 full；RT ap 显著负；待 #77 补 w/o all 后出 2×2 定稿）；③ **密度扫描 8/9**（收益≤0.006、过度加密反降；「密度不足非主因」；RB-160/10 补跑中）。
 
 - **2026-09-15 晚（续30·术语规定：base＝w/o all）**：用户拍板：**base ≡ w/o all ≡ [F,F,F,F]**（历史别名 vanilla）；历史称 "base/基座" 的 **[F,F,T,T]（CNAS+BTE）即日起统一称 `BTE+CNAS`**（行号 idx 0 不变；#81 在跑的那条就是它）。已对齐：PROGRESS 顶部新增「术语约定」节（含旧记录解读规则）；`run_experiments.py`、`tools/verify/agg_configs.py`、`tools/sync/fetch_results.py` 的注释同步更新（纯注释/文档，零行为变更）。
