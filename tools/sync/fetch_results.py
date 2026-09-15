@@ -143,6 +143,15 @@ SETS = {
         (E2C_PLUSRAS, "results/E-2_ablation/raw_seeds/RedditHyperlinkTitle", None, 5),
         (E2C_PLUSRAE, "results/E-2_ablation/raw_seeds/RedditHyperlinkTitle", None, 5),
     ],
+    # 2026-09-15 中期取数（BTE 进度核查）：BA/OTC/RT 已完成的三配置（full/CNAS-only/BTE-only）+ CNAS-only WV
+    "e2now": [
+        (E2C_BTEONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle"], 15),
+        (E2S_FULL, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle"], 15),
+        (E2S_CNASONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote"], 15),
+    ],
     "e2d": [
         (GRID_RT_A, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 4),
         (GRID_RT_B, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 1),
