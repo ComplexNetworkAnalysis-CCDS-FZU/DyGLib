@@ -117,6 +117,8 @@
 
 ## 最近更新记录
 
+- **2026-09-15 晚（续31·术语 + 结果已同步 Paper）**：已发 `Paper`（`mb-20260915-183732-code-4fef`）：① 术语规定（base≡w/o all；[F,F,T,T]→BTE+CNAS；旧记录解读规则）；② **BTE-only 5 种子结果**（5/5 胜 CNAS-only；WV 显著超 full；RT ap 显著负；待 #77 补 w/o all 后出 2×2 定稿）；③ **密度扫描 8/9**（收益≤0.006、过度加密反降；「密度不足非主因」；RB-160/10 补跑中）。
+
 - **2026-09-15 晚（续30·术语规定：base＝w/o all）**：用户拍板：**base ≡ w/o all ≡ [F,F,F,F]**（历史别名 vanilla）；历史称 "base/基座" 的 **[F,F,T,T]（CNAS+BTE）即日起统一称 `BTE+CNAS`**（行号 idx 0 不变；#81 在跑的那条就是它）。已对齐：PROGRESS 顶部新增「术语约定」节（含旧记录解读规则）；`run_experiments.py`、`tools/verify/agg_configs.py`、`tools/sync/fetch_results.py` 的注释同步更新（纯注释/文档，零行为变更）。
 
 - **2026-09-15 晚（续29·S1 修复重排 + 密度扫描结果 8/9 + OOM 补跑）**：① **S1 修复已部署**：`models/DyGFormer.py` 增加 `self.profiler = Profiler(); self.profiler.disable()`（镜像 SignDyGFormer；空记录 summary/save 安全）→ 提交 `17632bd`，服务器 `pull --ff-only` 校验（HEAD=17632bd、grep profiler=5 命中）；两条 S1 任务经新工具 `tools/queue/edit_remote_tasks.py`（ssh+python+base64，零转义；自动备份+回读校验）插入队列 **#83/#84**。② **密度扫描 8/9 已取回**（`--set dens` → `results/E-2_ablation/raw_density/`；单种子 42；base=CNAS-on / BTE-only=CNAS-off）：**收益普遍 ≤0.006、噪声量级**——RT base 0.9311(@60/1) → 60/10 **+0.0001**、120/10 **+0.0025**；RB base 0.9292(@80/3) → 80/10 **+0.0031**；BA base 0.9554(@40/15) → 40/20 **+0.0045** 但 80/20 **−0.0060**（过度加密反降）；BTE-only：RT 120/1 −0.0007、RB 160/3 **+0.0062**、BA 80/15 −0.0019。**同密度对比**：RT@NN-120 base(LF10) 0.9336 ≈ BTE-only 0.9330（加密后持平 → 可在 RT 补齐 CNAS 损失）；BA@NN-80 base 0.9494 < BTE-only 0.9600（仍差）→「采样密度不足是主因」假说**不获强支持**（单种子口径，谨慎）。③ **#72（RB NN-160/LF-10）因与 #73 同卡并发 CUDA OOM 丢失** → 补跑行已插 **#85**（加 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`）；k×N 网格顺延 **#86/#87**。队列现状 87 行。
