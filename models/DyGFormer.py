@@ -6,6 +6,7 @@ from torch.nn import MultiheadAttention
 
 from models.modules import AutoClassName, TimeEncoder
 from utils.utils import NeighborSampler
+from utils.profiler import Profiler
 
 
 class DyGFormer(nn.Module, metaclass=AutoClassName):
@@ -58,6 +59,12 @@ class DyGFormer(nn.Module, metaclass=AutoClassName):
         self.dropout = dropout
         self.max_input_sequence_length = max_input_sequence_length
         self.device = device
+
+        # 2026-09-15 修复（S1 真基线崩溃）：训练脚本的 E-1 profiler 仪器化会调用
+        # model[0].profiler.enable()/disable()/summary()/save()；纯 DyGFormer 原先无此属性
+        # → AttributeError（首个周期测试即崩）。此处镜像 SignDyGFormer 创建（空记录时各接口安全）。
+        self.profiler = Profiler()
+        self.profiler.disable()  # 默认关闭，仅测试阶段开启
 
         self.time_encoder = TimeEncoder(time_dim=time_feat_dim)
 

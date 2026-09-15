@@ -1,0 +1,2 @@
+-s sign -m DyGFormer -e -r BitcoinAlpha BitcoinOTC WikiVote
+-s linksign -m DyGFormer -e -r BitcoinAlpha BitcoinOTC WikiVote
