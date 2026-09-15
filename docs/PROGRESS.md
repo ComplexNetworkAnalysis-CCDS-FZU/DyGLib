@@ -111,6 +111,8 @@
 
 ## 最近更新记录
 
+- **2026-09-15 上午（续24·BTE 中期结果已同步 Paper + 口径澄清）**：已发 `Paper`（`mb-20260915-082414-code-a734`）：BTE 中期结果（=续23 数字）+ 数据口径（**E-2 消融加种子批 #65/#66/#67**，linksign 3 分类、修复后代码、per-dataset NN/LF 最优、P1/TE、5 种子；**full 批与主表数字逐位一致**=同口径基准）+ 待补清单（vanilla/base 5 种子 → 完整 2×2 定稿）。建议 Paper 等 2×2 完成后定稿引用。
+
 - **2026-09-15 上午（续23·BTE 中期结果：BTE-only 显著强于 CNAS-only）**：`#67` 五种子进度 BA/OTC/RT 15/15 完成（RB 1/5、WV 待跑；预计 12:00–13:00 全完）。已同步中期数据（`fetch_results.py` 新增 `--set e2now`，45 文件，sha256 入 `_sync_raw_log.csv`；新工具 `tools/verify/agg_configs.py` 按旗标聚合+同种子配对）。**5 种子（同种子配对 Δ）**：① **BTE-only − CNAS-only**：BA auc **+0.0075（t=4.4）**、ap +0.0247（t=5.7）、f1_mac +0.0235（t=2.2）；OTC auc **+0.0097（t=8.2）**、ap +0.0371（t=7.9）、sign_f1 +0.0082（t=4.7）→ **BTE 单独显著优于 CNAS 单独**；② **BTE-only − full**：BA +0.0036（t=1.7）n.s.、OTC +0.0031（t=1.4）n.s.、RT −0.0021（t=−1.8）且 ap **−0.0073（t=−3.0）显著负** → 在 BTE 上叠加 CNAS 无增益、RT 上有害（与「CNAS 裁剪丢证据」一致）；③ WV 当前仅 CNAS-only 5 种子（auc 0.9605±0.0019、ap 0.8129±0.0061）。**待补**：vanilla/base 5 种子（#77/#81）、RB/WV BTE-only、CNAS-only RT/RB（#78）→ 齐后出完整 2×2 配对。
 
 - **2026-09-15 上午（续22·与 Paper 同步审计结论 + 批次实况）**：① 已发 `Paper`（`mb-20260915-081806-code-f689`）：早停 notice 未接线（实际判据=全 val 指标 AND）+ sign 任务 best_thr 三元写反（sign 阈值型指标 @0.5 口径；linksign 主任务无此问题）+ 写作口径提示（方法节按「全部验证指标同时不下降」表述）。② **批次实况（08:20）**：#66 full BA/OTC/RT/RB 各 5/5 完、WV 3/5（~09:30 完）；#67 BTE-only BA/OTC/RT 各 5/5 完、RB 1/5 进行中（预计 ~13:00 全完）；#65 CNAS-only 09-14 22:49 全完。③ **输出位校正**：linksign（3 分类）结果在 `saved_results/SignLinkPrediction/`、sign 在 `saved_results/LinkSign/`（fetch 工具 glob 指向正确）。④ e2s/e2c 取数分别在 #77/#78 与 #67/#81/#82 完成后执行。
