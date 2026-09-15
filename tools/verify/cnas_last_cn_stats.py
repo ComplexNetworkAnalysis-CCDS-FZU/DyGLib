@@ -73,10 +73,11 @@ def build_node_histories(u, i, ts):
     return out
 
 
-def side_stats(nbrs_self, nbrs_other, k, k_ref=20):
+def side_stats(nbrs_self, nbrs_other, k, k_ref=20, *, counterpart_id=None, repeat_aware=False):
     """单侧统计：(has_cn, drop_tail, n_total, cov_k, cov_ref)。
 
     nbrs_self/nbrs_other：升序历史邻居 id 数组。
+    repeat_aware=True 时，锚点 = CN 位置 ∪ "与 counterpart 直接交互"的位置（RAS 语义）。
     """
     n_total = len(nbrs_self)
     if n_total == 0:
@@ -88,6 +89,10 @@ def side_stats(nbrs_self, nbrs_other, k, k_ref=20):
     positions = []
     for w in other:
         ps = pos_map.get(w)
+        if ps:
+            positions.extend(ps)
+    if repeat_aware and counterpart_id is not None:
+        ps = pos_map.get(int(counterpart_id))
         if ps:
             positions.extend(ps)
     if not positions:
@@ -118,6 +123,11 @@ def main():
     ap.add_argument("--edges", type=int, default=2000, help="每数据集抽样边数")
     ap.add_argument("--test-ratio", type=float, default=0.15, help="测试段比例（取最后分位）")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument(
+        "--repeat-aware",
+        action="store_true",
+        help="锚点含 RAS（与 counterpart 直接交互的位置）——对应主模型 full 口径（RAS 开）",
+    )
     ap.add_argument(
         "--datasets",
         nargs="*",
@@ -156,8 +166,14 @@ def main():
             cut_b = int(np.searchsorted(rec_b[0], t, side="left"))
             na = rec_a[1][:cut_a]
             nb = rec_b[1][:cut_b]
-            for self_n, other_n in ((na, nb), (nb, na)):
-                st = side_stats(self_n, other_n, k)
+            for self_n, other_n, cp in ((na, nb, b), (nb, na, a)):
+                st = side_stats(
+                    self_n,
+                    other_n,
+                    k,
+                    counterpart_id=cp,
+                    repeat_aware=args.repeat_aware,
+                )
                 if st is None:
                     continue
                 has_cn, d, nt, c, cr = st
