@@ -111,7 +111,9 @@
 
 ## 最近更新记录
 
-- **2026-09-15 上午（续25·BTE-only vs 基座（base）现状）**：用户询问 BTE-only 与 base（[F,F,T,T]＝BTE+CNAS 基座、无 RAS/RAE）对比 → **base 5 种子未跑（#81 排队中）**，暂无 5 种子配对；单种子（seed42：E-2 v3 base vs 新批 BTE-only）Δauc：BA **+0.0065** / OTC **+0.0072** / RT +0.0026 / RB −0.0058（混合、噪声内，仅参考）。**结构提示**：base 与 full 仅差 RAS/RAE（近 no-op；seed42 差距 ±0.001–0.008 无系统方向）⇒ base≈full ⇒「BTE-only vs base」的 5 种子结论预计与「BTE-only vs full」一致（BA +0.0036/OTC +0.0031 n.s.、RT −0.0021 且 ap 显著负）。
+- **2026-09-15 上午（续26·术语澄清「基座＝w/o all」+ BTE-only vs w/o all 现状）**：用户明确：**「基座」＝ w/o all ＝ vanilla [F,F,F,F]**（续25 中曾把「基座」记为 base [F,F,T,T]，现予澄清；两套数字均有效、勿混淆）。**BTE-only vs w/o all**：5 种子待 #77（密度扫描 #68–76 后自动接续，预计今夜—明晨出数）；单种子（seed42）Δauc：BA +0.0002（平）/ OTC **+0.0085**（ap +0.0413、sF1 +0.0116）/ RT −0.0003（平）/ RB −0.0100（但 sF1 +0.0118，混合）；WV 待跑。对照：**CNAS-only − w/o all 单种子 5/5 为负**（BA −0.0061 / OTC −0.0040 / RT −0.0110 / RB −0.0018 / WV −0.0050）→ 单种子下 BTE 单独明显好于 CNAS 单独。
+
+- **2026-09-15 上午（续25·BTE-only vs base [F,F,T,T] 现状；注：「基座」按用户口径＝w/o all，见续26）**：用户询问 BTE-only 与 base（[F,F,T,T]＝BTE+CNAS、无 RAS/RAE）对比 → **base 5 种子未跑（#81 排队中）**，暂无 5 种子配对；单种子（seed42：E-2 v3 base vs 新批 BTE-only）Δauc：BA **+0.0065** / OTC **+0.0072** / RT +0.0026 / RB −0.0058（混合、噪声内，仅参考）。**结构提示**：base 与 full 仅差 RAS/RAE（近 no-op；seed42 差距 ±0.001–0.008 无系统方向）⇒ base≈full ⇒「BTE-only vs base」的 5 种子结论预计与「BTE-only vs full」一致（BA +0.0036/OTC +0.0031 n.s.、RT −0.0021 且 ap 显著负）。
 
 - **2026-09-15 上午（续24·BTE 中期结果已同步 Paper + 口径澄清）**：已发 `Paper`（`mb-20260915-082414-code-a734`）：BTE 中期结果（=续23 数字）+ 数据口径（**E-2 消融加种子批 #65/#66/#67**，linksign 3 分类、修复后代码、per-dataset NN/LF 最优、P1/TE、5 种子；**full 批与主表数字逐位一致**=同口径基准）+ 待补清单（vanilla/base 5 种子 → 完整 2×2 定稿）。建议 Paper 等 2×2 完成后定稿引用。
 
