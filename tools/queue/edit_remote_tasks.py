@@ -17,7 +17,10 @@ import subprocess
 import sys
 
 SSH = "fedsa@172.17.173.102"
-REMOTE = "cd ~/DyGLib && python -"
+REMOTE = (
+    "cd ~/DyGLib && source /home/fedsa/anaconda3/etc/profile.d/conda.sh "
+    "&& conda activate gc && python -"
+)
 
 
 def ssh_py(code: str) -> str:
