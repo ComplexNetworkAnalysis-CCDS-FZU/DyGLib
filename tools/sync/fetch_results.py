@@ -151,8 +151,15 @@ SETS = {
          ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle"], 15),
         (E2S_CNASONLY, "results/E-2_ablation/raw_seeds/{ds}",
          ["BitcoinAlpha", "BitcoinOTC", "WikiVote"], 15),
-    ],
-    "e2d": [
+    ],    # 2026-09-15 进度快照取数（配合 --allow-partial）：full / CNAS-only / BTE-only × 全 5 数据集
+    "e2snap": [
+        (E2S_FULL, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2S_CNASONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+        (E2C_BTEONLY, "results/E-2_ablation/raw_seeds/{ds}",
+         ["BitcoinAlpha", "BitcoinOTC", "WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody"], 25),
+    ],    "e2d": [
         (GRID_RT_A, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 4),
         (GRID_RT_B, "results/sign_neighborhood/raw/RedditHyperlinkTitle", None, 1),
         (GRID_RB_A, "results/sign_neighborhood/raw/RedditHyperlinkBody", None, 4),
@@ -261,6 +268,8 @@ def sha256_bytes(b: bytes) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", choices=sorted(SETS), required=True)
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="允许实际文件数少于期望（进度快照用；逐 glob 打印匹配数）")
     args = ap.parse_args()
 
     specs = SETS[args.set]
@@ -270,8 +279,14 @@ def main():
     print(f"[fetch] set={args.set} 期望 {expect} 个文件；ssh 读取中…")
     items = remote_fetch(globs)
     if len(items) != expect:
-        print(f"[ERR] 实际匹配 {len(items)} 个，期望 {expect} —— 模式可能与服务器不符，中止。")
-        sys.exit(1)
+        if not args.allow_partial:
+            print(f"[ERR] 实际匹配 {len(items)} 个，期望 {expect} —— 模式可能与服务器不符，中止。")
+            sys.exit(1)
+        print(f"[warn] 实际匹配 {len(items)} 个（期望 {expect}；--allow-partial：按快照收集）")
+        from collections import Counter
+        cnt = Counter(gi for gi, _, _ in items)
+        for gi, (g, ldir) in enumerate(globs):
+            print(f"    {ldir:70s} matched={cnt.get(gi, 0)}")
 
     log_path = ROOT / "results" / "_sync_raw_log.csv"
     new_log = not log_path.exists()
