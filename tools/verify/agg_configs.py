@@ -27,10 +27,10 @@ CONFIG_ORDER = [
     "RAS-E.RASE-E.BTE-E.CNAS-E",  # full
     "RAS-E.RASE-D.BTE-E.CNAS-E",  # +RAS
     "RAS-D.RASE-E.BTE-E.CNAS-E",  # +RAE
-    "RAS-D.RASE-D.BTE-E.CNAS-E",  # base
+    "RAS-D.RASE-D.BTE-E.CNAS-E",  # BTE+CNAS（历史称 base）
     "RAS-D.RASE-D.BTE-D.CNAS-E",  # CNAS-only
     "RAS-D.RASE-D.BTE-E.CNAS-D",  # BTE-only
-    "RAS-D.RASE-D.BTE-D.CNAS-D",  # vanilla
+    "RAS-D.RASE-D.BTE-D.CNAS-D",  # w/o all（base；历史别名 vanilla）
 ]
 
 

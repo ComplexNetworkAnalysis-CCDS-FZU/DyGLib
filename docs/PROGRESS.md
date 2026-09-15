@@ -24,6 +24,12 @@
 | **实验队列** | ✅ 运行中（15/15 已全部派发，09-13 04:46；剩 #14/#15 两批消融在跑） | `tools/queue/queue_daemon.sh` 常驻守护：探测空闲 GPU（lock PID + 显存）并自动派发 `tasks.txt` 中的任务；日志 `tools/queue/queue.log`；自检 `bash tools/queue/selftest.sh` 全部通过；**追加任务 = 往 `tasks.txt` 加一行**（不含 `-g`） |
 | E-7 噪声 | ⛔ 本轮不做 | 模块 `utils/noise.py` 已实现保留 |
 
+## 术语约定（2026-09-15 用户拍板）
+- **base ≡ w/o all ≡ [F,F,F,F]**（全模块关闭；历史别名 `vanilla`、历史行号 idx 5）——此后文档/汇报/邮件统一用 **base**。
+- **[F,F,T,T]（BTE+CNAS）**：历史文档/代码曾称 "base"/"基座"（导师方案 R1-5 用语）→ **即日起统一称 `BTE+CNAS`，不再叫 base**（行号 idx 0 不变，`--module-idx 0`）。
+- 其余：`full`=[T,T,T,T]；`CNAS-only`=[F,F,F,T]；`BTE-only`=[F,F,T,F]。
+- ⚠️ 2026-09-15 前的旧记录中 "base/基座" 一律按 **BTE+CNAS** 理解（含 #81 任务）；新记录按本约定。
+
 ## 实验状态总览
 
 | 实验 | 任务 | 数据集 | 状态 | 结果路径 / 备注 |
@@ -110,6 +116,8 @@
 | 统计汇总（mean±std + p 值） | `dataset_analysis/compute_stats.py` 输出 |
 
 ## 最近更新记录
+
+- **2026-09-15 晚（续30·术语规定：base＝w/o all）**：用户拍板：**base ≡ w/o all ≡ [F,F,F,F]**（历史别名 vanilla）；历史称 "base/基座" 的 **[F,F,T,T]（CNAS+BTE）即日起统一称 `BTE+CNAS`**（行号 idx 0 不变；#81 在跑的那条就是它）。已对齐：PROGRESS 顶部新增「术语约定」节（含旧记录解读规则）；`run_experiments.py`、`tools/verify/agg_configs.py`、`tools/sync/fetch_results.py` 的注释同步更新（纯注释/文档，零行为变更）。
 
 - **2026-09-15 晚（续29·S1 修复重排 + 密度扫描结果 8/9 + OOM 补跑）**：① **S1 修复已部署**：`models/DyGFormer.py` 增加 `self.profiler = Profiler(); self.profiler.disable()`（镜像 SignDyGFormer；空记录 summary/save 安全）→ 提交 `17632bd`，服务器 `pull --ff-only` 校验（HEAD=17632bd、grep profiler=5 命中）；两条 S1 任务经新工具 `tools/queue/edit_remote_tasks.py`（ssh+python+base64，零转义；自动备份+回读校验）插入队列 **#83/#84**。② **密度扫描 8/9 已取回**（`--set dens` → `results/E-2_ablation/raw_density/`；单种子 42；base=CNAS-on / BTE-only=CNAS-off）：**收益普遍 ≤0.006、噪声量级**——RT base 0.9311(@60/1) → 60/10 **+0.0001**、120/10 **+0.0025**；RB base 0.9292(@80/3) → 80/10 **+0.0031**；BA base 0.9554(@40/15) → 40/20 **+0.0045** 但 80/20 **−0.0060**（过度加密反降）；BTE-only：RT 120/1 −0.0007、RB 160/3 **+0.0062**、BA 80/15 −0.0019。**同密度对比**：RT@NN-120 base(LF10) 0.9336 ≈ BTE-only 0.9330（加密后持平 → 可在 RT 补齐 CNAS 损失）；BA@NN-80 base 0.9494 < BTE-only 0.9600（仍差）→「采样密度不足是主因」假说**不获强支持**（单种子口径，谨慎）。③ **#72（RB NN-160/LF-10）因与 #73 同卡并发 CUDA OOM 丢失** → 补跑行已插 **#85**（加 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`）；k×N 网格顺延 **#86/#87**。队列现状 87 行。
 

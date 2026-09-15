@@ -96,7 +96,9 @@ NH_RT_100_5 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyG
 NH_RT_120_3 = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-120.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 # ---- ⓑ/E-2c 5 种子加深批（2026-09-14 晚起；命名 = NN-Best.LF-Best + 模块旗标）----
-# e2s（ⓑ）= full / vanilla / CNAS-only 各 5 数据集×5 种子；e2c = BTE-only / base 各 25 + RT 的 +RAS/+RAE 各 5
+# 术语（2026-09-15 用户规定）：base ≡ w/o all = [F,F,F,F]；[F,F,T,T] 称 "BTE+CNAS"。
+# 注意历史常量名：E2C_BASE 实为 [F,F,T,T]＝BTE+CNAS；E2S_VANILLA 才是 w/o all（=base）。
+# e2s（ⓑ）= full / w/o all / CNAS-only 各 5 数据集×5 种子；e2c = BTE-only / BTE+CNAS 各 25 + RT 的 +RAS/+RAE 各 5
 E2S_FULL = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 E2S_VANILLA = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-D.P1.TE.json"
 E2S_CNASONLY = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-E.P1.TE.json"

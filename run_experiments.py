@@ -200,9 +200,10 @@ MODULE_CTRL = [
 ]
 #
 MODULE_GROUP = [
-    # ===== E-2 消融（导师方案 R1-5）：CNAS+BTE 固定基座，RAS/RAE 解绑 =====
+    # ===== E-2 消融（导师方案 R1-5）：CNAS+BTE 固定组合，RAS/RAE 解绑 =====
     # 顺序: [RAS, RAE, BTE, CNAS]
-    # 1. 基座 CNAS+BTE
+    # 术语（2026-09-15 用户规定）：base ≡ w/o all（=vanilla，idx 5）；本行 [F,F,T,T] 统一称 "BTE+CNAS"（历史误称 base/基座）
+    # 1. BTE+CNAS
     [False, False, True, True],
     # 2. +RAS
     [True, False, True, True],
@@ -213,7 +214,7 @@ MODULE_GROUP = [
     # ===== E-2b 补充（Paper 09-13；BTE 关断对照）=====
     # 5. CNAS-only（BTE 关）
     [False, False, False, True],
-    # 6. vanilla（全关）
+    # 6. base = w/o all（全关；历史别名 vanilla）
     [False, False, False, False],
     # ===== E-2c 补充（2026-09-14 用户指示；BTE×CNAS 2×2 拆解，零架构风险）=====
     # 7. BTE-only（BTE 开、CNAS 关、RAS/RAE 关）——分离"BTE 证据通道" vs "CNAS 采样裁剪"
