@@ -510,7 +510,11 @@ if __name__ == "__main__":
         # load the best model
         early_stopping.load_checkpoint(model)
         hyper_param = early_stopping.load_hyper_param()
-        best_thr = 0.5 if hyper_param is not None else hyper_param.get("thr", 0.5)
+        # 2026-09-16 修复（用户批准）：三元写反——原先 hyper_param 非空时被强制回 0.5，
+        # 使 val 选择的最优阈值失效（sign 任务恒 0.5）。正确行为：使用随最佳 checkpoint
+        # 保存的 val 阈值；无记录（None）时回退 0.5。
+        # （协议=阈值在验证集上选择、应用于测试，测试集不参与选择，无泄露）
+        best_thr = hyper_param.get("thr", 0.5) if hyper_param is not None else 0.5
 
         # E-1: 训练阶段耗时（不含最终测试评估）
         training_time = time.time() - run_start_time
