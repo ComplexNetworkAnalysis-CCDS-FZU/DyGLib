@@ -32,6 +32,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
         *,
         module_repeat_aware_sign_encoder: bool = False,
         module_balance_theory_encoder: bool = True,
+        module_common_neighbor_encoder: bool = True,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
         time_scaling_factor: float = 1e-6,
@@ -40,6 +41,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         Neighbor co-occurrence encoder.
         :param neighbor_co_occurrence_feat_dim: int, dimension of neighbor co-occurrence features (encodings)
         :param device: str, device
+        :param module_common_neighbor_encoder: bool, 共同邻居编码（CNE，共现特征）通道开关；
+            False = 通道特征置零（探针，切信息不切结构）；默认 True = 零行为变更
         :param time_decay_lambda: Optional[float], 时间衰减系数 λ；None 表示不启用时间衰减 (E-4)
         :param time_decay_gap_mode: TimeDecayGapMode, Δt 定义: STALENESS=A(证据陈旧度), GAP=B(事件间隔)
         :param time_scaling_factor: float, 时间归一化因子（与采样器一致）
@@ -49,6 +52,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         self.device = device
         self.module_repeat_aware_sign_encoder = module_repeat_aware_sign_encoder
         self.module_balance_theory_encoder = module_balance_theory_encoder
+        # CNE 通道开关（2026-09-17 用户批准；Paper 6c7a 四）：False = 共现特征置零探针
+        self.module_common_neighbor_encoder = module_common_neighbor_encoder
         # 时间衰减：lambda 为 None 即不启用（用 Optional 判断）
         self.time_decay_mode = time_decay_lambda is not None
         self.time_decay_lambda = time_decay_lambda
@@ -588,6 +593,23 @@ class NeighborCooccurrenceEncoder(nn.Module):
         # src_padded_nodes_appearances, Tensor, shape (batch_size, src_max_seq_length, 2)
         # dst_padded_nodes_appearances, Tensor, shape (batch_size, dst_max_seq_length, 2)
         if sample_type == EncodeType.CoOccurredNeighbor:
+            # ---- CNE-off 探针（2026-09-17 用户批准；实现选项 (a) 通道置零）----
+            # 维度/参数结构不变，仅切断共现信息通道；默认开启 ⇒ 零行为变更；
+            # 关闭时结果名自动加 .CNE-D（utils/load_configs.py::result_save_name）。
+            if not self.module_common_neighbor_encoder:
+                src_cne_zero = torch.zeros(
+                    src_padded_nodes_neighbor_ids.shape[0],
+                    src_padded_nodes_neighbor_ids.shape[1],
+                    self.neighbor_co_occurrence_feat_dim,
+                    device=self.device,
+                )
+                dst_cne_zero = torch.zeros(
+                    dst_padded_nodes_neighbor_ids.shape[0],
+                    dst_padded_nodes_neighbor_ids.shape[1],
+                    self.neighbor_co_occurrence_feat_dim,
+                    device=self.device,
+                )
+                return src_cne_zero, dst_cne_zero
             src_padded_nodes_appearances, dst_padded_nodes_appearances = (
                 self.count_nodes_appearances(
                     src_padded_nodes_neighbor_ids=src_padded_nodes_neighbor_ids,

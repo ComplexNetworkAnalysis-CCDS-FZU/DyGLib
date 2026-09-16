@@ -128,6 +128,13 @@ class SignPredictArgs(BaseModel):
 
     module_balance_theory_encoder: bool = Field(True, description="平衡理论编码模块")
 
+    # ---- CNE 探针（2026-09-17 用户批准；Paper 6c7a 四）----
+    # 共同邻居编码（CNE，邻居共现特征通道）开关；默认 True = 零行为变更，
+    # 关闭（--no-module-common-neighbor-encoder）= 通道特征置零（结果名加 .CNE-D）。
+    module_common_neighbor_encoder: bool = Field(
+        True, description="共同邻居编码（CNE，共现特征）通道；关闭=置零探针（.CNE-D）"
+    )
+
     # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
     time_decay_lambda: Optional[float] = Field(
         None, description="时间衰减系数 λ；不提供(None)则不启用时间衰减"
@@ -210,6 +217,10 @@ class SignPredictArgs(BaseModel):
                 f"{'T' if self.noise_scope == NoiseScope.TRAIN else 'A'}"
             )
 
+        # CNE 探针标记（2026-09-17）：通道关闭时追加 .CNE-D，避免与常开结果互相覆盖；
+        # 默认开启 ⇒ 无标记，命名与历史结果完全一致（零行为变更）。
+        cne_tag = "" if self.module_common_neighbor_encoder else ".CNE-D"
+
         # E-3: patch 标记，避免不同 patch-size 结果互相覆盖（2026-09-06 修复）
         # 注：始终带上 .P{size}，使主表/消融(.P1) 与 patch 扫描各组在文件名上互相区分；
         #     旧 CPU 期文件无 .P 标记，天然可辨认为历史数据。
@@ -218,7 +229,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )

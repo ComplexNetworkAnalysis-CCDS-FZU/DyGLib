@@ -219,6 +219,11 @@ MODULE_GROUP = [
     # ===== E-2c 补充（2026-09-14 用户指示；BTE×CNAS 2×2 拆解，零架构风险）=====
     # 7. BTE-only（BTE 开、CNAS 关、RAS/RAE 关）——分离"BTE 证据通道" vs "CNAS 采样裁剪"
     [False, False, True, False],
+    # ===== E-2d LOO 补行（Paper 09-16 补单②；用户 09-17 批准：先单种子验证，有效果再多种子）=====
+    # 8. w/o CNAS（= full 去 CNAS；RAS/RAE/BTE 全开）——R1-5 必做项（T1）
+    [True, True, True, False],
+    # 9. w/o BTE（= full 去 BTE；RAS/RAE/CNAS 全开）——T3（可选）
+    [True, True, False, True],
 ]
 
 class ExpTy(Enum):

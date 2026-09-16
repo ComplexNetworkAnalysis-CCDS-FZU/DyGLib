@@ -5,10 +5,12 @@
     python tools/verify/agg_configs.py "results/E-2_ablation/raw_seeds/*"
     python tools/verify/agg_configs.py "results/E-2_ablation/raw_seeds/*" \
         --pair RAS-D.RASE-D.BTE-E.CNAS-D RAS-E.RASE-E.BTE-E.CNAS-E   # BTE-only − full（同种子）
+    python tools/verify/agg_configs.py results/cne_off/raw/* --pat "*.P1.TE.CNE-D.json"   # CNE 探针（.CNE-D）
 
 说明：
 - 文件名解析：seed{N}；配置旗标 RAS-[ED].RASE-[ED].BTE-[ED].CNAS-[ED]；指标取 JSON 的 "test metrics"。
 - std 口径：pstd（ddof=0），与全仓库一致；配对 t 用样本 sd（df=n−1）。
+- 默认模式 *.P1.TE.json 天然排除 .CNE-D 探针文件（避免与常开结果混算）；聚合探针请用 --pat。
 """
 from __future__ import annotations
 
@@ -34,10 +36,10 @@ CONFIG_ORDER = [
 ]
 
 
-def parse_dir(d: pathlib.Path, keys):
+def parse_dir(d: pathlib.Path, keys, pat: str = "*.P1.TE.json"):
     """返回 {cfg: {key: [(seed, value)]}}。"""
     out = {}
-    for f in sorted(d.glob("*.P1.TE.json")):
+    for f in sorted(d.glob(pat)):
         m = FLAG_RE.search(f.name)
         if not m:
             continue
@@ -66,6 +68,11 @@ def main():
     ap.add_argument("paths", nargs="+", help="目录或带 * 的 glob（每个目录=一个数据集）")
     ap.add_argument("--keys", nargs="*", default=DEFAULT_KEYS)
     ap.add_argument(
+        "--pat",
+        default="*.P1.TE.json",
+        help="文件名匹配模式（默认 *.P1.TE.json；CNE 探针用 '*.P1.TE.CNE-D.json'）",
+    )
+    ap.add_argument(
         "--pair",
         nargs=2,
         metavar=("CFG_A", "CFG_B"),
@@ -80,7 +87,7 @@ def main():
     dirs = [d for d in dirs if d.is_dir()]
 
     for d in dirs:
-        data = parse_dir(d, args.keys)
+        data = parse_dir(d, args.keys, args.pat)
         if not data:
             continue
         print(f"\n== {d.name} ==")
