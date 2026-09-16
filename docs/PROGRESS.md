@@ -117,6 +117,17 @@
 
 ## 最近更新记录
 
+- **2026-09-17（续45·CNE-off 实现 + LOO 掩码补行 + 队列插入 #129–136）**：用户指示 —— ① LOO **先单种子验证、有效果再多种子**；② CNE-off **提供实现、做**。落地：
+  - **CNE-off（选项 (a) 通道置零）**：`NeighborInteractEncoder`（关闭时共现特征严格置零，张量维度/参数结构不变）+ `SignDyGFormer` 接线 + `load_configs` 字段 `module_common_neighbor_encoder`（默认 True=零行为变更）+ 结果名 `.CNE-D` + 两训练脚本透传；CLI `--no-module-common-neighbor-encoder`。自检 `tools/verify/test_cne_off.py` **9 项 ALL PASS**（置零严格/形状 dtype/接线/命名/CLI）；`agg_configs.py` 增 `--pat`（默认 `*.P1.TE.json` 天然排除 `.CNE-D`，聚合探针用 `--pat "*.P1.TE.CNE-D.json"`）。
+  - **LOO 掩码**：`MODULE_GROUP` 增 **idx7=[T,T,T,F]**（w/o CNAS，T1 必做）、**idx8=[T,T,F,T]**（w/o BTE，T3）；idx1/idx2 原有（RT 5 种子复用 #82）。
+  - **部署**：commit `f39744c` → push → 服务器 `git pull` + 标记校验（CNE-D/接线/掩码注释）通过（前台同步）。
+  - **队列插入**（#128 之后、k×N 网格前；备份 `tasks.txt.bak-20260916-235236/235240`，回读校验 138 行）：
+    - **#129** = `-s linksign -t ablation --module-idx 7 8`（w/o CNAS + w/o BTE × 5 数据集 × seed42 = 10 runs）
+    - **#130** = `--module-idx 1 2 -r RedditHyperlinkTitle`（w/o RAE + w/o RAS × 4 数据集 × seed42 = 8 runs；RT 复用）
+    - **#131–136** = CNE-off 30 runs（RT/RB/BA × {full∖CNE, base∖CNE} × 5 种子，`--ablation`/NN-Best/P1/TE 口径对齐）
+    - 原 #129/130 网格顺延为 **#137/138**；k×N ETA ≈ **09-24**。
+  - **单种子初筛判据（拟）**：|Δ|≥0.005（linksign 种子噪声量级）→ 该组合扩 5 种子；w/o CNAS 扩种子呈报优先。
+
 - **2026-09-16 深夜（续44·信箱同步：Paper 三单处理 + 配对统计交付）**：① 收 Paper 三单（`6c7a` 合并回复 / `6788` S2 立项+审计 / `8c8d` LOO 四行），已合并答复（`mb-20260916-234317-code-98ca`）并逐条 ack。② **配对统计交付**（linksign 同种子配对 auc，t/df/p/Cohen's d）：**CNAS-only − base 4/5 显著负**（OTC p=.027、RB .023、RT .002、WV .003；BA .072 边缘）；**BTE-only − base 全 5 ns**（点估计 3 正 2 负 → 严谨表述="唯一不伤"）；full−base：RT +0.0044（p=.013）正、WV −0.0061（p<.001）负、其余 ns；full−BTE-only 仅 WV 显著负（p<.001）；full−真 DyG（linksign RT +0.0046 p=.003 d=2.91；RB −0.0074 ns）与 sign RT auc −0.0366 p<.001 但 f1_bin/f1_wt/acc +（p≈.04）均已给。③ 消融语义确认（CNAS-off→recent-N、CNE 恒开；§3.2/§4.1 建议措辞已供）。④ **CNE-off 探针评估**：无开关；建议"通道置零"（`.CNE-D`，默认零变更，~0.5 天），组合 full∖CNE+base∖CNE ×3 数据集×5=30 runs——待用户确认。⑤ **LOO**：掩码 idx1/idx2 已有（RT 复用 #82）、将补 idx7/8；建议插 #128 后、网格前（65 runs≈1.5–2 天）——待用户确认。⑥ **S2**：候选成本/自洽性/建议默认（recency 锚点+k_c/k_r）已给；P1≈9/P2 100/P3 50 runs；09-20 前 GO → 10-02 前可完成；go/no-go 判据（≥3/5 Δ>0 且 ≥1 |t|>2）收悉。⑦ 审计四件 ETA：对照表 ~1 天（需统一两套来源）、单项回退 20 runs（建议做）、证据清单/协议定义各 ~0.5 天。⑧ k×N ETA ~09-22（含 LOO/CNE 插批 ≈09-24）。Baseline 线：问询仍无回执（已向 Paper 说明）。
 
 - **2026-09-16 晚（续43·同步：半径批 20/20 齐 + WV 负对照平 + 5 种子确认进行中）**：① **seed-42 双半径批 20/20 完成并取数**（`rasradius` 全量 20；新增 fetch 集 `rasradius5`）。**WV 负对照曲线 = 0.9602/0.9607/0.9594/0.9588/0.9607（flat ±0.001）**，符合预期（R 窗占比 0.1%）→ 机制侧验证完成。② 半径结论（seed42、全模型 linksign、auc）：**OTC k_r=10 = 0.9741 vs 对角(k_c=5) 0.9668 → +0.0073**；**RB k_r=0 = 0.9296 vs 对角(k_c=3) 0.9239 → +0.0057**；RT ≈0（+0.0006）；WV flat——**C/R 单半径次优为双侧证据 + 负对照通过**。③ **5 种子确认批进行中**：#110/#111（RT k_r=10 / 对角 1）在跑——seed123/456 已出（#110 已取 3/5，#111 3/5），789/1024 收尾；#112–115 队列中（ETA 今夜）；随后 **#116–120 = ours sign 重跑**（val-thr）。④ 队列 111/130 已派发（#108/109 WV 收尾完成）。
