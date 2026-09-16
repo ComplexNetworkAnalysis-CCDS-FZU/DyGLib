@@ -20,6 +20,7 @@
     python tools/sync/fetch_results.py --set dens   # 密度扫描 9 点（单种子 42；base×6 + BTE-only×3）
     python tools/sync/fetch_results.py --set dens2  # 密度补跑 5（#85–89：RB-160/10±RAS、RT-120/10+RAS、BA-40/20·80/20+RAS）
     python tools/sync/fetch_results.py --set rasradius --allow-partial  # 双半径验证批（#90–109；全模型 linksign 单种子 42；WV 收尾中）
+    python tools/sync/fetch_results.py --set rasradius5 --allow-partial  # 双半径 5 种子确认批（#110–115；seed* 含 42；赢家+对角）
     python tools/sync/fetch_results.py --set s1     # S1 真基线 DyGFormer（RT/RB × sign/linksign，5 种子；#83/84 修复版重跑）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
@@ -128,6 +129,16 @@ RR_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/Sig
 RR_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-80.LF-3.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 RR_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-80.LF-5.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 RR_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-15.LF-10.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+
+# 双半径 5 种子确认批（#110–115）：赢家 + 对角线，glob 含全部种子（42+123+456+789+1024）
+RR5_SPECS = [
+    ("saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-60.LF-1.RLF-{kr}.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json", "RedditHyperlinkTitle",
+     [("10", 5), ("1", 5)]),
+    ("saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-80.LF-3.RLF-{kr}.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json", "RedditHyperlinkBody",
+     [("0", 5), ("3", 5)]),
+    ("saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed*.NN-80.LF-5.RLF-{kr}.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json", "BitcoinOTC",
+     [("10", 5), ("5", 5)]),
+]
 
 SETS = {
     "e2": [
@@ -277,6 +288,11 @@ SETS = {
         (RR_RB, "results/ras_radius/raw/RedditHyperlinkBody", None, 5),
         (RR_OTC, "results/ras_radius/raw/BitcoinOTC", None, 5),
         (RR_WV, "results/ras_radius/raw/WikiVote", None, 5),
+    ],
+    "rasradius5": [
+        (gt.format(kr=kr), f"results/ras_radius/raw5/{ds}", None, n)
+        for gt, ds, krs in RR5_SPECS
+        for kr, n in krs
     ],
     "s1": [
         (S1_SIGN_RT, "results/s1_refresh/raw/sign/RedditHyperlinkTitle", None, 5),
