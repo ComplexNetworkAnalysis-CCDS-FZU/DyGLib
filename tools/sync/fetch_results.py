@@ -18,6 +18,9 @@
     python tools/sync/fetch_results.py --set base-gpu  # Baseline GPU 产物：DySDGNN/DynamiSE 各 15 JSON + 2 summary CSV（32）
     python tools/sync/fetch_results.py --set e2snap --allow-partial  # 快照：full/CNAS-only/BTE-only ×5 数据集（允许部分完成）
     python tools/sync/fetch_results.py --set dens   # 密度扫描 9 点（单种子 42；base×6 + BTE-only×3）
+    python tools/sync/fetch_results.py --set dens2  # 密度补跑 5（#85–89：RB-160/10±RAS、RT-120/10+RAS、BA-40/20·80/20+RAS）
+    python tools/sync/fetch_results.py --set rasradius --allow-partial  # 双半径验证批（#90–109；全模型 linksign 单种子 42；WV 收尾中）
+    python tools/sync/fetch_results.py --set s1     # S1 真基线 DyGFormer（RT/RB × sign/linksign，5 种子；#83/84 修复版重跑）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -112,6 +115,19 @@ BASE_M5_DYSDGNN = "../DynamiSE_DySDGNN_repro/outputs/DySDGNN/*.json"
 BASE_M5_DYNAMISE = "../DynamiSE_DySDGNN_repro/outputs/DynamiSE/*.json"
 BASE_M5_SUM_DYSDGNN = "../DynamiSE_DySDGNN_repro/outputs/summary_DySDGNN.csv"
 BASE_M5_SUM_DYNAMISE = "../DynamiSE_DySDGNN_repro/outputs/summary_DynamiSE.csv"
+
+# ---- 2026-09-16 新增集 ----
+# S1 真基线：DyGFormer RT/RB × sign/linksign（5 种子；修复版重跑 #83/84；模型专属子目录）
+S1_SIGN_RT = "saved_results/LinkSign/DyGFormer/RedditHyperlinkTitle/DyGFormer_seed*.NN-100.LF-1.*.P1.TE.json"
+S1_SIGN_RB = "saved_results/LinkSign/DyGFormer/RedditHyperlinkBody/DyGFormer_seed*.NN-60.LF-1.*.P1.TE.json"
+S1_LINKSIGN_RT = "saved_results/SignLinkPrediction/DyGFormer/RedditHyperlinkTitle/DyGFormer_seed*.NN-60.LF-1.*.P1.TE.json"
+S1_LINKSIGN_RB = "saved_results/SignLinkPrediction/DyGFormer/RedditHyperlinkBody/DyGFormer_seed*.NN-80.LF-3.*.P1.TE.json"
+
+# 双半径验证批（#90–109，全模型 linksign 单种子 42；文件名带 .RLF-{k_r} 标记）
+RR_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-60.LF-1.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+RR_RB = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-80.LF-3.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+RR_OTC = "saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed42.NN-80.LF-5.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+RR_WV = "saved_results/SignLinkPrediction/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-15.LF-10.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 SETS = {
     "e2": [
@@ -243,6 +259,30 @@ SETS = {
         (BASE_M5_DYNAMISE, "results/baseline_m5/raw/DynamiSE", None, 15),
         (BASE_M5_SUM_DYSDGNN, "results/baseline_m5", None, 1),
         (BASE_M5_SUM_DYNAMISE, "results/baseline_m5", None, 1),
+    ],
+    "dens2": [
+        ("saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-160.LF-10.RAS-D.RASE-D.BTE-E.CNAS-E.P1.TE.json",
+         "results/E-2_ablation/raw_density/RedditHyperlinkBody", None, 1),
+        ("saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed42.NN-160.LF-10.RAS-E.RASE-D.BTE-E.CNAS-E.P1.TE.json",
+         "results/E-2_ablation/raw_density/RedditHyperlinkBody", None, 1),
+        ("saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-120.LF-10.RAS-E.RASE-D.BTE-E.CNAS-E.P1.TE.json",
+         "results/E-2_ablation/raw_density/RedditHyperlinkTitle", None, 1),
+        ("saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-40.LF-20.RAS-E.RASE-D.BTE-E.CNAS-E.P1.TE.json",
+         "results/E-2_ablation/raw_density/BitcoinAlpha", None, 1),
+        ("saved_results/SignLinkPrediction/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed42.NN-80.LF-20.RAS-E.RASE-D.BTE-E.CNAS-E.P1.TE.json",
+         "results/E-2_ablation/raw_density/BitcoinAlpha", None, 1),
+    ],
+    "rasradius": [
+        (RR_RT, "results/ras_radius/raw/RedditHyperlinkTitle", None, 5),
+        (RR_RB, "results/ras_radius/raw/RedditHyperlinkBody", None, 5),
+        (RR_OTC, "results/ras_radius/raw/BitcoinOTC", None, 5),
+        (RR_WV, "results/ras_radius/raw/WikiVote", None, 5),
+    ],
+    "s1": [
+        (S1_SIGN_RT, "results/s1_refresh/raw/sign/RedditHyperlinkTitle", None, 5),
+        (S1_SIGN_RB, "results/s1_refresh/raw/sign/RedditHyperlinkBody", None, 5),
+        (S1_LINKSIGN_RT, "results/s1_refresh/raw/linksign/RedditHyperlinkTitle", None, 5),
+        (S1_LINKSIGN_RB, "results/s1_refresh/raw/linksign/RedditHyperlinkBody", None, 5),
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
