@@ -24,6 +24,7 @@
     python tools/sync/fetch_results.py --set s1     # S1 真基线 DyGFormer（RT/RB × sign/linksign，5 种子；#83/84 修复版重跑）
     python tools/sync/fetch_results.py --set s1b --allow-partial   # 真基线补齐：DyGFormer BA/OTC/WV × sign/linksign（#121–126；WV linksign 收尾中）
     python tools/sync/fetch_results.py --set s1v    # 真基线 val-thr 刷新：DyG sign RT/RB（#127/128；新目录 raw_valthr，保留旧档）
+    python tools/sync/fetch_results.py --set loo --allow-partial   # LOO 单种子屏（#134/135；4 掩码×5 数据集 seed42；进 raw_seeds 家族目录）
     python tools/sync/fetch_results.py --set oursv  # ours sign val-thr 刷新 5 数据集（#129–133；新目录 sign_valthr，保留旧档）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
@@ -332,6 +333,20 @@ SETS = {
     "s1v": [
         (S1V_SIGN_RT, "results/s1_refresh/raw_valthr/sign/RedditHyperlinkTitle", None, 5),
         (S1V_SIGN_RB, "results/s1_refresh/raw_valthr/sign/RedditHyperlinkBody", None, 5),
+    ],
+    "loo": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed42.NN-Best.LF-Best." + mask + ".P1.TE.json",
+            "results/E-2_ablation/raw_seeds/{ds}",
+            ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote"],
+            5,
+        )
+        for mask in [
+            "RAS-E.RASE-E.BTE-E.CNAS-D",  # idx7 w/o CNAS
+            "RAS-E.RASE-E.BTE-D.CNAS-E",  # idx8 w/o BTE
+            "RAS-E.RASE-D.BTE-E.CNAS-E",  # idx1 w/o RAE
+            "RAS-D.RASE-E.BTE-E.CNAS-E",  # idx2 w/o RAS
+        ]
     ],
     "oursv": [
         (OURSV_RT, "results/sign_valthr/raw/RedditHyperlinkTitle", None, 5),

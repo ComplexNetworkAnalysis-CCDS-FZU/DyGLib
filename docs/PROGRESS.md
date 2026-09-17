@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-09-17 深夜（续49·LOO 单种子屏出数 + 全指标表交付 + Baseline 波三接入）**：
+  - **LOO 屏（#134/135，seed42；19/20 已取，WV w/o BTE 末件在跑）**——贡献 = full − mask（正=模块有帮助）：
+    - **w/o CNAS**：OTC **−0.0113**、WV **−0.0069**、RT **−0.0054**（去掉更好）｜BA +0.0004、RB +0.0034 → 3/5 负贡献（mean −0.0040）→ 从 full 侧坐实「CNAS 边际负」。
+    - **w/o RAS**：**5/5 正贡献**（mean **+0.0051**；RB +0.0119、RT +0.0075）→ full 语境下 RAS 有实贡献（与 2×2「无稳定增益」不矛盾：语境不同）。
+    - **w/o BTE**：4/4 正（mean +0.0026；RT +0.0054；WV 末件在跑）；**w/o RAE**：混合（BA +0.0083、OTC −0.0034、RB −0.0027）。
+    - 工具 `tools/verify/loo_screen_table.py`；取数集 `loo`（入 raw_seeds 家族）。**扩样范围待用户拍板**（满表 ≈72 runs：4 掩码×5 数据集×5 种子减已有；或先扩 CNAS+RAS≈36）。
+  - **Paper 补单③交付**：`docs/TABLES_valthr_20260917.md`（全指标：DyG sign/linksign + ours sign/linksign；mean±pstd + 5 种子原值）已生成并邮件交付（`4542`）：DyG linksign f1_mac 直给（RT .6838/RB .6938/BA .7807/OTC .7749/WV .8048）；ours linksign f1_mac 与其引用完全一致；澄清 WV 方向=ours−DyG、DyG f1_wt ±std 给齐；**f1_mac（ours−DyG）：RT +0.0141、OTC +0.0412、RB −0.0210、BA −0.0105、WV −0.0087**。
+  - **Baseline 波三（SEMBA）接入**：三条 staged 命令（对齐自检/smoke/A 档 100 runs）+ env 问询；已回执（`7823`）：gc 现场核 = torch 2.2.2 / PyG 2.5.2 / torch_scatter 2.1.2+pt22cu121 / torch-sparse 0.6.18 / **dgl 无** / einops 无；**执行待用户逐次放行**（A 档需 GPU 窗口，当前队列至 ≈09-24）。
+  - 队列：#136（CNE-off RT）20:58 起在跑；#137+ 待。
+
 - **2026-09-17 晚（续48·val-thr 刷新批 + 真基线补齐交付）**：#127–133 全完（DyG sign RT/RB 刷新 + ours sign 修正批 5×5）；三批取数 65 files（`s1b` 30 补全 / `s1v` 10 / `oursv` 25），sha 入 `_sync_raw_log.csv`；新工具 `tools/verify/valthr_sign_report.py` 出交付报表：
   - **ours sign（full）val-thr vs 旧（thr=0.5）**：auc 逐位不变（训练确定）；f1_binary 提升 RT 0.8736→0.9396 / RB 0.9084→0.9641 / BA 0.8342→0.9276 / OTC 0.8995→0.9494 / WV 0.8812→0.8812（近不敏感）；acc +0.10/+0.09/+0.12/+0.07/+0.00；25 对新旧 sha **全部不同**（旧档保留于 main_tables、新档 sign_valthr）。
   - **真基线五数据集（5 种子 mean±pstd）**：sign auc RT .7112±.0046 / RB .6153±.0267 / BA .7895±.0119 / OTC .8723±.0178 / WV .8210±.0034；linksign auc RT .9345±.0016 / RB .9310±.0056 / BA .9617±.0019 / OTC .9697±.0018 / WV .9674±.0006。DyG sign RT/RB 刷新：f1_bin +0.122/+0.107、acc +0.174/+0.172（auc 不变）。
