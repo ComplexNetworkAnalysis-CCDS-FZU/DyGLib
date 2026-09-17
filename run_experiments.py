@@ -283,9 +283,11 @@ TASK_DATASET_BEST_PARAMS = {
             Args.new("--common-neighbors-look-forward", "15"),
         ],
         "BitcoinOTC": [
+            # 2026-09-14 用户拍板换装：60/10 → 40/15（邻域胜者 5 种子 0.8775±0.0054；
+            # 09-17 修正同步：此前本表残留 60/10，导致 sign 主表重跑（#116–120）误用旧参数）
             Args(["--batch-size", "200"]),
-            Args.new("--num-neighbors", "60"),
-            Args.new("--common-neighbors-look-forward", "10"),
+            Args.new("--num-neighbors", "40"),
+            Args.new("--common-neighbors-look-forward", "15"),
         ],
         "RedditHyperlinkTitle": [
             Args(["--batch-size", "200"]),

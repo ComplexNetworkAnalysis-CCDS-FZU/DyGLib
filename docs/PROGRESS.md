@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-09-17（续46·半径 5 种子判定 → S2 NO-GO + sign 重跑纠错重发 + 队列重排）**：
+  - **半径 5 种子确认**（#110–115 全完；30 files 已取，sha256 入 `results/_sync_raw_log.csv`；归档 `results/ras_radius/raw5/`）：
+    - OTC（k_c=5）：k_r=10 −5：auc Δ**+0.0016**（sd 0.0036，t=0.98，p=0.38）
+    - RB（k_c=3）：k_r=0 −3：auc Δ**+0.0046**（sd 0.0091，t=1.13，p=0.32）
+    - RT（k_c=1）：k_r=10 −1：auc Δ**−0.0003**（t=−0.36，p=0.74）
+    - → 单种子 +0.0073/+0.0057 **未复现**；**无 |t|>2、正号仅 2/3（含 WV 负对照为 2/4）→ Paper 判据「≥3/5 Δ>0 且 ≥1 |t|>2」未达 → S2（C/R 解耦）按 NO-GO 报**（建议降为 future work/诊断性分析，不作主叙事）。
+  - 工具：`ras_radius_table.py` 升级（多种子 mean±pstd + 同种子配对 t/p/d + `--pair`）——分析可复现。
+  - **sign 主表 val-thr 重跑（#116–120）执行纠错**：该批命令缺 `--module-repeat-aware-sampler --module-repeat-aware-sign-encoder` → 产出 `RAS-D.RASE-D`（非 full 口径），**旧 full 文件（09-12）未被覆盖**；另发现 `run_experiments.py` sign[OTC] 残留 60/10（09-14 已换装 40/15，表未同步）。修复：① 表参数改为 40/15（注释备案）；② 以 `-s sign -t main -e` 重发 **#129–133**（RT/RB/BA/OTC/WV full 口径 val-thr，25 runs，同名覆盖）；③ 误产 RAS-D 文件留服务器备用、不入主线。
+  - **队列重排**（备份 `tasks.txt.bak-20260917-*`，143 行）：#129–133 sign 修批 → **#134/135 = LOO 单种子屏** → **#136–141 = CNE-off** → **#142/143 = k×N 网格**（ETA ≈09-24 不变；#121–128 DyGFormer 批在跑）。
+
 - **2026-09-17（续45·CNE-off 实现 + LOO 掩码补行 + 队列插入 #129–136）**：用户指示 —— ① LOO **先单种子验证、有效果再多种子**；② CNE-off **提供实现、做**。落地：
   - **CNE-off（选项 (a) 通道置零）**：`NeighborInteractEncoder`（关闭时共现特征严格置零，张量维度/参数结构不变）+ `SignDyGFormer` 接线 + `load_configs` 字段 `module_common_neighbor_encoder`（默认 True=零行为变更）+ 结果名 `.CNE-D` + 两训练脚本透传；CLI `--no-module-common-neighbor-encoder`。自检 `tools/verify/test_cne_off.py` **9 项 ALL PASS**（置零严格/形状 dtype/接线/命名/CLI）；`agg_configs.py` 增 `--pat`（默认 `*.P1.TE.json` 天然排除 `.CNE-D`，聚合探针用 `--pat "*.P1.TE.CNE-D.json"`）。
   - **LOO 掩码**：`MODULE_GROUP` 增 **idx7=[T,T,T,F]**（w/o CNAS，T1 必做）、**idx8=[T,T,F,T]**（w/o BTE，T3）；idx1/idx2 原有（RT 5 种子复用 #82）。

@@ -1,0 +1,5 @@
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkBody WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha RedditHyperlinkTitle RedditHyperlinkBody WikiVote
+-s sign -t main -m SignDyGFormer -e -r BitcoinAlpha BitcoinOTC RedditHyperlinkTitle RedditHyperlinkBody
