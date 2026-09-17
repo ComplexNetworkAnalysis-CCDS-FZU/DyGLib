@@ -117,12 +117,11 @@
 
 ## 最近更新记录
 
-- **2026-09-17 深夜（续50·LOO 满表入队 + Baseline 波二 smoke 插空 + 代码转发）**：
-  - 用户拍板：**LOO 方案 A 满表**（4 掩码 × 5 数据集 × 5 种子）；**波二 smoke「插空跑」**。
-  - **代码转发（Baseline 通道）**：本地 `D:\codes\DynamiSE_DySDGNN_repro` HEAD=`2d0a419`（波三 v1.1）直推服务器裸仓（1100ee6→2d0a419），服务器工作副本 pull 到位；`ext_baselines/semba/*` + `vendor/mamba_ssm_pure/*` 已就位；dygmamba env 已有 einops、py3.10 路径核对无误。
-  - **队列插入**（**147 行**；备份 `bak-20260917-212210/212215`；回读校验过）：**#137 = SD-smoke（scadyg）/ #138 = MA-smoke（dygmamba，含 pure 子集安装 + `--batch_size 64`）**（插 #136 后，「插空」执行）；**#144/145 = LOO 满表扩样**（`--module-idx 7 8 -e`=50 runs + `--module-idx 1 2 -e -r RT`=40 runs = **90 runs**）；k×N 网格顺延 **#146/147**。
-  - **旧 semba 实况（wyq-exprm，Mar 版；供 Baseline）**：曾跑 semba（RedditTitle/Body、Wikirfa、OTC-1），失败于 `torch_scatter.scatter_max → Not compiled with CUDA support`（当时 env 不匹配；现 gc 的 scatter 2.1.2+pt22cu121 已配对）。
-  - 实况（21:22）：#134 末件（WV w/o BTE）在跑（~21:40 完）；#136（CNE RT）在跑（~23:30 完）；随后 #137/138 smoke。
+- **2026-09-17 深夜2（续50·LOO 满表入队 + Baseline 波二 smoke 抢修 + Paper ④⑤处理）**：
+  - **用户批 A（LOO 满表）**：已入队 **#146/147**（`--module-idx 7 8 -e`、`--module-idx 1 2 -e -r RedditHyperlinkTitle`；含 seed42 重跑以求批次一致；≈90 runs）；网格顺延 **#153/154**。
+  - **用户批「3 插空跑」（Baseline 波二 smoke）**：两行插 #137/138 → **首跑结果：① ScaDyG ✗**（`ModuleNotFoundError: torchmetrics`，其 requirements 漏列）→ 已装 `torchmetrics==0.11.4`；**② DyG-Mamba ✗**（`triton.__spec__ is None`）→ 根因 = shim `_activate_pure` 将 triton 及其子模块占位为 `_DummyModule`（`__spec__=None`），而该 env 实装 triton 2.1.0、torch 2.1 首次 CUDA init 时 `find_spec('triton')` 抛 ValueError；本地 CPU 冒烟不触发（无 CUDA init）→ 已用「预导入 triton」包装**前台验证（CUDA init OK）**，**重试行插 #140/141**；`_install_dummy` 真实导入守卫补丁建议已发 Baseline 请其上游 commit。
+  - **Paper 补单④⑤**：linksign w/o CNAS 25 runs（④）由 #146 覆盖 ✓；**sign w/o CNAS 25 runs（⑤）已入队 #148–152**（`RAS-E.RASE-E.BTE-E.CNAS-D`，val-thr，OTC=40/15）。语义答复已发：CNAS-off ⇒ `history_neighbors_sampling()` 走 `get_all_first_hop_neighbors()`（全首跳→模型侧 NN 截断）；**RAS 锚点在该配置不生效**（扩充逻辑仅在 `get_common_neighbors()` 内，无其他采样侧消费点）；单种子屏 Δ=**auc**；纯开关组合、无需改码。
+  - 取数集 `loo` 补全 **20/20**；队列 154 行（备份 `tasks.txt.bak-20260917-214749/214753`）。
 
 - **2026-09-17 深夜（续49·LOO 单种子屏出数 + 全指标表交付 + Baseline 波三接入）**：
   - **LOO 屏（#134/135，seed42；19/20 已取，WV w/o BTE 末件在跑）**——贡献 = full − mask（正=模块有帮助）：
