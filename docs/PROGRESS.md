@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-17 深夜（续50·LOO 满表入队 + Baseline 波二 smoke 插空 + 代码转发）**：
+  - 用户拍板：**LOO 方案 A 满表**（4 掩码 × 5 数据集 × 5 种子）；**波二 smoke「插空跑」**。
+  - **代码转发（Baseline 通道）**：本地 `D:\codes\DynamiSE_DySDGNN_repro` HEAD=`2d0a419`（波三 v1.1）直推服务器裸仓（1100ee6→2d0a419），服务器工作副本 pull 到位；`ext_baselines/semba/*` + `vendor/mamba_ssm_pure/*` 已就位；dygmamba env 已有 einops、py3.10 路径核对无误。
+  - **队列插入**（**147 行**；备份 `bak-20260917-212210/212215`；回读校验过）：**#137 = SD-smoke（scadyg）/ #138 = MA-smoke（dygmamba，含 pure 子集安装 + `--batch_size 64`）**（插 #136 后，「插空」执行）；**#144/145 = LOO 满表扩样**（`--module-idx 7 8 -e`=50 runs + `--module-idx 1 2 -e -r RT`=40 runs = **90 runs**）；k×N 网格顺延 **#146/147**。
+  - **旧 semba 实况（wyq-exprm，Mar 版；供 Baseline）**：曾跑 semba（RedditTitle/Body、Wikirfa、OTC-1），失败于 `torch_scatter.scatter_max → Not compiled with CUDA support`（当时 env 不匹配；现 gc 的 scatter 2.1.2+pt22cu121 已配对）。
+  - 实况（21:22）：#134 末件（WV w/o BTE）在跑（~21:40 完）；#136（CNE RT）在跑（~23:30 完）；随后 #137/138 smoke。
+
 - **2026-09-17 深夜（续49·LOO 单种子屏出数 + 全指标表交付 + Baseline 波三接入）**：
   - **LOO 屏（#134/135，seed42；19/20 已取，WV w/o BTE 末件在跑）**——贡献 = full − mask（正=模块有帮助）：
     - **w/o CNAS**：OTC **−0.0113**、WV **−0.0069**、RT **−0.0054**（去掉更好）｜BA +0.0004、RB +0.0034 → 3/5 负贡献（mean −0.0040）→ 从 full 侧坐实「CNAS 边际负」。

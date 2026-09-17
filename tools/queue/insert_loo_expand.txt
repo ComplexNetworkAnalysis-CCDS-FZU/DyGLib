@@ -1,0 +1,2 @@
+-s linksign -t ablation -m SignDyGFormer --module-idx 7 8 -e
+-s linksign -t ablation -m SignDyGFormer --module-idx 1 2 -e -r RedditHyperlinkTitle
