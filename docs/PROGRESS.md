@@ -117,6 +117,11 @@
 
 ## 最近更新记录
 
+- **2026-09-17（续47·同步：DyG 真基线补齐批近齐 + val-thr 刷新取数集就绪）**：
+  - 队列 **127/143** 已派发：#124–125 完成，**#126（WV linksign DyG）收尾中**（seed42 已出），#127（RT sign DyG val-thr 刷新）在跑、#128 待跑；其后 #129–133（ours sign 修正批）→ #134/135 LOO → #136–141 CNE → #142/143 网格。
+  - **已取 DyG BA/OTC/WV × sign/linksign 26/30**（`--set s1b --allow-partial`；WV linksign 1/5，待 #126 完成后补取）：sign auc BA 0.7706–0.8007 / OTC 0.8393–0.8888 / WV 0.8150–0.8250；linksign auc BA 0.9593–0.9642 / OTC 0.9676–0.9730（WV seed42 0.9682 首点）。归档 `results/s1_refresh/raw/{sign,linksign}/…`；sha256 入 `_sync_raw_log.csv`。
+  - **新增取数集**（换数不覆盖旧档）：`s1b`（本次）、`s1v` = DyG sign RT/RB val-thr 刷新（#127/128 → `results/s1_refresh/raw_valthr/`）、`oursv` = ours sign 5 数据集 val-thr（#129–133 → `results/sign_valthr/raw/`）——齐批后出"新旧同名 sha256 对照 + 真基线五数据集表"交付 Paper。
+
 - **2026-09-17（续46·半径 5 种子判定 → S2 NO-GO + sign 重跑纠错重发 + 队列重排）**：
   - **半径 5 种子确认**（#110–115 全完；30 files 已取，sha256 入 `results/_sync_raw_log.csv`；归档 `results/ras_radius/raw5/`）：
     - OTC（k_c=5）：k_r=10 −5：auc Δ**+0.0016**（sd 0.0036，t=0.98，p=0.38）

@@ -22,6 +22,9 @@
     python tools/sync/fetch_results.py --set rasradius --allow-partial  # 双半径验证批（#90–109；全模型 linksign 单种子 42；WV 收尾中）
     python tools/sync/fetch_results.py --set rasradius5 --allow-partial  # 双半径 5 种子确认批（#110–115；seed* 含 42；赢家+对角）
     python tools/sync/fetch_results.py --set s1     # S1 真基线 DyGFormer（RT/RB × sign/linksign，5 种子；#83/84 修复版重跑）
+    python tools/sync/fetch_results.py --set s1b --allow-partial   # 真基线补齐：DyGFormer BA/OTC/WV × sign/linksign（#121–126；WV linksign 收尾中）
+    python tools/sync/fetch_results.py --set s1v    # 真基线 val-thr 刷新：DyG sign RT/RB（#127/128；新目录 raw_valthr，保留旧档）
+    python tools/sync/fetch_results.py --set oursv  # ours sign val-thr 刷新 5 数据集（#129–133；新目录 sign_valthr，保留旧档）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -123,6 +126,24 @@ S1_SIGN_RT = "saved_results/LinkSign/DyGFormer/RedditHyperlinkTitle/DyGFormer_se
 S1_SIGN_RB = "saved_results/LinkSign/DyGFormer/RedditHyperlinkBody/DyGFormer_seed*.NN-60.LF-1.*.P1.TE.json"
 S1_LINKSIGN_RT = "saved_results/SignLinkPrediction/DyGFormer/RedditHyperlinkTitle/DyGFormer_seed*.NN-60.LF-1.*.P1.TE.json"
 S1_LINKSIGN_RB = "saved_results/SignLinkPrediction/DyGFormer/RedditHyperlinkBody/DyGFormer_seed*.NN-80.LF-3.*.P1.TE.json"
+
+# ---- 2026-09-17 新增集 ----
+# S1b 真基线补齐：DyGFormer BA/OTC/WV × sign/linksign（#121–126）
+S1B_SIGN_BA = "saved_results/LinkSign/DyGFormer/BitcoinAlpha/DyGFormer_seed*.NN-40.LF-15.*.P1.TE.json"
+S1B_SIGN_OTC = "saved_results/LinkSign/DyGFormer/BitcoinOTC/DyGFormer_seed*.NN-40.LF-15.*.P1.TE.json"
+S1B_SIGN_WV = "saved_results/LinkSign/DyGFormer/WikiVote/DyGFormer_seed*.NN-40.LF-15.*.P1.TE.json"
+S1B_LINKSIGN_BA = "saved_results/SignLinkPrediction/DyGFormer/BitcoinAlpha/DyGFormer_seed*.NN-40.LF-15.*.P1.TE.json"
+S1B_LINKSIGN_OTC = "saved_results/SignLinkPrediction/DyGFormer/BitcoinOTC/DyGFormer_seed*.NN-80.LF-5.*.P1.TE.json"
+S1B_LINKSIGN_WV = "saved_results/SignLinkPrediction/DyGFormer/WikiVote/DyGFormer_seed*.NN-15.LF-10.*.P1.TE.json"
+# S1v val-thr 刷新：DyG sign RT/RB（#127/128；与旧档同模式，但写入独立本地目录避免覆盖）
+S1V_SIGN_RT = "saved_results/LinkSign/DyGFormer/RedditHyperlinkTitle/DyGFormer_seed*.NN-100.LF-1.*.P1.TE.json"
+S1V_SIGN_RB = "saved_results/LinkSign/DyGFormer/RedditHyperlinkBody/DyGFormer_seed*.NN-60.LF-1.*.P1.TE.json"
+# oursv val-thr 刷新：ours sign 5 数据集（#129–133；full 口径、同名覆盖；独立目录）
+OURSV_RT = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-100.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+OURSV_RB = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-60.LF-1.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+OURSV_BA = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+OURSV_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+OURSV_WV = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 
 # 双半径验证批（#90–109，全模型 linksign 单种子 42；文件名带 .RLF-{k_r} 标记）
 RR_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-60.LF-1.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
@@ -299,6 +320,25 @@ SETS = {
         (S1_SIGN_RB, "results/s1_refresh/raw/sign/RedditHyperlinkBody", None, 5),
         (S1_LINKSIGN_RT, "results/s1_refresh/raw/linksign/RedditHyperlinkTitle", None, 5),
         (S1_LINKSIGN_RB, "results/s1_refresh/raw/linksign/RedditHyperlinkBody", None, 5),
+    ],
+    "s1b": [
+        (S1B_SIGN_BA, "results/s1_refresh/raw/sign/BitcoinAlpha", None, 5),
+        (S1B_SIGN_OTC, "results/s1_refresh/raw/sign/BitcoinOTC", None, 5),
+        (S1B_SIGN_WV, "results/s1_refresh/raw/sign/WikiVote", None, 5),
+        (S1B_LINKSIGN_BA, "results/s1_refresh/raw/linksign/BitcoinAlpha", None, 5),
+        (S1B_LINKSIGN_OTC, "results/s1_refresh/raw/linksign/BitcoinOTC", None, 5),
+        (S1B_LINKSIGN_WV, "results/s1_refresh/raw/linksign/WikiVote", None, 5),
+    ],
+    "s1v": [
+        (S1V_SIGN_RT, "results/s1_refresh/raw_valthr/sign/RedditHyperlinkTitle", None, 5),
+        (S1V_SIGN_RB, "results/s1_refresh/raw_valthr/sign/RedditHyperlinkBody", None, 5),
+    ],
+    "oursv": [
+        (OURSV_RT, "results/sign_valthr/raw/RedditHyperlinkTitle", None, 5),
+        (OURSV_RB, "results/sign_valthr/raw/RedditHyperlinkBody", None, 5),
+        (OURSV_BA, "results/sign_valthr/raw/BitcoinAlpha", None, 5),
+        (OURSV_OTC, "results/sign_valthr/raw/BitcoinOTC", None, 5),
+        (OURSV_WV, "results/sign_valthr/raw/WikiVote", None, 5),
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
