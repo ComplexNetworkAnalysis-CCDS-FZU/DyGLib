@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-17 晚（续48·val-thr 刷新批 + 真基线补齐交付）**：#127–133 全完（DyG sign RT/RB 刷新 + ours sign 修正批 5×5）；三批取数 65 files（`s1b` 30 补全 / `s1v` 10 / `oursv` 25），sha 入 `_sync_raw_log.csv`；新工具 `tools/verify/valthr_sign_report.py` 出交付报表：
+  - **ours sign（full）val-thr vs 旧（thr=0.5）**：auc 逐位不变（训练确定）；f1_binary 提升 RT 0.8736→0.9396 / RB 0.9084→0.9641 / BA 0.8342→0.9276 / OTC 0.8995→0.9494 / WV 0.8812→0.8812（近不敏感）；acc +0.10/+0.09/+0.12/+0.07/+0.00；25 对新旧 sha **全部不同**（旧档保留于 main_tables、新档 sign_valthr）。
+  - **真基线五数据集（5 种子 mean±pstd）**：sign auc RT .7112±.0046 / RB .6153±.0267 / BA .7895±.0119 / OTC .8723±.0178 / WV .8210±.0034；linksign auc RT .9345±.0016 / RB .9310±.0056 / BA .9617±.0019 / OTC .9697±.0018 / WV .9674±.0006。DyG sign RT/RB 刷新：f1_bin +0.122/+0.107、acc +0.174/+0.172（auc 不变）。
+  - **关键读数（供两主表重排）**：sign ours−DyG：**RT F1 家族在 val-thr 下转「平」**（f1_bin −0.0004 p=.086；此前 0.5 阈值口径的「F1 显著更优」为口径假象，已向 Paper 更正）+ auc −0.0366（p<.001）；RB 全 ns；**BA/OTC ours f1_bin +0.0041（p=.011）/+0.0090（p=.007）、acc +0.0074/+0.0163 显著更优**，auc 平；WV DyG auc −0.0254（p=.0005）、f1_wt −0.0150（p=.0045）。linksign ours−DyG：**RT auc +0.0046（p=.003）**；**OTC f1_wt +0.0110（p=.025）**；**BA auc −0.0043（p=.011）**；**WV auc −0.0062（p=.0002）/f1_wt −0.0083（p=.018）**；RB 全 ns。
+  - LOO 单种子屏（#134/135）在跑（出数即报）；CNE-off（#136–141）随后。
+
 - **2026-09-17（续47·同步：DyG 真基线补齐批近齐 + val-thr 刷新取数集就绪）**：
   - 队列 **127/143** 已派发：#124–125 完成，**#126（WV linksign DyG）收尾中**（seed42 已出），#127（RT sign DyG val-thr 刷新）在跑、#128 待跑；其后 #129–133（ours sign 修正批）→ #134/135 LOO → #136–141 CNE → #142/143 网格。
   - **已取 DyG BA/OTC/WV × sign/linksign 26/30**（`--set s1b --allow-partial`；WV linksign 1/5，待 #126 完成后补取）：sign auc BA 0.7706–0.8007 / OTC 0.8393–0.8888 / WV 0.8150–0.8250；linksign auc BA 0.9593–0.9642 / OTC 0.9676–0.9730（WV seed42 0.9682 首点）。归档 `results/s1_refresh/raw/{sign,linksign}/…`；sha256 入 `_sync_raw_log.csv`。

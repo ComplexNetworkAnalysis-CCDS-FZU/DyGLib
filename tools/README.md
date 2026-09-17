@@ -32,6 +32,7 @@
 - `verify_ras_rae_leak.py` — **RAS/RAE/泄漏修复的三项断言**：① 翻转 pos0 标签后 BTE 输出不变（泄漏已封）；② RAE on ≠ off（direct 证据真实生效）；③ indirect 只落在真第三方位置。
 - `test_ras_dual_k.py` — **双半径（k_c/k_r）接口自检（双进程）**：① `--ras-look-forward`=None 与 =k_c 逐位一致（原公式零变更）；② k_r=0 vs k_c 采样差异 >0（R 窗半径真实生效）；③ 双 k 时 accel 自动回退——带/不带 accel 逐位一致（无 wheel 时自动 SKIP）。用法：`python tools/verify/test_ras_dual_k.py`（仓库根；纯 CPU）。
 - `test_cne_off.py` — **CNE-off（.CNE-D）探针接口自检（2026-09-17）**：① CNE 关闭 ⇒ 共现特征严格全零（形状/dtype 不变）；② 默认开启非零（零行为变更）；③ SignDyGFormer 构造参数接线；④ result_save_name 标记（默认无 .CNE-D；关闭以 .CNE-D 结尾；--ablation 规则可叠加）与 CLI 开关 `--no-module-common-neighbor-encoder` 可解析。用法：`python tools/verify/test_cne_off.py`（仓库根；纯 CPU）。
+- `valthr_sign_report.py` — **val-thr 刷新批交付报表（2026-09-17）**：① ours sign 新旧同名对照（指标 Δ + sha256 同/异计数；旧目录多套参数自动按文件名对齐）；② DyG 真基线五数据集（sign/linksign，5 种子 mean±pstd；RT/RB sign 为 val-thr 刷新版）与旧档对照；③ ours(新)−DyG(新) sign 同种子配对（t/p）；④ ours linksign full−DyG（auc/f1_wt）。用法：`python tools/verify/valthr_sign_report.py`（仓库根；纯 CPU）。
 - `check_archived_results.py` — 打印本地归档结果（`results/E-2_ablation/raw/`）的指标/耗时指纹，用于与服务器新结果对照、判定文件是否被新 run 覆盖。
 - `repeat_sign_stats.py` — 统计各数据集**重复交互率**与**重复对符号翻转率**（用于解释 RAS/RAE 的作用面；BA/OTC 重复率 ~80% 但翻转率仅 2.5%，WikiVote 翻转率 33% 但重复率仅 6.9%）。
 - `cn_quirk_analysis.py` — **CN 伪交集怪癖分析**（玩具探针 + 真实数据量化：伪 CN 查询占比/采样输出差异率）；结论见 `docs/ANALYSIS_CN_PSEUDO_INTERSECT.md`。用法：`python tools/verify/cn_quirk_analysis.py [--queries 2000]`。
