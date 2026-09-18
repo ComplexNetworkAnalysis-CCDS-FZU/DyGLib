@@ -2,7 +2,7 @@ import functools
 from itertools import product
 
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, matthews_corrcoef
 from sklearn.calibration import label_binarize
 from sklearn.metrics import (
     average_precision_score,
@@ -230,6 +230,14 @@ def get_link_sign_3class_prediction_metrics(
     exist_precision, exist_recall, exist_f1, _ = precision_recall_fscore_support(
         exist_labels, pred_exist, average="binary"
     )
+    # 扩展指标（2026-09-18 Paper 统一指标契约，additive、不影响既有键）：
+    # sign 分支逐类 precision/recall（0=负, 1=正）+ 3 类 MCC + 阈值元信息
+    sign_pr, sign_rc, _, _ = precision_recall_fscore_support(
+        sign_labels, pred_sign, labels=[0, 1], average=None, zero_division=0
+    )
+    precision_neg, precision_pos = float(sign_pr[0]), float(sign_pr[1])
+    recall_neg, recall_pos = float(sign_rc[0]), float(sign_rc[1])
+    mcc = float(matthews_corrcoef(y_true=y_true, y_pred=y_pred))
     # exist_f1 = f1_score(sign_labels, pred_sign, average="binary")
     # exist_precision=precision_recall_curve()
     # exist_recall = recall_score(exist_labels, pred_exist)
@@ -257,6 +265,13 @@ def get_link_sign_3class_prediction_metrics(
         "f1_mic": f1_micro,
         "acc": acc,
         "auc": auc,
+        "precision_neg": precision_neg,
+        "recall_neg": recall_neg,
+        "precision_pos": precision_pos,
+        "recall_pos": recall_pos,
+        "mcc": mcc,
+        "thr_exist": float(best_exist_thr),
+        "thr_sign": float(best_sign_thr),
     }
 
 
