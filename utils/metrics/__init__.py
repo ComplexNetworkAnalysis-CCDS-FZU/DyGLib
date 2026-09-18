@@ -55,7 +55,9 @@ def safe_roc_auc_score(
     if len(auc) == 0:
         # 全都是单类，跳了
         return np.nan
-    elif average in ["weight", "macro"]:
+    elif average in ["weight", "macro", "weighted"]:
+        # "macro"/"weight"：等权（循环内 weight=1.0）；"weighted"：支持度加权（循环内 weight=类计数）
+        # 修复 2026-09-18："weighted" 原先落入 else 分支（旧 API n_classes= 已不存在 → 直接崩溃）
         return np.average(auc, weights=weight)
     else:
         return roc_auc_score(y_true, y_pred, average="micro", n_classes=n_classes)
