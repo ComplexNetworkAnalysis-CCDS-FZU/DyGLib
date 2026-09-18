@@ -252,6 +252,9 @@ def get_link_sign_3class_prediction_metrics(
         y_true=labels_bin, y_score=prob_3, average="macro"
     )
     auc = safe_roc_auc_score(y_true=y_true, y_pred=prob_3, average="macro")
+    # 口径补充（2026-09-18 Paper 对齐问询）：同时输出 OVR 支持加权 AUC（Baseline 口径），
+    # 默认键 `auc` 保持原有 OVR-macro 语义不变（additive）。
+    auc_wt = safe_roc_auc_score(y_true=y_true, y_pred=prob_3, average="weighted")
     # report = classification_report(y_true, y_pred)
     # print(report)
     return {
@@ -265,6 +268,7 @@ def get_link_sign_3class_prediction_metrics(
         "f1_mic": f1_micro,
         "acc": acc,
         "auc": auc,
+        "auc_wt": auc_wt,
         "precision_neg": precision_neg,
         "recall_neg": recall_neg,
         "precision_pos": precision_pos,
