@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-18 深夜（续58·Baseline 口径冻结版部署 + 服务器预检通过）**：
+  - Baseline 主口径切换（Paper `472a`/`3943`）：`feature-mode history`（**保留历史边特征含历史符号维、不传目标边特征**）+ **摄取顺序修复**（先预测→后摄入；旧路径把目标边自身特征算进邻域=泄漏）→ 实测 TGN×RT×sign **0.9367→0.5399**；**版本冻结 = `1325f89`**（#148/#155/#156 唯一应跑版本）。
+  - **已部署**：服务器推送至 `c504b90`（= 1325f89 + 仅 `.gitignore`/`reports` 无害提交；运行代码 diff 核验一致）；**#148 尚未开跑 → 无需重跑**；A/B 命令无需改（无显式 `--feature-mode`，默认即 history）。
+  - **服务器预检（新代码）**：对齐自检 **5/5 PASS**；**CPU 预冒烟 3/3 ok**（semba/tgn/sigat × RB × sign，独立 out-dir `outputs/_smoke/semba_precheck`，不影响 #148 挂钟测量）；输出已带新指标 schema（precision/recall/balanced_acc/mcc/threshold）。
+  - **D1 键名对齐（采纳 Baseline/Paper 建议）**：linksign `auc` = OVR **weighted**（Paper 基准；源 `auc_wt`）+ **`auc_macro`** 并列（源 `auc`）；`thr` 统一列名（对方 JSON 键=threshold → D1 映射）。
+  - LOO 进度：**61/90** 文件（idx7=17 / idx8=15 / idx1=15 / idx2=14）；预计 09-19 晨-午收尾 → #148 smoke（挂钟 + git log 即回 Baseline）。
+
 - **2026-09-18 傍晚5（续57·口径对齐：`auc_wt` 双口径 + `weighted` 分支修复 + Baseline 3854d4a 转发）**：
   - 答复 Paper `f911` 三处待索：① `sign_f1`/`exist_f1` **定义原文**（全量真实边、正号为正类、不按存在门过滤 / 存在性二值 F1）；② linksign `auc` 确认 = **OVR macro**，并**新增 additive 键 `auc_wt`**（OVR 支持加权 = Baseline 口径）→ D1 双口径并列；③ `thr` 键名统一方案（D1 映射 `thr_sign`，另附 `thr_exist`）。
   - **修复 `safe_roc_auc_score` 的 `weighted` 死代码分支**（此前一旦走到会因旧 sklearn `n_classes=` API 崩溃；现正确返回支持加权平均；`macro`/`weight` 路径逐位不变；调用点全审计）——合成用例通过。
