@@ -117,6 +117,8 @@
 
 ## 最近更新记录
 
+- **2026-09-18 傍晚3（续55·SEMBA 公共基线 A/B 档预排入队）**：按用户"倾向 B"（全 5 数据集覆盖）+ Paper"A 出数确认后接续 B"指示：**#155 = SEMBA `--mode A`（Reddit 100 runs）→ #156 = `--mode B`（全 5 数据集，幂等跳过 A 已跑，新增 150）**，插在 sign w/o CNAS 批（#150–154）之后、k×N 网格（现 #157/158）之前；`tools/queue/insert_semba_ab.txt`，备份 `tasks.txt.bak-20260918-124729`，队列 158 行。smoke 通过后自动开跑；A 挂钟出数即回 Baseline。
+
 - **2026-09-18 傍晚2（续54·统一指标契约受理 + Baseline 6582a94 转发 + B 档预排方案）**：
   - **Paper「统一指标契约」行动项（用户要求主表多指标并列）**：① 必报键核查 —— sign 6 键、linksign 10 键**已全部在既有 JSON**（`f1_mac/f1_wt/f1_mic` 需改名映射；`exist_precision/recall` 已在）；② 建议增报键（precision/recall/balanced_acc/mcc、linksign 逐类）——评测为**逐 batch 标量平均**、混淆矩阵未落盘 ⇒ **不可无损恢复**；已给 Paper 两方案：**A=评测处加存 CM/逐类/概率 npz + 存量批次仅重评**（checkpoint 保留性核实中），**B=仅新 run 生效、存量标注未产出**；③ 将建 `tools/verify/export_full_metrics.py` 出 D1/D2 + 升级 `TABLES_valthr_20260917.md`（零 GPU）。
   - **Baseline `6582a94`**（交付模板按 Paper 口径更正）**已转发服务器**（0dc718e→6582a94）✓；`run_semba_queue.py --mode {smoke,A,B}` 确认。

@@ -1,0 +1,2 @@
+@cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python ext_baselines/semba/run_semba_queue.py --mode A --device cuda:@GPU@ --processed-root /home/fedsa/DyGLib/processed_data && echo SEMBA_A_OK
+@cd /home/fedsa/DynamiSE_DySDGNN_repro && . /home/fedsa/anaconda3/etc/profile.d/conda.sh && conda activate gc && python ext_baselines/semba/run_semba_queue.py --mode B --device cuda:@GPU@ --processed-root /home/fedsa/DyGLib/processed_data && echo SEMBA_B_OK
