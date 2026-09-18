@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-18 傍晚4（续56·统一指标契约：评测端扩展键落地，用户批"排队尾"）**：按用户指示（"新指标不慢、可排队尾"）先行落地评测端扩展（**additive、零行为变更、合成用例通过**）：
+  - `utils/metrics/binary_classification.py`：+`precision`/`recall`（正类）/`balanced_acc`/`mcc`/`thr`（阈值元信息）；
+  - `utils/metrics/linkSignPredict.py`（3 类级联）：+`precision_neg`/`precision_pos`/`recall_neg`/`recall_pos`/`mcc`/`thr_exist`/`thr_sign`。
+  - **自提交 `39180f5` 起所有新 run 原生带新键**（首个受益批：#150–154 sign w/o CNAS、#157/158 网格；重评批同版本）。
+  - 存量批「轻量重评（eval-only，checkpoint 已确认保留 407 pkl/2.4G）」driver + **队尾行**：随后落地（用户批"排队尾"）。
+
 - **2026-09-18 傍晚3（续55·SEMBA 公共基线 A/B 档预排入队）**：按用户"倾向 B"（全 5 数据集覆盖）+ Paper"A 出数确认后接续 B"指示：**#155 = SEMBA `--mode A`（Reddit 100 runs）→ #156 = `--mode B`（全 5 数据集，幂等跳过 A 已跑，新增 150）**，插在 sign w/o CNAS 批（#150–154）之后、k×N 网格（现 #157/158）之前；`tools/queue/insert_semba_ab.txt`，备份 `tasks.txt.bak-20260918-124729`，队列 158 行。smoke 通过后自动开跑；A 挂钟出数即回 Baseline。
 
 - **2026-09-18 傍晚2（续54·统一指标契约受理 + Baseline 6582a94 转发 + B 档预排方案）**：
