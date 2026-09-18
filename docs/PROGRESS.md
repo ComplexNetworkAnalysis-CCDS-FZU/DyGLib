@@ -117,6 +117,11 @@
 
 ## 最近更新记录
 
+- **2026-09-18 午后（续52·信箱往返：Paper 撤回 CNAS/CNE 互斥 + base CNE 确认；Baseline 收悉与 6b39cc4 转发）**：
+  - **Paper**：`c4ec`（CNAS/CNE 互斥核验，高优先级）→ **`deba` 撤回**（用户更正：CNAS 的替换对象是 **CNS 采样器**（最近 n 个邻居），非 CNE；停止互斥核验）→ 已答复 deba 第 4 点：**base [F,F,F,F] 下 CNE 启用**（独立开关 `module_common_neighbor_encoder` 默认 True、不属于 4 位模块向量；`.CNE-D` 探针是唯一 CNE-off 产物）；主表第二行定名 `SignDyG (CNS sampler)`（Paper 侧裁定）。CNE-off 交付已被 Paper 采纳（`14b1`：写作口径 "retained on evidence"）。
+  - **Baseline `8493` 收悉**：其 `6b39cc4` 补 scadyg 依赖（torchmetrics/yacs）+ 免装结论（graphgym/wandb）+ sklearn 版本差说明；交付模板 `make_delivery.py`（明细+mean±pstd+配对 t/df/p/d+设备对照+协议段）就绪 → **已转发服务器 `1f27af3→6b39cc4`**（服务器侧模板可用）；其请求已回：服务器环境 **sklearn 1.4.2**（torch 2.2.2 / PyG 2.5.2 / py3.9）；A 档回传将含 `probs/`。
+  - **LOO 满表进度**：上卡约 6h 出 **22 files**（idx7=6 / idx8=5 / idx1=6 / idx2=5）；#147（idx1/2，40 runs）预计 09-19 晨完、#146（idx7/8，50 runs）09-19 午前后 → 随后 **#148 SEMBA smoke**（挂钟即回 Baseline）→ #149 ScaDyG 重试 → #150–154 sign w/o CNAS。
+
 - **2026-09-18 中午（续51·夜间批完形：CNE-off 30/30 出数 + DyG-Mamba smoke ✓ + ScaDyG 再修 + SEMBA 对齐 PASS + 队列插 #148/149）**：
   - **CNE-off 探针批（#136–145）完成 30/30 并归档**（新取数集 `cne` → `results/cne_off/raw/{ds}`；sha 入 `_sync_raw_log.csv`；新工具 `tools/verify/cne_off_table.py`）——linksign、5 种子、Δ=CNE-on − CNE-off：
     - **full 语境**（其余模块全开，仅关 CNE）：**RT auc +0.0033（t=+4.32/p=0.012/d=1.93；ap +0.0047/p=0.030）**；RB +0.0000（p=0.99）、BA +0.0003（p=0.82）中性。
