@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-18 傍晚5（续57·口径对齐：`auc_wt` 双口径 + `weighted` 分支修复 + Baseline 3854d4a 转发）**：
+  - 答复 Paper `f911` 三处待索：① `sign_f1`/`exist_f1` **定义原文**（全量真实边、正号为正类、不按存在门过滤 / 存在性二值 F1）；② linksign `auc` 确认 = **OVR macro**，并**新增 additive 键 `auc_wt`**（OVR 支持加权 = Baseline 口径）→ D1 双口径并列；③ `thr` 键名统一方案（D1 映射 `thr_sign`，另附 `thr_exist`）。
+  - **修复 `safe_roc_auc_score` 的 `weighted` 死代码分支**（此前一旦走到会因旧 sklearn `n_classes=` API 崩溃；现正确返回支持加权平均；`macro`/`weight` 路径逐位不变；调用点全审计）——合成用例通过。
+  - Baseline 仓 **`3854d4a`**（契约全指标 + `enrich_metrics.py` + 训练脚本原生契约键 + D2 打包）**已转发服务器**；**A 开跑前流程已与其钉住**（转发最新 + pull + `git log` 回执；并要求先定稿 Paper `472a` 口径调整，避免半批口径）。
+  - 部署：`530e170`→`53eeb79`（双推 + 服务器 pull ✓；服务器 import 验证 ✓）。
+
 - **2026-09-18 傍晚4（续56·统一指标契约：评测端扩展键落地，用户批"排队尾"）**：按用户指示（"新指标不慢、可排队尾"）先行落地评测端扩展（**additive、零行为变更、合成用例通过**）：
   - `utils/metrics/binary_classification.py`：+`precision`/`recall`（正类）/`balanced_acc`/`mcc`/`thr`（阈值元信息）；
   - `utils/metrics/linkSignPredict.py`（3 类级联）：+`precision_neg`/`precision_pos`/`recall_neg`/`recall_pos`/`mcc`/`thr_exist`/`thr_sign`。
