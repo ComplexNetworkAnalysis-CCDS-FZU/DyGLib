@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-09-18 中午（续51·夜间批完形：CNE-off 30/30 出数 + DyG-Mamba smoke ✓ + ScaDyG 再修 + SEMBA 对齐 PASS + 队列插 #148/149）**：
+  - **CNE-off 探针批（#136–145）完成 30/30 并归档**（新取数集 `cne` → `results/cne_off/raw/{ds}`；sha 入 `_sync_raw_log.csv`；新工具 `tools/verify/cne_off_table.py`）——linksign、5 种子、Δ=CNE-on − CNE-off：
+    - **full 语境**（其余模块全开，仅关 CNE）：**RT auc +0.0033（t=+4.32/p=0.012/d=1.93；ap +0.0047/p=0.030）**；RB +0.0000（p=0.99）、BA +0.0003（p=0.82）中性。
+    - **base 语境**（全关 + CNE）：RT −0.0035（p=0.089）、RB +0.0019（p=0.54）、BA +0.0022（p=0.51）均不显著。
+    - 判定：**CNE 保留**——full 组合下对 RT 显著正贡献、其余无害；单独加入 base 无收益（其价值与 full 组合/CNAS 采样耦合）。已发 `Paper`。
+  - **Baseline 波二 smoke**：**DyG-Mamba ✓ PASS**（#141，`BASELINE_DYGMAMBA_SMOKE_OK`；单 run **1545.2s**、test AUC 0.6512/F1 0.9179；产物 `outputs/_smoke/DyG-Mamba/BitcoinAlpha_seed42.json`；「预导入 triton」包装有效）；**ScaDyG ✗→再修**（#140 缺 `yacs` → 已装；全仓缺包扫描：仅 graphgym/wandb 存于离线脚本、不在 smoke 路径）→ **重试 #149**。
+  - **Baseline 波三（SEMBA）**：本地仓直推服务器 **2d0a419→1f27af3** ✓（裸仓 `~/git/DynamiSE_DySDGNN.git`）；**对齐自检跑通：5 数据集 ALL CHECKS: PASS**（边界=quantile(0.70/0.85)、边数守恒、msg_dim 自动推断；OTC −212s / RB −22s 为其 edge-count 原生口径对照值）；**smoke 入队 #148**（semba,tgn,sigat × RedditBody × sign；gc env）。
+  - **队列**：插入后 **156 行**（#148 SEMBA smoke → #149 ScaDyG 重试 → #150–154 sign w/o CNAS → #155–156 网格；备份 `tasks.txt.bak-20260918-121010`）。**#146/#147 LOO 满表在跑**（09-18 05:42/06:32 上卡；全批 ≈90 runs，预计 09-19～20 收齐）。
+  - 工具注册：`fetch_results.py` 增 `cne` 集；`cne_off_table.py` 新增（README 已登记）。
+
 - **2026-09-17 深夜2（续50·LOO 满表入队 + Baseline 波二 smoke 抢修 + Paper ④⑤处理）**：
   - **用户批 A（LOO 满表）**：已入队 **#146/147**（`--module-idx 7 8 -e`、`--module-idx 1 2 -e -r RedditHyperlinkTitle`；含 seed42 重跑以求批次一致；≈90 runs）；网格顺延 **#153/154**。
   - **用户批「3 插空跑」（Baseline 波二 smoke）**：两行插 #137/138 → **首跑结果：① ScaDyG ✗**（`ModuleNotFoundError: torchmetrics`，其 requirements 漏列）→ 已装 `torchmetrics==0.11.4`；**② DyG-Mamba ✗**（`triton.__spec__ is None`）→ 根因 = shim `_activate_pure` 将 triton 及其子模块占位为 `_DummyModule`（`__spec__=None`），而该 env 实装 triton 2.1.0、torch 2.1 首次 CUDA init 时 `find_spec('triton')` 抛 ValueError；本地 CPU 冒烟不触发（无 CUDA init）→ 已用「预导入 triton」包装**前台验证（CUDA init OK）**，**重试行插 #140/141**；`_install_dummy` 真实导入守卫补丁建议已发 Baseline 请其上游 commit。

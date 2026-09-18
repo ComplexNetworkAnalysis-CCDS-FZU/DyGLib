@@ -26,6 +26,7 @@
     python tools/sync/fetch_results.py --set s1v    # 真基线 val-thr 刷新：DyG sign RT/RB（#127/128；新目录 raw_valthr，保留旧档）
     python tools/sync/fetch_results.py --set loo --allow-partial   # LOO 单种子屏（#134/135；4 掩码×5 数据集 seed42；进 raw_seeds 家族目录）
     python tools/sync/fetch_results.py --set oursv  # ours sign val-thr 刷新 5 数据集（#129–133；新目录 sign_valthr，保留旧档）
+    python tools/sync/fetch_results.py --set cne     # CNE-off 探针：RT/RB/BA × {full,base}∖CNE × 5 种子（#136–145；30）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -145,6 +146,10 @@ OURSV_RB = "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkBody/SignDyGForm
 OURSV_BA = "saved_results/LinkSign/SignDyGFormer/BitcoinAlpha/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 OURSV_OTC = "saved_results/LinkSign/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
 OURSV_WV = "saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed*.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
+# ---- 2026-09-18 新增集 ----
+# CNE-off 探针（#136–145：RT/RB/BA × {full,base}∖CNE × 5 种子；linksign 目录，文件名带 .CNE-D）
+CNE_FULL = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.CNE-D.json"
+CNE_BASE = "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best.RAS-D.RASE-D.BTE-D.CNAS-D.P1.TE.CNE-D.json"
 
 # 双半径验证批（#90–109，全模型 linksign 单种子 42；文件名带 .RLF-{k_r} 标记）
 RR_RT = "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed42.NN-60.LF-1.RLF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json"
@@ -354,6 +359,12 @@ SETS = {
         (OURSV_BA, "results/sign_valthr/raw/BitcoinAlpha", None, 5),
         (OURSV_OTC, "results/sign_valthr/raw/BitcoinOTC", None, 5),
         (OURSV_WV, "results/sign_valthr/raw/WikiVote", None, 5),
+    ],
+    "cne": [
+        (CNE_FULL, "results/cne_off/raw/{ds}",
+         ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha"], 15),
+        (CNE_BASE, "results/cne_off/raw/{ds}",
+         ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha"], 15),
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
