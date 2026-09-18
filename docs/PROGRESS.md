@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-18 傍晚2（续54·统一指标契约受理 + Baseline 6582a94 转发 + B 档预排方案）**：
+  - **Paper「统一指标契约」行动项（用户要求主表多指标并列）**：① 必报键核查 —— sign 6 键、linksign 10 键**已全部在既有 JSON**（`f1_mac/f1_wt/f1_mic` 需改名映射；`exist_precision/recall` 已在）；② 建议增报键（precision/recall/balanced_acc/mcc、linksign 逐类）——评测为**逐 batch 标量平均**、混淆矩阵未落盘 ⇒ **不可无损恢复**；已给 Paper 两方案：**A=评测处加存 CM/逐类/概率 npz + 存量批次仅重评**（checkpoint 保留性核实中），**B=仅新 run 生效、存量标注未产出**；③ 将建 `tools/verify/export_full_metrics.py` 出 D1/D2 + 升级 `TABLES_valthr_20260917.md`（零 GPU）。
+  - **Baseline `6582a94`**（交付模板按 Paper 口径更正）**已转发服务器**（0dc718e→6582a94）✓；`run_semba_queue.py --mode {smoke,A,B}` 确认。
+  - **B 档预排方案已回 Baseline**：A、B 两行"预排"位置 = #154（sign 批）之后、k×N 网格之前；A 完成自动接续 B；**插入动作待 #146/#147 收尾 + smoke 出数后执行，并经用户确认 GPU 窗口**。
+  - 队列/批次不变：#146/#147 双卡跑中（≈23/90 files）；#148/149 等待；无新增 GPU 任务。
+
 - **2026-09-18 傍晚（续53·「边特征=标签」泄漏事件处置 + 我方管线审计）**：
   - **事件**：`Baseline` 发现 DyGLib 预处理 `preprocess_data.py:77-79` 将**符号写进边特征首维**（`ml_*.npy` dim0=sign/带符号权重）→ 任何把该数组当消息/特征输入的模型在"抄答案"（LR 用该特征集 AUC=1.0）；其修复 `0dc718e`：自动泄漏维检测+剔除、`--feature-mode {structural,text,raw}`（默认 structural=全关边特征）、JSON 记 `feature_leak_guard`、取证脚本（TGN×RT×sign：0.9367→0.5198）。
   - **服务器处置**：转发 `6b39cc4→0dc718e` ✓；**重跑对齐自检 5/5 PASS（新增 `leaky_dims_excluded: true`）**；`verify_leak_features.py` 对 RT/BA 取证落盘（`outputs/_smoke/leak_check_{rt,ba}.json`，npy 带符号维逐行匹配 csv sign）；smoke #148 直接使用新代码，A 档随后。
