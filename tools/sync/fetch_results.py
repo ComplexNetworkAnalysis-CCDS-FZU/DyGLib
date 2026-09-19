@@ -27,6 +27,9 @@
     python tools/sync/fetch_results.py --set loo --allow-partial   # LOO 单种子屏（#134/135；4 掩码×5 数据集 seed42；进 raw_seeds 家族目录）
     python tools/sync/fetch_results.py --set oursv  # ours sign val-thr 刷新 5 数据集（#129–133；新目录 sign_valthr，保留旧档）
     python tools/sync/fetch_results.py --set cne     # CNE-off 探针：RT/RB/BA × {full,base}∖CNE × 5 种子（#136–145；30）
+    python tools/sync/fetch_results.py --set loofull # LOO 满表（#146/147；4 掩码 × 5/4 数据集 × 5 种子 = 90）
+    python tools/sync/fetch_results.py --set signwocnas # sign w/o CNAS 批（#150–154；5 数据集 × 5 种子 = 25）
+    python tools/sync/fetch_results.py --set sembaab --allow-partial # SEMBA A/B 部分产物（#155/156 成功件 + manifest + smoke 成功件）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -365,6 +368,45 @@ SETS = {
          ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha"], 15),
         (CNE_BASE, "results/cne_off/raw/{ds}",
          ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha"], 15),
+    ],
+    # ---- 2026-09-19 新增集 ----
+    # LOO 满表（#146/147）：idx7/8 = 5 数据集 ×5 种子；idx1/2 = 4 数据集（RT 除外，早前已有）×5 种子
+    "loofull": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed*.NN-Best.LF-Best." + mask + ".P1.TE.json",
+            "results/E-2_ablation/raw_seeds/{ds}",
+            ds_list,
+            exp,
+        )
+        for mask, ds_list, exp in [
+            ("RAS-E.RASE-E.BTE-E.CNAS-D", ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote"], 25),
+            ("RAS-E.RASE-E.BTE-D.CNAS-E", ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote"], 25),
+            ("RAS-E.RASE-D.BTE-E.CNAS-E", ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkBody", "WikiVote"], 20),
+            ("RAS-D.RASE-E.BTE-E.CNAS-E", ["BitcoinAlpha", "BitcoinOTC", "RedditHyperlinkBody", "WikiVote"], 20),
+        ]
+    ],
+    # sign w/o CNAS（#150–154；LinkSign 目录；full 旗标 + CNAS-D）
+    "signwocnas": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + nn + ".LF-" + lf + ".RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.json",
+            "results/sign_wocnas/raw/" + ds,
+            None,
+            5,
+        )
+        for ds, nn, lf in [
+            ("RedditHyperlinkTitle", "100", "1"),
+            ("RedditHyperlinkBody", "60", "1"),
+            ("BitcoinAlpha", "40", "15"),
+            ("BitcoinOTC", "40", "15"),
+            ("WikiVote", "40", "15"),
+        ]
+    ],
+    # SEMBA A/B 部分产物（#155/156 成功件 + manifests；含 smoke 成功件）——证据归档
+    "sembaab": [
+        ("../DynamiSE_DySDGNN_repro/outputs/semba_aligned/*/*.json", "results/semba_ab/raw", None, 70),
+        ("../DynamiSE_DySDGNN_repro/outputs/semba_aligned/queue_manifest_*.json", "results/semba_ab/raw", None, 2),
+        ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/*/*.json", "results/semba_ab/raw_smoke", None, 1),
+        ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/queue_manifest_*.json", "results/semba_ab/raw_smoke", None, 1),
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]

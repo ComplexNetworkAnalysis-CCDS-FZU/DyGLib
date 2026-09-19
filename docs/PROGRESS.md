@@ -117,6 +117,11 @@
 
 ## 最近更新记录
 
+- **2026-09-19 早晨（续60·队列全清 + LOO/sign 收集完成 + SEMBA GPU 批失败转发）**：
+  - **队列 158/158 全部派发**（06:16 idle）：**LOO 满表 90/90 完成**；**sign w/o CNAS 25/25 完成**；#157/#158 网格仍在跑（linksign/sign parameter）。
+  - **SEMBA GPU 批大面积失败**（#148 smoke 2/3、#155 A 75/100、#156 B 180/250、#149 ScaDyG 1/1 挂）：4 类 bug——① 内存模型 `__assoc__` 设备混用（`semba.py:172`/`tgn.py:123`）；② 适配器 linksign forward device-cat（`train_semba_aligned.py:155`）；③ OOM（10.89 GiB ×20）；④ ScaDyG `ap` NameError（`train_sign_scadyg.py:290`）。成功 70 件（sign×{gcn 25, sgcn 25, sigat 20}）。→ **已发 Baseline 行动项**（修复→commit→我转发+追加幂等重跑行）。
+  - **结果收集**：新增取数集 `loofull`(90) / `signwocnas`(25) / `sembaab`(~74，证据归档 `results/semba_ab/`，含 manifests)；sha256 入 `_sync_raw_log.csv`。下一步：LOO 全表（4 掩码 × 5 数据集 × 5 种子配对）+ sign w/o CNAS 对照表 → 交付 Paper。
+
 - **2026-09-18 深夜2（续59·晚间同步：结果同步 Paper + Baseline B 档验毕 + 服务器 10be2fd）**：
   - 向 Paper 发送晚间状态同步（`code-sync-20260918-evening-results-01`）：LOO 进度 61/90 与收齐流程；Baseline 冻结链在我方服务器闭环（对齐 5/5 PASS + CPU 预冒烟 3/3）；D1 键名裁定（`auc`=weighted 基准 + `auc_macro` 并列；`thr` 统一）。
   - Baseline `8582`（B 档代码路径本地验毕 + 可选提交）收悉；服务器同步至 **`10be2fd`**（=1325f89 + 无害提交；运行口径核验一致）。
