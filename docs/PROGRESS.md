@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-19 上午（续64·d6061ff 部署 + ScaDyG bug#5→#6 + precheck 复跑 50/50）**：
+  - Baseline `d6061ff`（ScaDyG 设备修复 + `--device-selfcheck` 绕过幂等守卫）已转发部署；两处标记核验 ✓。
+  - **precheck 复跑（cuda:0）：`50/50 PASS` wall=496.4s**——上轮 14 个 false-skip 组合全真跑且过；JSON 留档 `outputs/semba_aligned/precheck_cuda0.json`。
+  - **ScaDyG smoke**：bug#5（设备）已修 ✓（首轮训练完整）→ 验证段暴露 **bug#6**：`evaluate_segment` 传裸 tensor，而 vendor `mode!='train'` 需带 `.edge_label_index` 属性的图对象（与设备无关的 API 错配）→ 已附根因+单点修复建议回执（`mb-20260919-083127-code-38a0`；补报 50/50：`mb-20260919-083944-code-f976`）。
+  - A/B（#159/#160）保持队列等待；子任务 scadyg 全量待 bug#6 修复后再启。
+
 - **2026-09-19 上午（续63·Baseline GPU 修复同步：部署 + 预检/smoke 通过 + ScaDyG 新 bug）**：
   - Baseline 修复单（`2b47e91`=4 类 GPU bug；含 SiGAT 反向 N×N→稀疏 `[LOCAL PATCH]`、适配器统一 `.to(device)`、scadyg `--force` 作用域）已转发服务器：裸仓+工作区至 **`ea37526`**（+auc_macro 列增补），`git pull --ff-only` + 标记校验通过。
   - **precheck（cuda:0 实测）**：实跑 **36/36 全 PASS**（14 个 "FAIL"=幂等 skip，非设备失败）；关键组合 sigat×RT×sign 实跑 OK（历史 OOM）；semba/tgn 全通。wall=419s。
