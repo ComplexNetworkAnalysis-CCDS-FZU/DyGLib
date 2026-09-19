@@ -117,6 +117,14 @@
 
 ## 最近更新记录
 
+- **2026-09-19 上午（续63·Baseline GPU 修复同步：部署 + 预检/smoke 通过 + ScaDyG 新 bug）**：
+  - Baseline 修复单（`2b47e91`=4 类 GPU bug；含 SiGAT 反向 N×N→稀疏 `[LOCAL PATCH]`、适配器统一 `.to(device)`、scadyg `--force` 作用域）已转发服务器：裸仓+工作区至 **`ea37526`**（+auc_macro 列增补），`git pull --ff-only` + 标记校验通过。
+  - **precheck（cuda:0 实测）**：实跑 **36/36 全 PASS**（14 个 "FAIL"=幂等 skip，非设备失败）；关键组合 sigat×RT×sign 实跑 OK（历史 OOM）；semba/tgn 全通。wall=419s。
+  - **smoke（semba,tgn,sigat/RB sign）**：ok=2 skip=1 fail=0（semba/tgn 上轮全挂者现全通）；指标近退化形态与 CPU 参照一致。
+  - **⚠️ ScaDyG 新 bug**（被 NameError 遮挡）：`hist_features` line 86 `tf = time_enc(...)` 漏搬设备（同根因，单点修复建议已给）→ 已回执 Baseline `mb-20260919-082724-code-42d6`，修后转发+复跑 smoke。
+  - **A/B 幂等重跑入队**：tasks.txt 159/160 行（与 #155/#156 逐字相同；成功 70 件自动 skip），待网格释放 GPU 后接棒。
+  - 状态流：`9cb3` → 🔄（待重跑验证后 ✅）；插入文件 `tools/queue/insert_semba_fix_rerun_ab.txt` 已入仓。
+
 - **2026-09-19 上午（续62·Paper 补数回复 + 绝对值全表 + WV 退化复核）**：
   - Paper 问询（`mb-20260919-081039-paper-db0f`）：补齐 sign w/o CNAS 行绝对值、linksign w/o CNAS 其余键、LOO 掩码 auc 绝对值、WV Δf1_macro=+0.1792 量级复核。已回执 `mb-20260919-081400-code-db91`。
   - **复核结论**：WV 大 Δf1_macro **非异常**——w/o CNAS 行在 WV 退化为多数类坍缩（bal_acc .502–.528、负类 recall* ≤.081、thr 正常），full 行不坍缩（反推负类 F1≈.42 vs woc≈.07）；且 Δauc +.0547 p=.010 表明排序质量真降 → f1 差异=排序下降+二值化坍缩双重放大（建议主表以 Δauc 叙述）。
