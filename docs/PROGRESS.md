@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-19 上午（续65·ScaDyG bug#6 修复部署 + smoke 通过（6 bug 全闭环））**：
+  - Baseline `c158743`（bug#6：vendor test 模式需带 `.edge_label_index` 对象；改用只读 `SimpleNamespace` shim + 索引显式搬设备）已转发部署；标记核验 ✓。
+  - **scadyg smoke ✅ 通过**（cuda:0，BA，epochs=3，11.3s）：训练→验证→保存全流程（AUC≈0.50 近退化与 SEMBA 系形态一致，smoke 仅验路径）。
+  - **6 个 GPU 连环 bug 全部闭环**（4+1+1）：修复链 `2b47e91`→`ea37526`→`d6061ff`→`c158743`。
+  - 已请 Baseline 给 **ScaDyG 全量行命令原文**（数据集/种子/epochs/out_dir），到位后插队尾；A/B（#159/#160）仍等网格释放 GPU。
+  - 回执：`mb-20260919-085954-code-5a74`。
+
 - **2026-09-19 上午（续64·d6061ff 部署 + ScaDyG bug#5→#6 + precheck 复跑 50/50）**：
   - Baseline `d6061ff`（ScaDyG 设备修复 + `--device-selfcheck` 绕过幂等守卫）已转发部署；两处标记核验 ✓。
   - **precheck 复跑（cuda:0）：`50/50 PASS` wall=496.4s**——上轮 14 个 false-skip 组合全真跑且过；JSON 留档 `outputs/semba_aligned/precheck_cuda0.json`。
