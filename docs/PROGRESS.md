@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-19 上午（续62·Paper 补数回复 + 绝对值全表 + WV 退化复核）**：
+  - Paper 问询（`mb-20260919-081039-paper-db0f`）：补齐 sign w/o CNAS 行绝对值、linksign w/o CNAS 其余键、LOO 掩码 auc 绝对值、WV Δf1_macro=+0.1792 量级复核。已回执 `mb-20260919-081400-code-db91`。
+  - **复核结论**：WV 大 Δf1_macro **非异常**——w/o CNAS 行在 WV 退化为多数类坍缩（bal_acc .502–.528、负类 recall* ≤.081、thr 正常），full 行不坍缩（反推负类 F1≈.42 vs woc≈.07）；且 Δauc +.0547 p=.010 表明排序质量真降 → f1 差异=排序下降+二值化坍缩双重放大（建议主表以 Δauc 叙述）。
+  - **重要口径发现**：sign 表中 **RT/RB 两侧均处多数类坍缩区**（bal_acc≈.500、mcc≈0、f1_macro≈常数正类基线 .47/.48）→ RT/RB 的 sign f1 族无区分度（仅 auc 有效）；BA/OTC 健康。已告知 Paper。
+  - 工具：`tools/verify/metrics_abs_table.py`（登记 README；输出留档 `results/metrics_abs_table_20260919_sync.txt`）。
+  - 网格进度：#157 linksign 6/210（~25 min/run，估 ~3 天+）；#158 sign 20/210（~6 min/run，估 ~19h）。
+
 - **2026-09-19 上午（续61·LOO 满表 + sign w/o CNAS 交付 Paper）**：
   - **LOO 满表（linksign，5 种子；Δ=full−mask）**：**BTE 5/5 正**（均值 **+0.0053**；RT .000 / OTC .036 / RB .045 / WV .019 显著）；RAS +0.0047（RT/OTC/WV 显著）；RAE +0.0026（RT 显著）；**CNAS 混合（均值 −0.0004）：RT +0.0058(p=.001) 正、OTC −0.0072(p=.004) 负、RB/BA/WV ns** → 单种子屏"去掉 CNAS 更好"被 5 种子推翻。
   - **sign w/o CNAS（5 种子）**：CNAS **4/5 auc 正**（RT +.0189 p=.001；WV +.0547 p=.010）；BA/WV f1 族显著正（WV Δf1_mac **+0.1792**；BA Δf1_wt +.0143）→ 第二行（CNS sampler）在 sign 表明显更弱、linksign 表接近/混合；`w_o_cnas_wording` 情形选择建议据此重估。
