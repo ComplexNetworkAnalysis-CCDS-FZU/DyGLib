@@ -117,6 +117,11 @@
 
 ## 最近更新记录
 
+- **2026-09-19 上午（续61·LOO 满表 + sign w/o CNAS 交付 Paper）**：
+  - **LOO 满表（linksign，5 种子；Δ=full−mask）**：**BTE 5/5 正**（均值 **+0.0053**；RT .000 / OTC .036 / RB .045 / WV .019 显著）；RAS +0.0047（RT/OTC/WV 显著）；RAE +0.0026（RT 显著）；**CNAS 混合（均值 −0.0004）：RT +0.0058(p=.001) 正、OTC −0.0072(p=.004) 负、RB/BA/WV ns** → 单种子屏"去掉 CNAS 更好"被 5 种子推翻。
+  - **sign w/o CNAS（5 种子）**：CNAS **4/5 auc 正**（RT +.0189 p=.001；WV +.0547 p=.010）；BA/WV f1 族显著正（WV Δf1_mac **+0.1792**；BA Δf1_wt +.0143）→ 第二行（CNS sampler）在 sign 表明显更弱、linksign 表接近/混合；`w_o_cnas_wording` 情形选择建议据此重估。
+  - 工具：`loo_full_table.py` / `wocnas_sign_table.py`（已登记 `tools/README.md`）；取数 `loofull`(90)/`signwocnas`(25) 已归档（sha256 入 `_sync_raw_log.csv`）。交付消息 `code-deliver-20260919-loo-wocnas-01`（含主表第二行数据表 + Δ 统计 + claims 建议）。
+
 - **2026-09-19 早晨（续60·队列全清 + LOO/sign 收集完成 + SEMBA GPU 批失败转发）**：
   - **队列 158/158 全部派发**（06:16 idle）：**LOO 满表 90/90 完成**；**sign w/o CNAS 25/25 完成**；#157/#158 网格仍在跑（linksign/sign parameter）。
   - **SEMBA GPU 批大面积失败**（#148 smoke 2/3、#155 A 75/100、#156 B 180/250、#149 ScaDyG 1/1 挂）：4 类 bug——① 内存模型 `__assoc__` 设备混用（`semba.py:172`/`tgn.py:123`）；② 适配器 linksign forward device-cat（`train_semba_aligned.py:155`）；③ OOM（10.89 GiB ×20）；④ ScaDyG `ap` NameError（`train_sign_scadyg.py:290`）。成功 70 件（sign×{gcn 25, sgcn 25, sigat 20}）。→ **已发 Baseline 行动项**（修复→commit→我转发+追加幂等重跑行）。
