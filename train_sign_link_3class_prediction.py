@@ -32,6 +32,15 @@ from utils import accel as _accel
 
 TASK_NAME= "SignLinkPrediction"
 
+# 早停判据键集合（2026-09-20 用户批准修复）：恢复 09-18 指标扩展前的历史口径——
+# best-checkpoint/早停判据 = 这些键"全部同时不下降"（patience 计数）；扩展键
+# （auc_wt/precision_neg/recall_neg/precision_pos/recall_pos/mcc/thr_exist/thr_sign）
+# 仍照常写入结果 JSON，但不参与判据，保证与 09-18 前批次（主表/LOO 早期等）同口径。
+EARLY_STOP_METRICS = [
+    "exist_recall", "exist_precision", "exist_f1", "sign_f1", "ap",
+    "f1_mac", "f1_wt", "f1_mic", "acc", "auc",
+]
+
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
@@ -275,6 +284,7 @@ if __name__ == "__main__":
             save_model_name=args.result_save_name,
             logger=logger,
             model_name=args.model_name,
+            metric_notice=EARLY_STOP_METRICS,
         )
 
         loss_func = nn.BCEWithLogitsLoss()

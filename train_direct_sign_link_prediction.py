@@ -34,6 +34,11 @@ from loss_function import FocalLoss
 
 TASK_NAME = "LinkSign"
 
+# 早停判据键集合（2026-09-20 用户批准修复）：恢复 09-18 指标扩展前的历史口径——
+# best-checkpoint/早停判据 = 这些键"全部同时不下降"（patience 计数）；扩展键
+# （precision/recall/balanced_acc/mcc/thr 等）仍照常写入结果 JSON，但不参与判据。
+EARLY_STOP_METRICS = ["ap", "f1_macro", "f1_binary", "acc", "auc", "f1_weighted"]
+
 if __name__ == "__main__":
 
     warnings.filterwarnings("ignore")
@@ -238,6 +243,7 @@ if __name__ == "__main__":
             save_model_name=args.save_model_name,
             logger=logger,
             model_name=args.model_name,
+            metric_notice=EARLY_STOP_METRICS,
         )
 
         loss_func = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([args.pos_weight]).to(args.device))

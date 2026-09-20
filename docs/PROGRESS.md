@@ -117,6 +117,17 @@
 
 ## 最近更新记录
 
+- **2026-09-20 午后（续66·⚠️ P0 事故与修复：指标扩展静默改变早停判据 → 恢复历史键集合）**：
+  - **事故**：09-18 12:51 部署的"指标契约评测端扩展"（当时标注 additive）向 val 指标字典新增键（sign +5：precision/recall/balanced_acc/mcc/thr；linksign +8：auc_wt、逐类 P/R、mcc、thr_exist/thr_sign）；而**早停/best-checkpoint 判据 = "val 字典全部键 AND 同时不下降"**（续21 已记录：`--early-stop-notice` 未接线、`metric_notice=None` 为既定行为）→ 判据从 6/10 键静默变 11/18 键（含 thr/mcc 等几乎不可能逐轮不降的键）→ 早停从 ~44 轮提前到 ~21 轮。
+  - **发现路径**：k×N 网格 vs 主表 QA（WV 同配置 Δf1_macro −0.20）→ 配置 diff 仅差 seeds、数据 mtime 无变化、当前代码确定性复现网格值（连 thr 0.5488 逐位一致）、5 种子交叉验证同值（排除 seeds）→ 定位机制（EarlyStopping 构造未传 metric_notice + 扩展加键）。
+  - **污染范围（服务器全量键 schema 审计：774 个结果 JSON 中 357 新判据代）**：sign 网格 210、sign wocnas 25、linksign 网格 ~67（BA 42 全+OTC 部分）、LOO 掩码新判据分流 ~55（RT/RB/WV 为主）。**主表全部行 / CNE-off / 密度 / S1 / E-3~E-5 等均为旧判据代，未受影响。**
+  - **修复（用户批准"统一指标口径"）**：`train_link_sign_prediction.py` / `train_sign_link_3class_prediction.py` / `train_direct_sign_link_prediction.py` 新增 `EARLY_STOP_METRICS`（sign 6 键 / linksign 10 键历史集合）并传 `metric_notice=`；扩展键仍写 JSON、不参与判据。（direct-link 用 linkPredict.py 未受扩展影响；`train_sign_link_prediction.py` 为已失效旧脚本跳过。）
+  - **金标准验证**：修复后重跑 WV (40,15) 应复现主表 auc .7937/f1_macro .6479（新判据代为 .7309/.4442）。
+  - **重跑清单（修复部署后入队）**：① LOO 新判据掩码 55 runs（4 行：idx2 excl BA / idx8 excl BA OTC / idx7 excl BA OTC RB / idx1 excl BA OTC RT）；② sign wocnas 25 runs（#150–154 同命令重入）；③ sign 网格 210；④ linksign 网格 210（先停 #157 旧判据批）。已给 Paper 的 LOO/wocnas 报文将随重跑更新（先发暂停引用警示）。
+
+- **2026-09-20 上午（续65b·A/B 完成与 OOM 上报）**：
+  - A 档 ok=74 skip=25 fail=1；B 档 ok=105 skip=144 fail=1；唯一失败 `semba/RT/linksign/seed1024` = **硬 OOM**（7.6GiB 卡，峰值 7.46GiB，expandable_segments 重试仍差 40MiB）→ 按用户指示直接报 OOM，回执 `mb-20260920-102805-code-a870`，待 Baseline 口径决定。
+
 - **2026-09-19 上午（续65·ScaDyG bug#6 修复部署 + smoke 通过（6 bug 全闭环））**：
   - Baseline `c158743`（bug#6：vendor test 模式需带 `.edge_label_index` 对象；改用只读 `SimpleNamespace` shim + 索引显式搬设备）已转发部署；标记核验 ✓。
   - **scadyg smoke ✅ 通过**（cuda:0，BA，epochs=3，11.3s）：训练→验证→保存全流程（AUC≈0.50 近退化与 SEMBA 系形态一致，smoke 仅验路径）。
