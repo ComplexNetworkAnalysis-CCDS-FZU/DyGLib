@@ -122,7 +122,8 @@
   - **发现路径**：k×N 网格 vs 主表 QA（WV 同配置 Δf1_macro −0.20）→ 配置 diff 仅差 seeds、数据 mtime 无变化、当前代码确定性复现网格值（连 thr 0.5488 逐位一致）、5 种子交叉验证同值（排除 seeds）→ 定位机制（EarlyStopping 构造未传 metric_notice + 扩展加键）。
   - **污染范围（服务器全量键 schema 审计：774 个结果 JSON 中 357 新判据代）**：sign 网格 210、sign wocnas 25、linksign 网格 ~67（BA 42 全+OTC 部分）、LOO 掩码新判据分流 ~55（RT/RB/WV 为主）。**主表全部行 / CNE-off / 密度 / S1 / E-3~E-5 等均为旧判据代，未受影响。**
   - **修复（用户批准"统一指标口径"）**：`train_link_sign_prediction.py` / `train_sign_link_3class_prediction.py` / `train_direct_sign_link_prediction.py` 新增 `EARLY_STOP_METRICS`（sign 6 键 / linksign 10 键历史集合）并传 `metric_notice=`；扩展键仍写 JSON、不参与判据。（direct-link 用 linkPredict.py 未受扩展影响；`train_sign_link_prediction.py` 为已失效旧脚本跳过。）
-  - **金标准验证**：修复后重跑 WV (40,15) 应复现主表 auc .7937/f1_macro .6479（新判据代为 .7309/.4442）。
+  - **金标准验证 ✅ 通过（09-20 10:47，服务器实跑）**：修复后单种子重跑 WV (40,15) → **训练 44 轮**（污染代仅 21 轮）、总耗时 530.6s，`auc=0.7937 / f1_macro=0.6479 / thr=0.5047`，与主表金标准**逐位一致**（污染代 .7309/.4442）→ 根因确认、修复端到端生效。证据 JSON：`~/wv_diag/saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-40.LF-15.*.json`。
+  - **重跑队列已接棒（10:39 起）**：守护自动派发——GPU1=#161（LOO idx2 `-r BitcoinAlpha`，OTC 5 种子运行中）；GPU0=#162（LOO idx8 `-r BitcoinAlpha BitcoinOTC`，RT 起步）。顺序：LOO 4 行（55 runs）→ wocnas 5 行（25）→ sign 网格（210）→ linksign 网格（210）。
   - **重跑清单（修复部署后入队）**：① LOO 新判据掩码 55 runs（4 行：idx2 excl BA / idx8 excl BA OTC / idx7 excl BA OTC RB / idx1 excl BA OTC RT）；② sign wocnas 25 runs（#150–154 同命令重入）；③ sign 网格 210；④ linksign 网格 210（先停 #157 旧判据批）。已给 Paper 的 LOO/wocnas 报文将随重跑更新（先发暂停引用警示）。
 
 - **2026-09-20 上午（续65b·A/B 完成与 OOM 上报）**：
