@@ -1,0 +1,39 @@
+{
+    "note": "P0 早停判据修复后的金标准验证（09-20 10:47 服务器实跑，修复 commit 2f5f632）。对照：主表 WV(40,15) auc=0.7937/f1_macro=0.6479；污染代 auc=0.7309/f1_macro=0.4442。训练 44 轮（污染代 21 轮）。服务器路径：~/wv_diag/saved_results/LinkSign/SignDyGFormer/WikiVote/SignDyGFormer_seed42.NN-40.LF-15.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+    "test metrics": {
+        "ap": "0.9167",
+        "f1_macro": "0.6479",
+        "f1_binary": "0.8853",
+        "acc": "0.8205",
+        "auc": "0.7937",
+        "precision": "0.8491",
+        "recall": "0.9301",
+        "balanced_acc": "0.6452",
+        "mcc": "0.3354",
+        "thr": "0.5047",
+        "f1_weighted": "0.7981"
+    },
+    "new node test metrics": {
+        "ap": "0.9391",
+        "f1_macro": "0.6547",
+        "f1_binary": "0.9064",
+        "acc": "0.8465",
+        "auc": "0.8115",
+        "precision": "0.8714",
+        "recall": "0.9469",
+        "balanced_acc": "0.6449",
+        "mcc": "0.3505",
+        "thr": "0.5047",
+        "f1_weighted": "0.8238"
+    },
+    "single run time (s)": 530.6219685077667,
+    "training time (s)": 528.4054193496704,
+    "inference time (s)": 2.213961601257324,
+    "peak memory (MB)": 866.052734375,
+    "parameter count": 1642185,
+    "device": "cuda:0",
+    "accel": {
+        "enabled": true,
+        "abi": "k1k2-v2-2026-09-11"
+    }
+}
