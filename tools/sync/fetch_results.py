@@ -30,6 +30,8 @@
     python tools/sync/fetch_results.py --set loofull # LOO 满表（#146/147；4 掩码 × 5/4 数据集 × 5 种子 = 90）
     python tools/sync/fetch_results.py --set signwocnas # sign w/o CNAS 批（#150–154；5 数据集 × 5 种子 = 25）
     python tools/sync/fetch_results.py --set sembaab --allow-partial # SEMBA A/B 部分产物（#155/156 成功件 + manifest + smoke 成功件）
+    python tools/sync/fetch_results.py --set signparam # 参数网格 #158（sign，210：5 数据集 × 42 组合 × seed42）
+    python tools/sync/fetch_results.py --set linksignparam --allow-partial # 参数网格 #157（linksign；收尾中）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -407,6 +409,30 @@ SETS = {
         ("../DynamiSE_DySDGNN_repro/outputs/semba_aligned/queue_manifest_*.json", "results/semba_ab/raw", None, 2),
         ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/*/*.json", "results/semba_ab/raw_smoke", None, 1),
         ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/queue_manifest_*.json", "results/semba_ab/raw_smoke", None, 1),
+    ],
+    # 参数网格 #158（sign）：5 数据集 × {look, numN} 全组合 × seed42 = 210（精确逐点）
+    "signparam": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/sign_param/raw/" + ds,
+            None,
+            1,
+        )
+        for ds in ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC", "WikiVote"]
+        for nn in [20, 40, 60, 80, 100, 10, 15]
+        for lf in [5, 10, 15, 20, 1, 3]
+    ],
+    # 参数网格 #157（linksign）：同构（210；收尾中，用 --allow-partial）
+    "linksignparam": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/linksign_param/raw/" + ds,
+            None,
+            1,
+        )
+        for ds in ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC", "WikiVote"]
+        for nn in [20, 40, 60, 80, 100, 10, 15]
+        for lf in [5, 10, 15, 20, 1, 3]
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
