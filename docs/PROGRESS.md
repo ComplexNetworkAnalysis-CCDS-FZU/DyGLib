@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-09-21 上午（续67·重跑收官：LOO/wocnas 全量取数 + 结论更新 + 网格并行化）**：
+  - **LOO 55 runs 全部重跑完成**（#161–164：RAS-D 20 / BTE-D 15 / CNAS-D 10 / RASE-D 10）。取数 `loofull`（90 文件）已归档（sha256 入 `_sync_raw_log.csv`）；新表 `results/loo_full_table_20260921.txt`。
+  - **sign wocnas 25 runs 全部重跑完成**（#165–169）。取数 `signwocnas`（25 文件）已归档；新表 `results/wocnas_sign_table_20260921.txt`。
+  - **⚠️ 结论要点变化（替换 82b6/db91 中 LOO/wocnas 数据；主表/full 行不受影响）**：
+    - LOO（Δ=full−mask，Δauc）：**BTE 不再 5/5 正**（RB +0.045→**−0.0016 ns**）；**RT 的 CNAS 正效应消失**（+0.0058→+0.0004 ns）；**RB 的 RAE 转为显著负**（−0.0038, p=.044，去掉更好）；OTC/WV 的 CNAS 负保持显著（−0.0072 p=.004 / −0.0062 p=.000）；BTE 在 RT/OTC 仍显著正（+0.0057 p=.009 / +0.0075 p=.036）。
+    - sign wocnas（Δ=full−w/oCNAS）**方向翻转**：RT −0.0162 (p=.002)、OTC −0.0175 (p=.004)、WV −0.0221 (p=.001) → 三数据集 auc "去掉 CNAS 采样器更好"显著；BA +0.0032 / RB +0.0026 不显著。旧"4/5 正"主要系训练量差异伪影。
+  - **两参数网格并行化**：sign 网格 #170 运行中（预计 ~09-22 05:00 完成 210）；linksign 网格原 #171（单卡 ~5 天）已停，拆为 **#172（BA/OTC/WV，GPU0）+ #173（RT/RB，待 GPU1）** 并行（配置/命名不变，文件幂等覆盖），预计 **09-24 前**完成（压缩 ~1.7 天）。
+  - 已向 Paper 发更正交付（替换旧差分数据）。
+
 - **2026-09-20 午后（续66·⚠️ P0 事故与修复：指标扩展静默改变早停判据 → 恢复历史键集合）**：
   - **事故**：09-18 12:51 部署的"指标契约评测端扩展"（当时标注 additive）向 val 指标字典新增键（sign +5：precision/recall/balanced_acc/mcc/thr；linksign +8：auc_wt、逐类 P/R、mcc、thr_exist/thr_sign）；而**早停/best-checkpoint 判据 = "val 字典全部键 AND 同时不下降"**（续21 已记录：`--early-stop-notice` 未接线、`metric_notice=None` 为既定行为）→ 判据从 6/10 键静默变 11/18 键（含 thr/mcc 等几乎不可能逐轮不降的键）→ 早停从 ~44 轮提前到 ~21 轮。
   - **发现路径**：k×N 网格 vs 主表 QA（WV 同配置 Δf1_macro −0.20）→ 配置 diff 仅差 seeds、数据 mtime 无变化、当前代码确定性复现网格值（连 thr 0.5488 逐位一致）、5 种子交叉验证同值（排除 seeds）→ 定位机制（EarlyStopping 构造未传 metric_notice + 扩展加键）。

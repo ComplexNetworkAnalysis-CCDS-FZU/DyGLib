@@ -1,0 +1,2 @@
+-s linksign -t parameter -m SignDyGFormer -r RedditHyperlinkTitle RedditHyperlinkBody
+-s linksign -t parameter -m SignDyGFormer -r BitcoinAlpha BitcoinOTC WikiVote
