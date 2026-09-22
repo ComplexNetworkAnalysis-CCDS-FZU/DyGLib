@@ -125,6 +125,7 @@ class DirectedNeighborSampler:
         ras_look_forward: Optional[int] = None,
         module_repeat_aware_sampler: bool = False,
         module_common_neighbor_sampler: bool = True,
+        cnas_tail_fill: bool = False,
     ):
         """
         Neighbor sampler.
@@ -145,6 +146,10 @@ class DirectedNeighborSampler:
         )
         self.module_repeat_aware_sampler = module_repeat_aware_sampler
         self.module_common_neighbor_sampler = module_common_neighbor_sampler
+        # E1a 空白填补（2026-09-22 用户批准；导师方向①）：True 时取消 CNAS 的
+        # last-CN 截断——窗口并集尾部延伸至查询前一日（最新事件补回）。
+        # 默认 False = 零行为变更；启用时结果名带 .TF-E（代际标记）+ strict-past 护栏。
+        self.cnas_tail_fill = cnas_tail_fill
 
         # list of each node's neighbor ids, edge ids and interaction times, which are sorted by interaction times
         # 无符号时使用的邻居，不考虑邻居符号信息
@@ -385,7 +390,11 @@ class DirectedNeighborSampler:
             # 与下方原路径逐位一致（K1 bit-exact 门禁验证）；启用时内核内部完成
             # searchsorted 截断 + CN + RAS + look-forward + concat/sort，返回升序下标。
             # 2026-09-15：K1 内核仅支持单一 k —— 双半径（k_r != k_c）时自动回退 numpy 原路径。
-            if _accel.on and self.ras_look_forward == self.common_neighbors_look_forward:
+            if (
+                _accel.on
+                and self.ras_look_forward == self.common_neighbors_look_forward
+                and not self.cnas_tail_fill
+            ):
                 _nb = self.nodes_neighbors_selector(neighbor_ty)
                 with prof.timer("Sampling: Accel K1"):
                     src_sel, dst_sel = _accel.kernel.core_sample(
@@ -506,6 +515,34 @@ class DirectedNeighborSampler:
                         else np.array([], dtype=np.int64)
                     )
                     dst_idxs.sort()
+
+                if self.cnas_tail_fill:
+                    # E1a 空白填补：取消 last-CN 截断——窗口并集尾部从"最后一个锚点"
+                    # 延伸至查询前一日（最新段）；模型侧 NN 截断将优先保留最新事件。
+                    _TAIL_CAP = 2000  # 护栏：尾部填充上限（远大于任何 NN，限制最坏开销）
+                    n_src_hist = len(src_node_neighbor_ids)
+                    if len(src_idxs) > 0:
+                        _start = max(int(src_idxs[-1]) + 1, n_src_hist - _TAIL_CAP)
+                        if _start <= n_src_hist - 1:
+                            src_idxs = np.concatenate(
+                                [src_idxs, np.arange(_start, n_src_hist, dtype=np.int64)]
+                            )
+                    n_dst_hist = len(dst_node_neighbor_ids)
+                    if len(dst_idxs) > 0:
+                        _start = max(int(dst_idxs[-1]) + 1, n_dst_hist - _TAIL_CAP)
+                        if _start <= n_dst_hist - 1:
+                            dst_idxs = np.concatenate(
+                                [dst_idxs, np.arange(_start, n_dst_hist, dtype=np.int64)]
+                            )
+                    # 护栏断言（strict-past；目标边自身 t=t_query 天然排除）
+                    if len(src_idxs) > 0:
+                        assert np.all(
+                            src_node_neighbor_times[src_idxs] < interact_time
+                        ), "sampling_guard: src 队列含非过去事件（t >= t_query）"
+                    if len(dst_idxs) > 0:
+                        assert np.all(
+                            dst_node_neighbor_times[dst_idxs] < interact_time
+                        ), "sampling_guard: dst 队列含非过去事件（t >= t_query）"
 
                 assert np.all(
                     np.diff(src_node_neighbor_times[src_idxs]) >= 0
@@ -901,6 +938,7 @@ def get_neighbor_sampler(
     ras_look_forward: Optional[int] = None,
     module_repeat_aware_sampler: bool = False,
     module_common_neighbor_sampler: bool = True,
+    cnas_tail_fill: bool = False,
 ):
     """
     get neighbor sampler
@@ -957,4 +995,5 @@ def get_neighbor_sampler(
         ras_look_forward=ras_look_forward,
         module_repeat_aware_sampler=module_repeat_aware_sampler,
         module_common_neighbor_sampler=module_common_neighbor_sampler,
+        cnas_tail_fill=cnas_tail_fill,
     )
