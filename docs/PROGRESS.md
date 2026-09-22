@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-22 深夜（续71·毕业论文第二点立项：新 Agent `DirG`（有向图））**：
+  - **用户拍板四项**：① 范围 = **有向符号图方法**（复用 `DirectSignDyGFormer`/`DirectStatusEncoder`/`DirectedNeighborSampler`；方向感知 in/out 序列 + Status Theory 有向 2-路径，退避 Balance Theory）；② 数据集 = **BA/OTC**（天然有向）+ **RT/RB/WV**（主线口径），myket 备用；③ **服务器可直连（须用户逐次明确许可）**——新专例（其余 agent 仍禁，主通道仍为 `Code`）；④ 时间线 = **修订 ours 批全部完成后匀 1 张卡起步，2027-04 前送审、预留修改返修**。
+  - **准备工作完成（Code 侧）**：① 工作区 `D:\codes\SignDyG-Dir`（自本仓克隆派生，分支 `dirg`，已推 GitHub `origin/dirg`；远端 `origin`=GitHub、`server`=本仓裸仓）；② 契约登记：本仓 `AGENTS.md`（角色行+服务器纪律修订）、`docs/AGENTS_REGISTRY.md`（DirG 行 + 服务器例外 + 变更记录）；新仓 `AGENTS.md`（DirG 专属区块）+ `copilot-instructions.md` + `.vscode/mcp.json`（`MAILBOX_AGENT=DirG`）+ `REPORTS/`；③ 数据：`processed_data`/`DG_data` 各数据集 **junction 只读共享**（myket 本体随仓可直接用；Epinions 原始未预处理，如需再议）；④ **首单任务包 `docs/DIRG_KICKOFF.md`**（T0–T5：脚手架/协议冻结/资产审计+有向护栏单测/基线矩阵/方法候选〔有向 BTE-Status 门控、有向 CNAS 三类 2-路径、方向不对称时间衰减〕/交付；里程碑倒排：10 月底基线齐、12 月底方法实验齐、1 月底数据定稿、2–3 月写作+返修缓冲）。
+  - **GPU 交接点**：修订批次（E1a/E1c/G1/D3b/D5b/M3/M4/阶段 B）收官后由 `Code` 确认窗口，DirG 正式实验单独占 1 卡，不与修订抢卡。
+  - **信箱**：开工通知 `DirG`（含回执要求）+ `Paper` FYI（不影响期刊修订节奏）。
+
 - **2026-09-22 夜（续70·G1 证据门控实现部署 + 护栏单测落地 + G1 批入队）**：
   - **G1 实现（用户/Paper 批准；commit `d9cc98d`，GitHub+server 双推，服务器 HEAD 验讫）**：`--module-bte-evidence-gate`——BTE 分支输出乘以"证据存在性掩码"（(pos,neg) 双零位置严格置零，含 layer(0) 偏置项；已有 `node_sign_effect_mapping` 仅处理全零样本，G1 补逐位置）；默认关=零行为变更；代际标记 `.G1`；单变量（对照=现默认 full）；改 5 文件：`NeighborInteractEncoder`（ctor+forward）、`SignDyGFormer`（ctor 透传）、`load_configs`（字段+.G1）、两训练脚本（接线）。
   - **服务器校验全过**：`--module-bte-evidence-gate` CLI 可见；G1 冒烟 PASS（无证据位置置零、有证据位置逐位不变——同权重切换旗标）；护栏单测 4/4 PASS。
