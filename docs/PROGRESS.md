@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-09-22 夜（续70·G1 证据门控实现部署 + 护栏单测落地 + G1 批入队）**：
+  - **G1 实现（用户/Paper 批准；commit `d9cc98d`，GitHub+server 双推，服务器 HEAD 验讫）**：`--module-bte-evidence-gate`——BTE 分支输出乘以"证据存在性掩码"（(pos,neg) 双零位置严格置零，含 layer(0) 偏置项；已有 `node_sign_effect_mapping` 仅处理全零样本，G1 补逐位置）；默认关=零行为变更；代际标记 `.G1`；单变量（对照=现默认 full）；改 5 文件：`NeighborInteractEncoder`（ctor+forward）、`SignDyGFormer`（ctor 透传）、`load_configs`（字段+.G1）、两训练脚本（接线）。
+  - **服务器校验全过**：`--module-bte-evidence-gate` CLI 可见；G1 冒烟 PASS（无证据位置置零、有证据位置逐位不变——同权重切换旗标）；护栏单测 4/4 PASS。
+  - **采样护栏单测落地（Paper 要求"正式结论前完成"）**：`tools/verify/test_sampling_guard.py` 4 例合成——(i) 仅目标边 ⇒ 队列排除目标边；(ii) 历史重复可入队（R 锚点）但 t=t_query 排除；(iii) `--recent-block` 下 strict-past 仍成立；(iv) 无锚点回退=全历史（模型侧 pad=最近 N 语义）。本地+服务器双跑 PASS。结果 JSON 新增 `sampling_guard` 字段（strict_past/target_edge_excluded/cnas_tail_fill/recent_block）——新 run 起审计留痕。
+  - **G1 批入队（205–214；回读校验通过）**：linksign 5 数据集×5 种子（205–209）+ sign 5 数据集×seed42（210–214），参数=各任务主表最优（linksign WV15/10·RT60/1·RB80/3·BA40/15·OTC80/5；sign WV40/15·RT100/1·RB60/1·BA40/15·OTC40/15），RT/RB/WV 含 `--tail-num 20000`；网格顺延 215/216。排程文件 `tools/queue/insert_g1_20260922.txt`。
+  - **E1a 正式批进行中**：linksign 5×5（180–184）+ sign 5×1（185–189），19:01 双卡并行（#180 WV/#181 RT）；截至 20:05 无 `.TF-E` 正式批新档（屏幕 3 档在 SignLinkPrediction/ 已核）。E1c m-sweep（190–204，15 行）在其后、G1 之前。
+  - **命名交叉核对（防错排）**：本仓库脚本名与任务口径**反直觉但已验明**——`train_sign_link_3class_prediction.py` = **linksign**（3 分类，输出 `SignLinkPrediction/`，主指标 f1_wt，notice `f1_wt f1_mic ap f1_mac auc`）；`train_link_sign_prediction.py` = **sign**（二分类，输出 `LinkSign/`，主指标 f1_macro，notice `f1_binary auc f1_weighted`）——续22 明文记录。E1a/G1 批行脚本+参数+种子数逐行核对无错。
+  - **工具登记**：`tools/README.md` 新增 `bte_sparsity_stats.py`（D1/D2 掩码复算）、`test_sampling_guard.py`、三探针说明；`results/bte_sparsity/`（npz+summary）随 commit 入库。
+  - **待办**：E1a 5 种子判定（明晨）→ E1c 曲线 → G1 → D3/D3b 重评批（full vs w/o-BTE checkpoint 测试推理 + 与掩码对齐分组）→ D5b（训练侧占比+梯度探针）→ 阶段 B 参数重扫。
+
 - **2026-09-22 晚（续69·E1a 屏幕结果出炉 + 正式批开跑）**：
   - **屏幕（linksign/seed42，对照=full seed42 同批次）**：WV Δauc **+4.5**/Δf1_wt **+7.2**/Δf1_mac **+26.8**（‰，强正）；RT +1.6/+1.7/+8.3（温和正）；RB **+5.1/−8.8/+1.8**（auc 达线、f1_wt 负点）。**auc 3/3 正**、f1_mac 3/3 正、f1_wt 2/3 正。
   - **正式批（E1a 优先于网格；两台网格再度暂停并排替补 190/191）**：linksign 5 数据集 × 5 种子（行 180–184）+ sign 5 数据集 × seed42（行 185–189），19:01 起双卡并行（#180 WV / #181 RT），预计明晨出齐 → 5 种子配对统计正式判定。
