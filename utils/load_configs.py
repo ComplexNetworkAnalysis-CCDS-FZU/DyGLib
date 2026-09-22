@@ -140,6 +140,13 @@ class SignPredictArgs(BaseModel):
     cnas_tail_fill: bool = Field(
         False, description="CNAS 空白填补（取消 last-CN 截断；结果名加 .TF-E）"
     )
+    # ---- E1c 双块窗口（2026-09-22 用户方向，已认可）----
+    # 窗口 = 最近 m 个事件（recency 块）∪ CNAS+RAS 锚点窗并集（证据块）；
+    # 模型上限 = NN + m（两块各自保底；m=N 即"双倍 NN"）。
+    # m=0 = 零行为变更；m>0 时结果名加 .RK-{m}（代际标记）。
+    recent_block: int = Field(
+        0, description="E1c 最近块大小 m（0=关；结果名加 .RK-m）"
+    )
 
     # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
     time_decay_lambda: Optional[float] = Field(
@@ -230,6 +237,9 @@ class SignPredictArgs(BaseModel):
         # E1a 空白填补标记（2026-09-22）：启用时追加 .TF-E（代际标记；跨代不可比）
         tf_tag = ".TF-E" if self.cnas_tail_fill else ""
 
+        # E1c 双块窗口标记（2026-09-22）：m>0 时追加 .RK-{m}（代际标记）
+        rk_tag = f".RK-{self.recent_block}" if self.recent_block > 0 else ""
+
         # E-3: patch 标记，避免不同 patch-size 结果互相覆盖（2026-09-06 修复）
         # 注：始终带上 .P{size}，使主表/消融(.P1) 与 patch 扫描各组在文件名上互相区分；
         #     旧 CPU 期文件无 .P 标记，天然可辨认为历史数据。
@@ -238,7 +248,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )
@@ -248,7 +258,8 @@ class SignPredictArgs(BaseModel):
     
     @property
     def max_input_sequence_length(self):
-        return self.num_neighbors
+        # E1c 双块窗口：模型上限 = NN + m（证据块 N + 最近块 m；m=0 时为原值）
+        return self.num_neighbors + max(0, self.recent_block)
 
 def get_sign_prediction_args(is_evaluation=False):
     import pydantic_argparse

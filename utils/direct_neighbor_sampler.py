@@ -126,6 +126,7 @@ class DirectedNeighborSampler:
         module_repeat_aware_sampler: bool = False,
         module_common_neighbor_sampler: bool = True,
         cnas_tail_fill: bool = False,
+        recent_block: int = 0,
     ):
         """
         Neighbor sampler.
@@ -150,6 +151,10 @@ class DirectedNeighborSampler:
         # last-CN 截断——窗口并集尾部延伸至查询前一日（最新事件补回）。
         # 默认 False = 零行为变更；启用时结果名带 .TF-E（代际标记）+ strict-past 护栏。
         self.cnas_tail_fill = cnas_tail_fill
+        # E1c 双块窗口（2026-09-22 用户方向；导师①的推广，已认可）：
+        # 窗口 = 最近 m 个事件（recency 块）∪ CNAS+RAS 锚点窗并集（证据块）；
+        # 模型上限 = NN + m（两块各自保底）。m=0 = 零行为变更；结果名带 .RK-{m}。
+        self.recent_block = recent_block
 
         # list of each node's neighbor ids, edge ids and interaction times, which are sorted by interaction times
         # 无符号时使用的邻居，不考虑邻居符号信息
@@ -394,6 +399,7 @@ class DirectedNeighborSampler:
                 _accel.on
                 and self.ras_look_forward == self.common_neighbors_look_forward
                 and not self.cnas_tail_fill
+                and self.recent_block == 0
             ):
                 _nb = self.nodes_neighbors_selector(neighbor_ty)
                 with prof.timer("Sampling: Accel K1"):
@@ -516,25 +522,39 @@ class DirectedNeighborSampler:
                     )
                     dst_idxs.sort()
 
-                if self.cnas_tail_fill:
-                    # E1a 空白填补：取消 last-CN 截断——窗口并集尾部从"最后一个锚点"
-                    # 延伸至查询前一日（最新段）；模型侧 NN 截断将优先保留最新事件。
-                    _TAIL_CAP = 2000  # 护栏：尾部填充上限（远大于任何 NN，限制最坏开销）
-                    n_src_hist = len(src_node_neighbor_ids)
-                    if len(src_idxs) > 0:
-                        _start = max(int(src_idxs[-1]) + 1, n_src_hist - _TAIL_CAP)
-                        if _start <= n_src_hist - 1:
-                            src_idxs = np.concatenate(
-                                [src_idxs, np.arange(_start, n_src_hist, dtype=np.int64)]
+                if self.cnas_tail_fill or self.recent_block > 0:
+                    if self.cnas_tail_fill:
+                        # E1a 空白填补：取消 last-CN 截断——窗口并集尾部从"最后一个锚点"
+                        # 延伸至查询前一日（最新段）；模型侧 NN 截断将优先保留最新事件。
+                        _TAIL_CAP = 2000  # 护栏：尾部填充上限（远大于任何 NN，限制最坏开销）
+                        n_src_hist = len(src_node_neighbor_ids)
+                        if len(src_idxs) > 0:
+                            _start = max(int(src_idxs[-1]) + 1, n_src_hist - _TAIL_CAP)
+                            if _start <= n_src_hist - 1:
+                                src_idxs = np.concatenate(
+                                    [src_idxs, np.arange(_start, n_src_hist, dtype=np.int64)]
+                                )
+                        n_dst_hist = len(dst_node_neighbor_ids)
+                        if len(dst_idxs) > 0:
+                            _start = max(int(dst_idxs[-1]) + 1, n_dst_hist - _TAIL_CAP)
+                            if _start <= n_dst_hist - 1:
+                                dst_idxs = np.concatenate(
+                                    [dst_idxs, np.arange(_start, n_dst_hist, dtype=np.int64)]
+                                )
+                    if self.recent_block > 0:
+                        # E1c：把每侧最近 m 个事件并入窗口（与锚点窗去重合并，升序）
+                        _m = int(self.recent_block)
+                        _n = len(src_node_neighbor_ids)
+                        if _n > 0:
+                            src_idxs = np.union1d(
+                                src_idxs, np.arange(max(0, _n - _m), _n, dtype=np.int64)
                             )
-                    n_dst_hist = len(dst_node_neighbor_ids)
-                    if len(dst_idxs) > 0:
-                        _start = max(int(dst_idxs[-1]) + 1, n_dst_hist - _TAIL_CAP)
-                        if _start <= n_dst_hist - 1:
-                            dst_idxs = np.concatenate(
-                                [dst_idxs, np.arange(_start, n_dst_hist, dtype=np.int64)]
+                        _n = len(dst_node_neighbor_ids)
+                        if _n > 0:
+                            dst_idxs = np.union1d(
+                                dst_idxs, np.arange(max(0, _n - _m), _n, dtype=np.int64)
                             )
-                    # 护栏断言（strict-past；目标边自身 t=t_query 天然排除）
+                    # 护栏断言（strict-past；目标边自身 t=t_query 天然排除；两模式共用）
                     if len(src_idxs) > 0:
                         assert np.all(
                             src_node_neighbor_times[src_idxs] < interact_time
@@ -939,6 +959,7 @@ def get_neighbor_sampler(
     module_repeat_aware_sampler: bool = False,
     module_common_neighbor_sampler: bool = True,
     cnas_tail_fill: bool = False,
+    recent_block: int = 0,
 ):
     """
     get neighbor sampler
@@ -996,4 +1017,5 @@ def get_neighbor_sampler(
         module_repeat_aware_sampler=module_repeat_aware_sampler,
         module_common_neighbor_sampler=module_common_neighbor_sampler,
         cnas_tail_fill=cnas_tail_fill,
+        recent_block=recent_block,
     )
