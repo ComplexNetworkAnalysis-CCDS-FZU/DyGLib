@@ -1,0 +1,1 @@
+-s linksign -t parameter -m SignDyGFormer -r BitcoinAlpha BitcoinOTC WikiVote
