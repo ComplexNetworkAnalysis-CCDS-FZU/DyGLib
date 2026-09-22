@@ -7,7 +7,7 @@
 | 项 | 决定 |
 |---|---|
 | 研究范围 | **A：有向符号图方法** —— 复用 `DirectSignDyGFormer`（方向感知 in/out 序列 + Status Theory 有向 2-路径，不确定时退避 Balance Theory）与 `DirectedNeighborSampler`；目标：方向感知序列 + 有向符号预测 |
-| 数据集 | **BA、OTC**（天然有向）+ **RT、RB、WV**（复用主线口径）；`myket` 已预处理（有向）备用 |
+| 数据集 | **BA、OTC**（天然有向）+ **RT、RB、WV**（复用主线口径）；`myket` 已预处理（有向）备用。**Epinions 排除**（2026-09-22 用户裁定：**缺乏具体时间信息**，动态图不可用） |
 | 算力/服务器 | **允许直连服务器（仍须用户逐次明确许可）**；**当前修订 ours 批次全部完成后匀出 1 张卡**（预计 09-23 晚～09-24，以 `Code` 确认窗口为准） |
 | 时间线 | **2027-04 前送审**，需预留修改返修时间 → 内部里程碑见 §4 |
 
@@ -39,7 +39,7 @@
 ## 3. 资源与护栏
 
 - 服务器：逐次许可；GPU 窗口由 `Code` 协调（**当前修订批次优先**）。
-- 数据：`processed_data/`、`DG_data/` 为 junction 至 DyGLib（**只读**，勿写入）；新预处理数据（如 Epinions）放自己仓 `preprocess_data/`，服务器同步一律走 git（禁 scp）。
+- 数据：`processed_data/`、`DG_data/` 为 junction 至 DyGLib（**只读**，勿写入）；**新数据集纳入前置条件 = 含逐边时间戳**（Epinions 已因缺时间信息排除）；预处理脚本放自己仓 `preprocess_data/`，服务器同步一律走 git（禁 scp）。
 - 红线：不碰 `sign-adoption` 分支与既有主表产物；不改 DyGLib 工作区文件（经信箱请求对方执行）。
 
 ## 4. 里程碑（内部，倒排 2027-04 送审）
