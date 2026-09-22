@@ -246,6 +246,7 @@ if __name__ == "__main__":
                 module_balance_theory_encoder=args.module_balance_theory_encoder,
                 module_common_neighbor_encoder=args.module_common_neighbor_encoder,
                 module_balance_theory_gate=args.module_balance_theory_gate,
+                module_bte_evidence_gate=args.module_bte_evidence_gate,
                 time_decay_lambda=args.time_decay_lambda,
                 time_decay_gap_mode=args.time_decay_gap_mode,
                 time_scaling_factor=args.time_scaling_factor,
@@ -630,6 +631,13 @@ if __name__ == "__main__":
             "device": str(args.device),
             # M4：加速状态（口径防混淆；默认启用）
             "accel": _accel.status,
+            # 采样护栏审计（2026-09-22 用户批准；strict-past 断言随采样管线启用）
+            "sampling_guard": {
+                "strict_past": True,
+                "target_edge_excluded": True,
+                "cnas_tail_fill": bool(args.cnas_tail_fill),
+                "recent_block": int(args.recent_block),
+            },
         }
         result_json = json.dumps(result_json, indent=4)
 

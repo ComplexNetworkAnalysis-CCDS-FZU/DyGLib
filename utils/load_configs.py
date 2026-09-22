@@ -147,6 +147,12 @@ class SignPredictArgs(BaseModel):
     recent_block: int = Field(
         0, description="E1c 最近块大小 m（0=关；结果名加 .RK-m）"
     )
+    # ---- G1 证据存在性门控（2026-09-22 用户批准；对抗"全零 BTE 有害"假设）----
+    # True = 无证据位置（(pos,neg) 双零）的 BTE 分支输出置零；默认 False = 零行为变更；
+    # 结果名加 .G1（代际标记）。
+    module_bte_evidence_gate: bool = Field(
+        False, description="G1 证据存在性门控（无证据位置 BTE 分支置零；结果名加 .G1）"
+    )
 
     # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
     time_decay_lambda: Optional[float] = Field(
@@ -240,6 +246,9 @@ class SignPredictArgs(BaseModel):
         # E1c 双块窗口标记（2026-09-22）：m>0 时追加 .RK-{m}（代际标记）
         rk_tag = f".RK-{self.recent_block}" if self.recent_block > 0 else ""
 
+        # G1 证据存在性门控标记（2026-09-22）：启用时追加 .G1（代际标记）
+        g1_tag = ".G1" if self.module_bte_evidence_gate else ""
+
         # E-3: patch 标记，避免不同 patch-size 结果互相覆盖（2026-09-06 修复）
         # 注：始终带上 .P{size}，使主表/消融(.P1) 与 patch 扫描各组在文件名上互相区分；
         #     旧 CPU 期文件无 .P 标记，天然可辨认为历史数据。
@@ -248,7 +257,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )

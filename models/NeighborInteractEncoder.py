@@ -33,6 +33,7 @@ class NeighborCooccurrenceEncoder(nn.Module):
         module_repeat_aware_sign_encoder: bool = False,
         module_balance_theory_encoder: bool = True,
         module_common_neighbor_encoder: bool = True,
+        module_bte_evidence_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
         time_scaling_factor: float = 1e-6,
@@ -54,6 +55,9 @@ class NeighborCooccurrenceEncoder(nn.Module):
         self.module_balance_theory_encoder = module_balance_theory_encoder
         # CNE 通道开关（2026-09-17 用户批准；Paper 6c7a 四）：False = 共现特征置零探针
         self.module_common_neighbor_encoder = module_common_neighbor_encoder
+        # G1 证据存在性门控（2026-09-22 用户批准）：True = 无证据位置（(pos,neg) 双零）
+        # 的 BTE 分支输出严格置零（含 layer(0) 偏置项）；默认 False = 零行为变更。
+        self.module_bte_evidence_gate = module_bte_evidence_gate
         # 时间衰减：lambda 为 None 即不启用（用 Optional 判断）
         self.time_decay_mode = time_decay_lambda is not None
         self.time_decay_lambda = time_decay_lambda
@@ -659,6 +663,23 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
                     dst_padded_nodes_sign_effect
                 )
+
+                # ---- G1 证据存在性门控（2026-09-22 用户批准）----
+                # 无证据位置（(pos,neg) 双零）⇒ 门控=0：把该位置的 BTE 分支输出严格
+                # 置零（移除 layer(0) 偏置项在无证据位置的伪输出）；默认关 = 零变更。
+                if self.module_bte_evidence_gate:
+                    src_evidence_mask = (
+                        src_padded_nodes_sign_effect.abs().sum(dim=-1, keepdim=True) > 0
+                    ).float()
+                    dst_evidence_mask = (
+                        dst_padded_nodes_sign_effect.abs().sum(dim=-1, keepdim=True) > 0
+                    ).float()
+                    src_padded_nodes_sign_effect_features = (
+                        src_padded_nodes_sign_effect_features * src_evidence_mask
+                    )
+                    dst_padded_nodes_sign_effect_features = (
+                        dst_padded_nodes_sign_effect_features * dst_evidence_mask
+                    )
 
                 return (
                     src_padded_nodes_sign_effect_features,

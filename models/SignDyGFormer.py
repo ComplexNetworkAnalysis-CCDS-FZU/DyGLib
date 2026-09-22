@@ -38,6 +38,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         module_balance_theory_encoder: bool = True,
         module_common_neighbor_encoder: bool = True,
         module_balance_theory_gate: bool = False,
+        module_bte_evidence_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
         time_scaling_factor: float = 1e-6,
@@ -65,6 +66,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         # 启用后：第 5 通道（BTE）投影输出乘 sigmoid(gate)；gate 初始 -6 ≈ 0.0025，
         # 使启用初期行为 ≈ 无门控基座，训练中由梯度决定是否打开（后续或有向图实验用）。
         self.module_balance_theory_gate = module_balance_theory_gate
+        # G1 证据存在性门控（2026-09-22 用户批准）：透传到编码器（默认 False=零变更）
+        self.module_bte_evidence_gate = module_bte_evidence_gate
 
         self.time_decay_mode = time_decay_lambda is not None
         self.time_decay_lambda = time_decay_lambda
@@ -103,6 +106,7 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             device=self.device,
             module_repeat_aware_sign_encoder=module_repeat_aware_sign_encoder,
             module_common_neighbor_encoder=module_common_neighbor_encoder,
+            module_bte_evidence_gate=module_bte_evidence_gate,
             time_decay_lambda=time_decay_lambda,
             time_decay_gap_mode=time_decay_gap_mode,
             time_scaling_factor=time_scaling_factor,
