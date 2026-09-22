@@ -123,6 +123,7 @@
   - **冒烟（WV，40 测试边）**：19/40 序列被填补，尾部平均 +4.3 事件；"最后事件→查询"时间差均值 5.14M→2.59M（减半）；护栏断言全过。
   - **实验排程（就绪待部署）**：`tools/queue/insert_e1a_screen_20260922.txt`（3 行：linksign RT/RB/WV × seed42 × .TF-E）；对位参照 = 主表 full seed42（同代码行为等价，金标准已验）。插入策略：insert-after 172（排在 #173 之前）；若 #173 已在跑则先 kill（`tools/verify/_kill_173.sh`）+ 补网格 B 替补行（`insert_grid_b_replacement_20260922.txt`）。
   - **服务器阻塞**：VPN 中断（连续 5 次 SSH 超时）；部署/启动脚本 `tools/verify/_deploy_e1a.sh` 已备好，恢复后一键执行。
+  - **15:00 VPN 恢复后执行 + 16:30 修正记录**：部署（HEAD `1fad470`）→ 抢占网格 B（#173，含孤儿清理）→ 插入 E1 行。**发现配置错误**：手工 `@` 行漏 `--tail-num 20000`（RT/RB/WV 的 `DATASET_EXTRA` 由 run_experiments 自动追加、手工行易漏）→ #174 误跑 RT 全量（1335 batches/epoch，2.5h 未完成）→ 已停 #174 + 拦杀 #175，**修正行插入 177/178**（补 tail）。#176（WV，配置本来就对）随即接棒运行。教训入记忆：手工 `@` 行必须逐字对照 run_experiments 生成形态（含 `DATASET_EXTRA`）。
 
 - **2026-09-21 上午（续67·重跑收官：LOO/wocnas 全量取数 + 结论更新 + 网格并行化）**：
   - **LOO 55 runs 全部重跑完成**（#161–164：RAS-D 20 / BTE-D 15 / CNAS-D 10 / RASE-D 10）。取数 `loofull`（90 文件）已归档（sha256 入 `_sync_raw_log.csv`）；新表 `results/loo_full_table_20260921.txt`。
