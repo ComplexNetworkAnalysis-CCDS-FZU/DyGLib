@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "agent-mailbox": {
+      "type": "stdio",
+      "command": "C:\\Users\\FrozenString\\.conda\\envs\\torch_venv\\python.exe",
+      "args": ["-X", "utf8", "D:\\codes\\agent-mailbox\\mcp_server.py"],
+      "env": {
+        "MAILBOX_AGENT": "DirG"
+      }
+    }
+  }
+}

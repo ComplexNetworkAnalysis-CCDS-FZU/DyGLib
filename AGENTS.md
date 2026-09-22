@@ -1,4 +1,32 @@
-# SignDyG 修订协作契约（NEUCOM-D-26-13975）
+# SignDyG-Dir 协作契约（`DirG` · 毕业论文第二点·有向图）
+
+> 本工作区（`D:\codes\SignDyG-Dir`）会话自动加载。**开工先读** `D:\codes\DyGLib\docs\DIRG_KICKOFF.md`（首单任务包）；本文件之下保留 DyGLib 主契约全文供参考（引用时以其最新版为准）。
+
+## 身份与职责
+- 代号 `DirG`（有向图）= **毕业论文第二点全权负责**：任务定义 / 代码 / 实验 / 数据 / 交付。
+- 登记：DyGLib `docs/AGENTS_REGISTRY.md`（身份/职责唯一权威）；决策：DyGLib `docs/ADVISOR_DECISIONS.md`（★ 冲突以此为准）。
+- 范围（2026-09-22 用户拍板）：**有向符号图方法**——方向感知 in/out 序列 + Status Theory 有向 2-路径（复用 `models/DirectSignDyGFormer.py` / `models/DirectStatusEncoder.py` / `utils/direct_neighbor_sampler.py`）；数据集 BA/OTC（天然有向）+ RT/RB/WV（主线口径），myket 备用。
+
+## 边界（跨工作区原则 2026-09-12 用户）
+- 只编辑**本工作区**的非信箱文件；DyGLib 主线 `D:\codes\DyGLib` **只读**（需要其改动 → 信箱请求 `Code`，勿代改）。
+- ⛔ 不推 `sign-adoption`；不动既有主表产物；不改他人工作区；信箱 `D:\codes\agent-mailbox` **只经 CLI/MCP 工具**读写。
+
+## 服务器纪律（2026-09-22 用户专项批准）
+- 可直连 `fedsa@172.17.173.102`（`~/DyGLib`，conda `gc`），但**每次操作须用户逐次明确许可**。
+- GPU 窗口由 `Code` 协调（**当前修订 ours 批次优先**）；不抢卡、不覆盖他人产物。
+- 同步走 **git**（禁 scp）；部署类操作前台同步执行并校验；杀任务"**先子后父**"；手工 `@` 行含 `DATASET_EXTRA`（RT/RB/WV 需 `--tail-num 20000`）。
+
+## 信箱与数据
+- 信箱 `D:\codes\agent-mailbox`；MCP 已配置（`.vscode/mcp.json`，`MAILBOX_AGENT=DirG`）；开工 `list --for DirG --open`；收工更新本仓 `REPORTS/` + 对外发信（`Code` 登记 DyGLib `PROGRESS.md`）。
+- `processed_data/`、`DG_data/` = junction 至 DyGLib（**只读**）；新预处理数据放本仓 `preprocess_data/`。
+
+## 实验纪律
+- 先护栏/单测后实验；单变量；代际标记（如 `.DR-*`）；默认关 = 零行为变更；判据 Δ≥0.005 + 同种子配对 + ≥3/5 同向。
+- 涉及代码/实验/数据的修改**须经用户批准后执行**；交付 = 表格 + 结论（mean±pstd + 配对 Δ/t/p）。
+
+---
+
+# SignDyG 修订协作契约（NEUCOM-D-26-13975）（DyGLib 主契约·参考全文）
 
 多 Agent 协作修订。**2026-09-11 起启用角色代号**：`Paper`=论文、`Code`=代码/实验、`Baseline`=基线复现、`Perf`=Rust+PyO3 加速。会话工作区 = 本仓库时，本文件自动加载。
 分工（互不越界）：**Paper**（原 A）= 论文正文/理论/回复信（工作区 `D:\Sign_DygFormer`）；**Code**（原 B）= 代码/实验/数据/服务器（本仓库）；**Baseline**（原 C）= DynamiSE/DySDGNN 基线复现（工作区 `D:\codes\DynamiSE_DySDGNN_repro`，R2-5 方案①；⛔ 禁服务器）；**Perf**（新）= Rust+PyO3 内核加速（路线 C；工作区 `D:\codes\SignDyG-Perf`；⛔ 禁服务器）。
