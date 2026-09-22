@@ -118,7 +118,7 @@
 ## 最近更新记录
 
 - **2026-09-22 深夜（续71·毕业论文第二点立项：新 Agent `DirG`（有向图））**：
-  - **用户拍板四项**：① 范围 = **有向符号图方法**（复用 `DirectSignDyGFormer`/`DirectStatusEncoder`/`DirectedNeighborSampler`；方向感知 in/out 序列 + Status Theory 有向 2-路径，退避 Balance Theory）；② 数据集 = **BA/OTC**（天然有向）+ **RT/RB/WV**（主线口径），myket 备用；③ **服务器可直连（须用户逐次明确许可）**——新专例（其余 agent 仍禁，主通道仍为 `Code`）；④ 时间线 = **修订 ours 批全部完成后匀 1 张卡起步，2027-04 前送审、预留修改返修**。
+  - **用户拍板四项**：① 范围 = **有向符号图方法**（复用 `DirectSignDyGFormer`/`DirectStatusEncoder`/`DirectedNeighborSampler`；方向感知 in/out 序列 + Status Theory 有向 2-路径，退避 Balance Theory）；② 数据集 = **BA/OTC 与 RT/RB/WV 全部 5 个底层均为有向图**（09-22 用户纠正：RT/RB/WV 本身也是有向的）；RT/RB/WV 复用主线口径，myket 备用；**指标政策 = "多跑选更优"（主指标不预冻结；多指标并列全跑、选更优者为主展示口径，定稿以全指标并列+排名矩阵呈现）**；③ **服务器可直连（须用户逐次明确许可）**——新专例（其余 agent 仍禁，主通道仍为 `Code`）；④ 时间线 = **修订 ours 批全部完成后匀 1 张卡起步，2027-04 前送审、预留修改返修**。
   - **准备工作完成（Code 侧）**：① 工作区 `D:\codes\SignDyG-Dir`（自本仓克隆派生，分支 `dirg`，已推 GitHub `origin/dirg`；远端 `origin`=GitHub、`server`=本仓裸仓）；② 契约登记：本仓 `AGENTS.md`（角色行+服务器纪律修订）、`docs/AGENTS_REGISTRY.md`（DirG 行 + 服务器例外 + 变更记录）；新仓 `AGENTS.md`（DirG 专属区块）+ `copilot-instructions.md` + `.vscode/mcp.json`（`MAILBOX_AGENT=DirG`）+ `REPORTS/`；③ 数据：`processed_data`/`DG_data` 各数据集 **junction 只读共享**（myket 本体随仓可直接用；**Epinions 排除**——2026-09-22 用户裁定：缺逐边时间信息、动态图不可用）；④ **首单任务包 `docs/DIRG_KICKOFF.md`**（T0–T5：脚手架/协议冻结/资产审计+有向护栏单测/基线矩阵/方法候选〔有向 BTE-Status 门控、有向 CNAS 三类 2-路径、方向不对称时间衰减〕/交付；里程碑倒排：10 月底基线齐、12 月底方法实验齐、1 月底数据定稿、2–3 月写作+返修缓冲）。
   - **GPU 交接点**：修订批次（E1a/E1c/G1/D3b/D5b/M3/M4/阶段 B）收官后由 `Code` 确认窗口，DirG 正式实验单独占 1 卡，不与修订抢卡。
   - **信箱**：开工通知 `DirG`（含回执要求）+ `Paper` FYI（不影响期刊修订节奏）。

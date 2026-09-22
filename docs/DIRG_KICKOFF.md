@@ -7,7 +7,8 @@
 | 项 | 决定 |
 |---|---|
 | 研究范围 | **A：有向符号图方法** —— 复用 `DirectSignDyGFormer`（方向感知 in/out 序列 + Status Theory 有向 2-路径，不确定时退避 Balance Theory）与 `DirectedNeighborSampler`；目标：方向感知序列 + 有向符号预测 |
-| 数据集 | **BA、OTC**（天然有向）+ **RT、RB、WV**（复用主线口径）；`myket` 已预处理（有向）备用。**Epinions 排除**（2026-09-22 用户裁定：**缺乏具体时间信息**，动态图不可用） |
+| 数据集 | **全部 5 数据集底层均为有向图**（BA/OTC 与 RT/RB/WV 的边序均带方向——2026-09-22 用户纠正：RT/RB/WV 本身也是有向的，不应只视为“复用主线口径”）；纳入：BA、OTC、RT、RB、WV；`myket` 已预处理（有向）备用。**Epinions 排除**（2026-09-22 用户裁定：**缺乏具体时间信息**，动态图不可用） |
+| 指标政策 | **主指标不预先冻结**——按用户 2026-09-22 指示“**多跑选更优**”：多指标并列全跑（`auc`/`ap`/`f1_binary`/`f1_macro`/`acc`/方向判定准确率等 + 多配置初筛），**选更优者作为主展示口径**；定稿呈现仍按**全指标并列 + 平均排名矩阵**（透明性纪律，避免“挑指标”质疑） |
 | 算力/服务器 | **允许直连服务器（仍须用户逐次明确许可）**；**当前修订 ours 批次全部完成后匀出 1 张卡**（预计 09-23 晚～09-24，以 `Code` 确认窗口为准） |
 | 时间线 | **2027-04 前送审**，需预留修改返修时间 → 内部里程碑见 §4 |
 
@@ -16,8 +17,8 @@
 - **T0 脚手架（0.5 天）**：读权威文档（本文件、DyGLib `AGENTS.md`、`docs/AGENTS_REGISTRY.md`、`docs/ADVISOR_DECISIONS.md`、`docs/HANDOFF.md`）；确认信箱 MCP 可用（`.vscode/mcp.json`，`MAILBOX_AGENT=DirG`）；在自己仓建 `REPORTS/` 进度档。
 - **T1 协议冻结（1 天）**：自己仓 `docs/DIR_TASK_SPEC.md`：
   - 任务定义：有向存在性（u→v）与有向符号（正/负）；反边（rev）与随机负（neg）协议；
-  - 数据集与划分：BA/OTC/RT/RB/WV（复用主线 `val_ratio/test_ratio/tail_num` 口径）+ myket 备用；
-  - 指标：`f1_binary`/`auc`/`ap`/方向判定准确率（若有）等，主指标待与用户/导师确认后冻结；
+  - 数据集与划分：BA/OTC/RT/RB/WV（**5 数据集均为有向图**；划分复用主线 `val_ratio/test_ratio/tail_num` 口径）+ myket 备用；
+  - 指标：**不预先冻结主指标**（用户 2026-09-22：“多跑选更优”）——多指标并列全跑（`auc`/`ap`/`f1_binary`/`f1_macro`/`acc`/方向判定准确率等），选更优者为主展示口径；定稿以全指标并列 + 排名矩阵呈现；
   - 判据：Δ≥0.005（或与用户约定阈值）+ 同种子配对显著性 + ≥3/5 同向；
   - 代际标记规范：结果名后缀（如 `.DR-*`），默认关 = 零行为变更。
 - **T2 资产审计（1–2 天）**：走读 `train_direct_link_prediction.py`、`models/DirectSignDyGFormer.py`、`models/DirectStatusEncoder.py`、`utils/direct_neighbor_sampler.py`；
