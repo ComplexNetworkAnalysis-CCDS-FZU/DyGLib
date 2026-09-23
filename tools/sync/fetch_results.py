@@ -32,6 +32,9 @@
     python tools/sync/fetch_results.py --set sembaab --allow-partial # SEMBA A/B 部分产物（#155/156 成功件 + manifest + smoke 成功件）
     python tools/sync/fetch_results.py --set signparam # 参数网格 #158（sign，210：5 数据集 × 42 组合 × seed42）
     python tools/sync/fetch_results.py --set linksignparam --allow-partial # 参数网格 #157（linksign；收尾中）
+    python tools/sync/fetch_results.py --set e1a    # E1a 空白填补批（#176–189；linksign 5×5 + sign 5×1；`.TF-E` 标记）
+    python tools/sync/fetch_results.py --set e1a-base # E1a 对位基线（同配置 full，无 `.TF-E`）
+    python tools/sync/fetch_results.py --set e1c --allow-partial # E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 标记）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -171,6 +174,22 @@ RR5_SPECS = [
     ("saved_results/SignLinkPrediction/SignDyGFormer/BitcoinOTC/SignDyGFormer_seed*.NN-80.LF-5.RLF-{kr}.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json", "BitcoinOTC",
      [("10", 5), ("5", 5)]),
 ]
+
+# E1 系列：主表最优参数（E1a/E1c 批所用；linksign=3class、sign=binary）
+E1A_LINKSIGN_PARAMS = {
+    "WikiVote": (15, 10),
+    "RedditHyperlinkTitle": (60, 1),
+    "RedditHyperlinkBody": (80, 3),
+    "BitcoinAlpha": (40, 15),
+    "BitcoinOTC": (80, 5),
+}
+E1A_SIGN_PARAMS = {
+    "WikiVote": (40, 15),
+    "RedditHyperlinkTitle": (100, 1),
+    "RedditHyperlinkBody": (60, 1),
+    "BitcoinAlpha": (40, 15),
+    "BitcoinOTC": (40, 15),
+}
 
 SETS = {
     "e2": [
@@ -433,6 +452,53 @@ SETS = {
         for ds in ["RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC", "WikiVote"]
         for nn in [20, 40, 60, 80, 100, 10, 15]
         for lf in [5, 10, 15, 20, 1, 3]
+    ],
+    # ---- E1a 空白填补批（#176–189；`.TF-E` 代际标记）----
+    # linksign（3class）= 5 数据集 × 5 种子（seed*）；sign（binary）= 5 数据集 × seed42；
+    # 对位基线 = 同名无 `.TF-E` 的 full run（同配置、稳定代）。
+    "e1a": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.json",
+            "results/e1a_tailfill/raw/linksign/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
+    ] + [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.json",
+            "results/e1a_tailfill/raw/sign/" + ds,
+            None,
+            1,
+        )
+        for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
+    ],
+    "e1a-base": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/e1a_tailfill/raw_base/linksign/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
+    ] + [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/e1a_tailfill/raw_base/sign/" + ds,
+            None,
+            1,
+        )
+        for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
+    ],
+    # ---- E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 代际标记；linksign seed42）----
+    "e1c": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.RK-*.json",
+            "results/e1c_recent_block/raw/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]

@@ -117,6 +117,17 @@
 
 ## 最近更新记录
 
+- **2026-09-23 上午（续72·E1a 正式批判定（5×5+5×1 全出）+ E1c 曲线部分）**：
+  - **E1a 5 种子配对判定（Δ = `.TF-E` − full；linksign（3class）规格）**：
+    - **auc**：WV **+6.0‰**（5/5，p=.0002）✅、OTC **+5.5‰**（5/5，p=.016）✅、BA +4.5‰（4/5，p=.069）、RB +3.5‰（3/5，ns）、RT −0.3‰（ns）；跨数据集均值 **+3.8‰（4/5 正）**。
+    - **f1_wt（主指标）**：WV **+6.8‰**（5/5，p=.0005）✅；OTC +3.3‰（4/5）；BA +1.5‰（4/5）；RT **−7.5‰**（1/5，ns）；**RB −6.9‰（0/5，p=.021 显著负）**；均值 −0.6‰ → **主指标未过判据（仅 WV ✅）**。
+    - f1_mac：OTC +11.2 / WV +7.4 / RB +7.3 / BA +3.0 / RT −1.9（‰），均值 +5.4‰；**ap 全正**（均值 +8.9‰；WV +13.7 p=.003、OTC +15.1 p=.058）。
+    - **vs 真基线 DyGFormer（auc，均值对均值）**：BA **+0.1‰**（原 −4.3‰→追平）、OTC **+6.5‰**、RT **+4.3‰**、WV **−0.2‰**（原 −6.2‰→追平）、**RB −4.0‰（唯一负；较原 −7.5‰ 收窄）** → **E1a 使 linksign auc 全面追平/反超 DyGFormer**。
+    - sign（binary，seed42 单点）：auc **WV +31.8‰ / BA +25.5‰ / OTC +9.3‰ 正**、RT −12.5‰ / RB −2.8‰ 负；f1_macro WV +32.0‰ / OTC +8.7‰ 正、**BA −40.0‰ 负**、RT +1.1‰ / RB −4.0‰（负）。混合，待多种子/汇总后再解读。
+  - **E1c 双块窗口 m-sweep（部分；linksign seed42；Δ vs m=0=full）**：**WV 全 5 点正**——m=4：+3.5/+5.5/+21.4‰、m=8：+4.0/**+7.5**/+23.5‰、m=15：+4.7/+4.5/+20.4‰（auc/f1_wt/f1_mac；f1_wt 峰值 m=8）；RT m=15 无效（auc 0.0、f1_wt −7.8‰）；RB 待跑（当前队列 #190–204 进行中，RT m=30/60 运行）。
+  - **取数与工具**：`fetch_results.py` 新增 set `e1a`/`e1a-base`/`e1c`（30+30+partial 已同步归档 `results/e1a_tailfill/`、`results/e1c_recent_block/`）；新工具 `tools/verify/e1a_pair_table.py`（配对判定表）、`tools/verify/e1c_curve_table.py`（m 曲线）。
+  - **队列状态**：E1c m-sweep 到 #196（RT 段）；其后 #197–204（RT 收尾 + RB 10/30/45/60）、**G1 批 205–214**、网格 215/216。
+
 - **2026-09-22 深夜（续71·毕业论文第二点立项：新 Agent `DirG`（有向图））**：
   - **用户拍板四项**：① 范围 = **有向符号图方法**（复用 `DirectSignDyGFormer`/`DirectStatusEncoder`/`DirectedNeighborSampler`；方向感知 in/out 序列 + Status Theory 有向 2-路径，退避 Balance Theory）；② 数据集 = **BA/OTC 与 RT/RB/WV 全部 5 个底层均为有向图**（09-22 用户纠正：RT/RB/WV 本身也是有向的）；RT/RB/WV 复用主线口径，myket 备用；**指标政策 = "多跑选更优"（主指标不预冻结；多指标并列全跑、选更优者为主展示口径，定稿以全指标并列+排名矩阵呈现）**；③ **服务器可直连（须用户逐次明确许可）**——新专例（其余 agent 仍禁，主通道仍为 `Code`）；④ 时间线 = **修订 ours 批全部完成后匀 1 张卡起步，2027-04 前送审、预留修改返修**。
   - **准备工作完成（Code 侧）**：① 工作区 `D:\codes\SignDyG-Dir`（自本仓克隆派生，分支 `dirg`，已推 GitHub `origin/dirg`；远端 `origin`=GitHub、`server`=本仓裸仓）；② 契约登记：本仓 `AGENTS.md`（角色行+服务器纪律修订）、`docs/AGENTS_REGISTRY.md`（DirG 行 + 服务器例外 + 变更记录）；新仓 `AGENTS.md`（DirG 专属区块）+ `copilot-instructions.md` + `.vscode/mcp.json`（`MAILBOX_AGENT=DirG`）+ `REPORTS/`；③ 数据：`processed_data`/`DG_data` 各数据集 **junction 只读共享**（myket 本体随仓可直接用；**Epinions 排除**——2026-09-22 用户裁定：缺逐边时间信息、动态图不可用）；④ **首单任务包 `docs/DIRG_KICKOFF.md`**（T0–T5：脚手架/协议冻结/资产审计+有向护栏单测/基线矩阵/方法候选〔有向 BTE-Status 门控、有向 CNAS 三类 2-路径、方向不对称时间衰减〕/交付；里程碑倒排：10 月底基线齐、12 月底方法实验齐、1 月底数据定稿、2–3 月写作+返修缓冲）。
