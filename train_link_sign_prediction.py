@@ -293,7 +293,7 @@ if __name__ == "__main__":
         early_stopping = EarlyStopping(
             patience=args.patience,
             save_model_folder=save_model_folder,
-            save_model_name=args.result_save_name,
+            save_model_name=args.eval_ckpt_name or args.result_save_name,
             logger=logger,
             model_name=args.model_name,
             metric_notice=EARLY_STOP_METRICS,
@@ -303,7 +303,8 @@ if __name__ == "__main__":
 
         logger.info(f"pos node interaction rate: {pos_weight}")
 
-        for epoch in range(args.num_epochs):
+        # eval-only（2026-09-23 用户批准）：range(0) 空转跳过训练，直接装载 checkpoint 评测
+        for epoch in range(0 if args.eval_only else args.num_epochs):
 
             model.train()
             if args.model_name in [
@@ -528,6 +529,9 @@ if __name__ == "__main__":
         # 保存的 val 阈值；无记录（None）时回退 0.5。
         # （协议=阈值在验证集上选择、应用于测试，测试集不参与选择，无泄露）
         best_thr = hyper_param.get("thr", 0.5) if hyper_param is not None else 0.5
+        # 2026-09-23（用户批准）：CLI 固定阈值覆盖（固定阈值评测；配合 --eval-only）
+        if args.test_thr is not None:
+            best_thr = args.test_thr
 
         # E-1: 训练阶段耗时（不含最终测试评估）
         training_time = time.time() - run_start_time
@@ -638,6 +642,9 @@ if __name__ == "__main__":
                 "cnas_tail_fill": bool(args.cnas_tail_fill),
                 "recent_block": int(args.recent_block),
             },
+            # eval-only / 固定阈值（2026-09-23 用户批准；固定阈值评测协议）
+            "eval_only": bool(args.eval_only),
+            "fixed_thr": {"test_thr": args.test_thr},
         }
         result_json = json.dumps(result_json, indent=4)
 

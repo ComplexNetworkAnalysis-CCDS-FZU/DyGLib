@@ -120,6 +120,22 @@ class SignPredictArgs(BaseModel):
     exist_thr: Optional[float] = Field(None, description="边存在阈值，不提供自适应计算")
     sign_thr: Optional[float] = Field(None, description="符号阈值，不提供将自适应计算")
 
+    # ---- 固定阈值评测 / eval-only（2026-09-23 用户批准）----
+    # test_thr：sign（binary）任务测试阈值覆盖（提供则不使用自适应阈值）；
+    # eval_only：跳过训练、装载 checkpoint 直接测试（结果名加 .EVT）；
+    # 提供任一固定阈值时结果名加 .FX（防覆盖正常训练结果）。
+    test_thr: Optional[float] = Field(
+        None, description="sign 任务测试阈值覆盖（提供则不使用自适应阈值）"
+    )
+    eval_only: bool = Field(
+        False, description="eval-only：跳过训练、装载 checkpoint 直接测试（结果名加 .EVT）"
+    )
+    # eval-only 装载的 checkpoint 基名（缺省 = result_save_name；用于固定阈值重评时
+    # 指向原训练 run 的 ckpt，而结果写到带 .EVT/.FX 的新名下，互不覆盖）。
+    eval_ckpt_name: str = Field(
+        "", description="eval-only 装载的 checkpoint 基名（缺省=result_save_name）"
+    )
+
     module_repeat_aware_sampler: bool = Field(False, description="启用重复感知邻居采样")
 
     module_repeat_aware_sign_encoder: bool = Field(
@@ -249,6 +265,18 @@ class SignPredictArgs(BaseModel):
         # G1 证据存在性门控标记（2026-09-22）：启用时追加 .G1（代际标记）
         g1_tag = ".G1" if self.module_bte_evidence_gate else ""
 
+        # 固定阈值 / eval-only 标记（2026-09-23 用户批准；防覆盖正常训练结果）
+        evt_tag = ".EVT" if self.eval_only else ""
+        fx_tag = (
+            ".FX"
+            if (
+                self.test_thr is not None
+                or self.sign_thr is not None
+                or self.exist_thr is not None
+            )
+            else ""
+        )
+
         # E-3: patch 标记，避免不同 patch-size 结果互相覆盖（2026-09-06 修复）
         # 注：始终带上 .P{size}，使主表/消融(.P1) 与 patch 扫描各组在文件名上互相区分；
         #     旧 CPU 期文件无 .P 标记，天然可辨认为历史数据。
@@ -257,7 +285,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}{evt_tag}{fx_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )

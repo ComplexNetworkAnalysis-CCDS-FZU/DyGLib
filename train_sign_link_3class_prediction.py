@@ -286,7 +286,7 @@ if __name__ == "__main__":
         early_stopping = EarlyStopping(
             patience=args.patience,
             save_model_folder=save_model_folder,
-            save_model_name=args.result_save_name,
+            save_model_name=args.eval_ckpt_name or args.result_save_name,
             logger=logger,
             model_name=args.model_name,
             metric_notice=EARLY_STOP_METRICS,
@@ -294,7 +294,8 @@ if __name__ == "__main__":
 
         loss_func = nn.BCEWithLogitsLoss()
 
-        for epoch in range(args.num_epochs):
+        # eval-only（2026-09-23 用户批准）：range(0) 空转跳过训练，直接装载 checkpoint 评测
+        for epoch in range(0 if args.eval_only else args.num_epochs):
 
             model.train()
             if args.model_name in [
@@ -582,6 +583,11 @@ if __name__ == "__main__":
         hyper_parm = early_stopping.load_hyper_param()
         best_sign_thr = hyper_parm["best_sign_thr"]
         best_exist_thr = hyper_parm["best_exist_thr"]
+        # 2026-09-23（用户批准）：CLI 固定阈值覆盖 checkpoint 记录值（固定阈值评测；配合 --eval-only）
+        if args.sign_thr is not None:
+            best_sign_thr = args.sign_thr
+        if args.exist_thr is not None:
+            best_exist_thr = args.exist_thr
         # E-1: 训练阶段耗时（不含最终测试评估）
         training_time = time.time() - run_start_time
 
@@ -700,6 +706,12 @@ if __name__ == "__main__":
                 "target_edge_excluded": True,
                 "cnas_tail_fill": bool(args.cnas_tail_fill),
                 "recent_block": int(args.recent_block),
+            },
+            # eval-only / 固定阈值（2026-09-23 用户批准；固定阈值评测协议）
+            "eval_only": bool(args.eval_only),
+            "fixed_thr": {
+                "sign_thr": args.sign_thr,
+                "exist_thr": args.exist_thr,
             },
         }
         result_json = json.dumps(result_json, indent=4)
