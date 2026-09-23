@@ -429,6 +429,19 @@ SETS = {
         ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/*/*.json", "results/semba_ab/raw_smoke", None, 1),
         ("../DynamiSE_DySDGNN_repro/outputs/_smoke/semba/queue_manifest_*.json", "results/semba_ab/raw_smoke", None, 1),
     ],
+    # SEMBA 全量（2026-09-23）：5 变体 × 2 任务 × 5 数据集 × 5 种子（semba 变体缺 RT-linksign-seed1024=OOM）
+    "sembafull": [
+        (
+            f"../DynamiSE_DySDGNN_repro/outputs/semba_aligned/{var}/*.json",
+            f"results/semba_ab/raw_full/{var}",
+            None,
+            50 if var != "semba" else 49,
+        )
+        for var in ["gcn", "sgcn", "sigat", "tgn", "semba"]
+    ] + [
+        ("../DynamiSE_DySDGNN_repro/outputs/semba_aligned/queue_manifest_*.json", "results/semba_ab/raw_full", None, 3),
+        ("../DynamiSE_DySDGNN_repro/outputs/semba_aligned/precheck_cuda0.json", "results/semba_ab/raw_full", None, 1),
+    ],
     # 参数网格 #158（sign）：5 数据集 × {look, numN} 全组合 × seed42 = 210（精确逐点）
     "signparam": [
         (

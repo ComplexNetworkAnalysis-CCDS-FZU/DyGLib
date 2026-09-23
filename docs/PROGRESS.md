@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-23 上午（续74·基线全景核对 + SEMBA 公共基线对照交付）**：
+  - **排程**：A+B 已插 G1 后（行 215–217 = E1a seed42 固定阈值补齐（WV 0.61/0.53/0.48 阈值来源=RLF 对角 ckpt，**已验证 RLF 对角与 full 全键逐位一致**，免重训）；218–222 = sign 扩 5 种子（`.TF-E`）；后续批顺延（EVT 批 223–249、网格 250/251）。
+  - **基线完成度**：**SEMBA 公共基线（A/B 档）已完成**——5 变体（gcn/sgcn/sigat/tgn/semba）× 5 数据集 × 2 任务 × 5 种子 = **249/250**（缺 `semba` 变体 RT-linksign-seed1024 = 硬 OOM，09-20 已按用户指示报 OOM 给 Baseline）；全量已取回本地 `results/semba_ab/raw_full/{variant}/`（253 件含 manifest/预检）。DynamiSE/DySDGNN（`results/baseline_m5`）为 3 数据集（WV/BA/OTC，另一任务口径）；真 DyGFormer 5×5 齐。
+  - **对照结论（5 种子，见 `results/baseline_compare_20260923.txt`；工具 `tools/verify/baseline_compare_table.py`）**：**公共基线全面弱于 ours/DyG**——sign auc：ours 0.61–0.88 vs SEMBA 最佳 0.50–0.64；linksign auc：ours 0.92–0.97 vs 0.50–0.72（部分点恰为随机水平=其复现质量参差）。**仅两处接近/落后**：sign-RB f1_macro ours **0.4835** vs semba **0.4931（−0.0096）**、sign-RT f1_macro ours 0.4698 vs tgn 0.4690（+0.0008）；其余 ours 领先。DYSDGNN/DynamiSE：AUC 0.49–0.91（弱）。→ 并入排名后 ours/DyG 相对位次受益。
+  - **交付**：已发 Paper（`基线状态 + 对照表 + 缺档说明`）；缺档共 3 处（semba-1 OOM、DynamiSE/DySDGNN × RT/RB）待 Paper/Baseline 口径。
+
 - **2026-09-23 上午（续73·固定阈值评测（eval-only）落地 + 阈值漂移诊断批入队）**：
   - **用户口径核实与采纳**：① 提供阈值即不启用自适应——已核（`evaluate_models_utils` 传非 None 阈值即跳过 `cascade_best_thr`/`best_thr` 自动选择）；② checkpoint 同记 best-thr——已核（3class `.param.json`=`{best_sign_thr,best_exist_thr}`；sign= `{thr}`）；③ **eval-only 认可、无需重训**；④ 批排 **G1 后**。
   - **实现（commit `a6490d2`；GitHub+server 双推；服务器 HEAD/CLI 验讫；默认关=零变更）**：新增 `--eval-only`（`range(0)` 空转跳过训练，直接装载 checkpoint 测试；结果名加 `.EVT`）+ `--eval-ckpt-name`（装载原 run 的 ckpt 基名，与结果名解耦）+ 固定阈值覆盖（**linksign `--sign-thr/--exist-thr` 现真正作用于最终测试**（此前仅影响验证阶段）；**sign 新增 `--test-thr`**）；提供任一固定阈值时结果名加 `.FX`（防覆盖）；结果 JSON 新增 `eval_only`/`fixed_thr` 字段。
