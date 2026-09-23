@@ -503,7 +503,25 @@ SETS = {
         )
         for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
     ],
-    # ---- E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 代际标记；linksign seed42）----
+    # ---- G1 证据门控批（#205–214；`.G1` 代际标记）----
+    "g1": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G1.json",
+            "results/g1_gate/raw/linksign/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
+    ] + [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G1.json",
+            "results/g1_gate/raw/sign/" + ds,
+            None,
+            1,
+        )
+        for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
+    ],
+    # ---- E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 代际标记；linksign seed42；RT/RB/WV 三数据集）----
     "e1c": [
         (
             "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.RK-*.json",
@@ -512,6 +530,7 @@ SETS = {
             5,
         )
         for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
+        if ds in ("RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote")
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
