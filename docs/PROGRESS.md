@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-09-23 晚间（续75·E1c m-sweep 全出 + RB m=80 触发 5 种子确认 + G1 批进行中）**：
+  - **E1c m-sweep 完成（15 点，linksign seed42；Δ vs m=0=full）**：
+    - **WV（全 5 点正）**：auc +2.7~**+5.9‰**（m=11 最高）；f1_wt +4.5~**+7.5‰**（m=8 峰值）；f1_mac +20.4~+23.5‰；ap +5.4~+16.7‰。
+    - **RT（全档无感/略负）**：auc 0~−6.4‰；f1_wt −3.6~−14.4‰ → 与 E1a 同为"RT 无改善"。
+    - **RB（分化，唯 m=80 f1_wt 转正）**：auc +2.0/+4.5/**+6.2**/+1.3/−5.5‰（m=10/20/40/60/80）；**f1_wt −12.6/−4.4/−10.4/−5.6/+1.9‰（m=80 转正）**；f1_mac +6.9/+7.9/+9.1/+0.2/+1.8‰。
+  - **按 Paper 预案自动触发**：RB m=80 使 f1_wt 转正 → **5 种子确认行已排**（行 223：RB NN-80/LF-3/`--recent-block 80` × seeds 42…1024；插于 222 后=EVT 批之前；无需再批已按预案执行）。
+  - **G1 批进行中**：linksign 段 5×5 已出（`saved_results/...*.G1.json` 归档中，已取 23 件含 sign 段部分）；sign 段 4/5 完成（#213/214 排队中）。
+  - **E1c 取数/工具**：set `e1c`（15 件）、新 set `g1`（30 件，支持 --allow-partial）；`e1c_curve_table.py` 曲线表；RB m=80 行文件 `tools/queue/insert_e1c_rb80_5seed_20260923.txt`。
+  - **E1a vs E1c 初判（供 Paper）**：WV 上两者同向且幅度相当（E1c m=8 +7.5‰ vs E1a 5 种子 +6.8‰）；RB 上 **仅 E1c m=80 使主指标转正**；RT 两者皆无感；成本侧 E1c 抬升序列上限 NN+m（注意力开销↑）、E1a 抬升采样窗口（采样开销↑）。默认建议待 RB 5 种子确认后定。
+
 - **2026-09-23 上午（续74·基线全景核对 + SEMBA 公共基线对照交付）**：
   - **排程**：A+B 已插 G1 后（行 215–217 = E1a seed42 固定阈值补齐（WV 0.61/0.53/0.48 阈值来源=RLF 对角 ckpt，**已验证 RLF 对角与 full 全键逐位一致**，免重训）；218–222 = sign 扩 5 种子（`.TF-E`）；后续批顺延（EVT 批 223–249、网格 250/251）。
   - **基线完成度**：**SEMBA 公共基线（A/B 档）已完成**——5 变体（gcn/sgcn/sigat/tgn/semba）× 5 数据集 × 2 任务 × 5 种子 = **249/250**（缺 `semba` 变体 RT-linksign-seed1024 = 硬 OOM，09-20 已按用户指示报 OOM 给 Baseline）；全量已取回本地 `results/semba_ab/raw_full/{variant}/`（253 件含 manifest/预检）。DynamiSE/DySDGNN（`results/baseline_m5`）为 3 数据集（WV/BA/OTC，另一任务口径）；真 DyGFormer 5×5 齐。
