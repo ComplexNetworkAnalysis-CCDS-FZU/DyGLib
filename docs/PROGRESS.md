@@ -117,6 +117,14 @@
 
 ## 最近更新记录
 
+- **2026-09-23 上午（续73·固定阈值评测（eval-only）落地 + 阈值漂移诊断批入队）**：
+  - **用户口径核实与采纳**：① 提供阈值即不启用自适应——已核（`evaluate_models_utils` 传非 None 阈值即跳过 `cascade_best_thr`/`best_thr` 自动选择）；② checkpoint 同记 best-thr——已核（3class `.param.json`=`{best_sign_thr,best_exist_thr}`；sign= `{thr}`）；③ **eval-only 认可、无需重训**；④ 批排 **G1 后**。
+  - **实现（commit `a6490d2`；GitHub+server 双推；服务器 HEAD/CLI 验讫；默认关=零变更）**：新增 `--eval-only`（`range(0)` 空转跳过训练，直接装载 checkpoint 测试；结果名加 `.EVT`）+ `--eval-ckpt-name`（装载原 run 的 ckpt 基名，与结果名解耦）+ 固定阈值覆盖（**linksign `--sign-thr/--exist-thr` 现真正作用于最终测试**（此前仅影响验证阶段）；**sign 新增 `--test-thr`**）；提供任一固定阈值时结果名加 `.FX`（防覆盖）；结果 JSON 新增 `eval_only`/`fixed_thr` 字段。
+  - **冒烟（GPU1；WV seed123）✅**：`...TF-E.EVT.FX.json` 产出；fixed(0.65/0.01) vs auto(0.63/0.01)：auc/ap 不变（阈值不变指标）、f1_wt −0.2‰、f1_mac +3.9‰。
+  - **阈值采集（checkpoint param.json，77 条）**：linksign full 22 + TF-E 25；sign full 25 + TF-E 5。**WV/RT/RB 的 linksign full seed42 检查点缺失（历史遗留，原因未明）→ 该 3 点跳过（4 种子配对）**。
+  - **队列：27 行固定阈值评测批已入队 215–241（G1 后、网格前）**：linksign 22 行（5 数据集 × 4~5 种子；E1a `.TF-E` ckpt @ full 侧记录阈值）+ sign 5 行（seed42）；网格顺延 242/243。
+  - 待办：E1c 全出汇总（RB 三条线/RT 结论/默认建议）+ sign 5 种子扩批（Paper 已批，排期待定）+ D5b 插桩。
+
 - **2026-09-23 上午（续72·E1a 正式批判定（5×5+5×1 全出）+ E1c 曲线部分）**：
   - **E1a 5 种子配对判定（Δ = `.TF-E` − full；linksign（3class）规格）**：
     - **auc**：WV **+6.0‰**（5/5，p=.0002）✅、OTC **+5.5‰**（5/5，p=.016）✅、BA +4.5‰（4/5，p=.069）、RB +3.5‰（3/5，ns）、RT −0.3‰（ns）；跨数据集均值 **+3.8‰（4/5 正）**。
