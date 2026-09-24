@@ -598,6 +598,38 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- BTE 四变体第一段（B2/B3/B4/B5；2026-09-24 起）----
+    "bte1": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.*." + tag + ".json",
+            "results/bte_stage1/raw/" + task + "/" + ds,
+            None,
+            1,
+        )
+        for task, d in (("linksign", "SignLinkPrediction"), ("sign", "LinkSign"))
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+        for tag in ("B2", "B3", "B4", "B5")
+    ],
+    # ---- sign × w/o BTE（屏幕批 2026-09-24）----
+    "signnobte": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.*.BTE-D.CNAS-E.P1.TE.json",
+            "results/sign_nobte/raw/" + ds,
+            None,
+            1,
+        )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ],
+    # ---- BTE 稀疏/极性掩码（重算含 p_sum/n_sum；2026-09-25）----
+    "sparsity": [
+        (
+            "results/bte_sparsity/linksign_" + ds + ".npz",
+            "results/bte_sparsity",
+            None,
+            1,
+        )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
 SETS["all"] = SETS["e2"] + SETS["e5"]

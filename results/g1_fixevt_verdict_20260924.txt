@@ -1,0 +1,18 @@
+G1-EVT 修正批判定（去 TF；test=G1-EVT 固定阈值 vs base=full 自适应）
+Δ 单位 ‰；正 = G1 更高；(正/5)；p = 配对 t
+
+== linksign（5×5） ==
+ds                                   f1_wt              f1_mac             sign_f1                  ap                 auc
+WikiVote                -0.2 (2/5) p=0.865 -10.1 (1/5) p=0.100  +7.0 (3/5) p=0.164  -1.4 (2/5) p=0.505  +0.1 (2/5) p=0.887
+RedditHyperlinkTitle    -3.3 (3/5) p=0.601  -7.0 (0/5) p=0.019  -5.4 (3/5) p=0.745  -4.7 (0/5) p=0.082  -4.1 (1/5) p=0.067
+RedditHyperlinkBody    -24.0 (0/5) p=0.154  +2.7 (3/5) p=0.761 -56.3 (0/5) p=0.133  +7.0 (5/5) p=0.021  +8.0 (5/5) p=0.009
+BitcoinAlpha            -7.1 (1/5) p=0.255 -20.3 (3/5) p=0.489  -6.3 (1/5) p=0.262  +3.2 (3/5) p=0.472  -0.4 (2/5) p=0.841
+BitcoinOTC              +2.4 (5/5) p=0.008 +13.9 (5/5) p=0.002  +0.1 (1/5) p=0.967  +7.8 (4/5) p=0.079  +2.7 (3/5) p=0.118
+
+== sign（seed42 单点对照；test=G1-EVT vs base=full） ==
+ds                               auc      f1_macro     f1_binary
+WikiVote                        +4.4          -5.5          -0.8
+RedditHyperlinkTitle           -34.3          +0.2          +0.4
+RedditHyperlinkBody             -5.4         +11.8         -13.0
+BitcoinAlpha                    -1.6         +42.7          -0.6
+BitcoinOTC                      -8.5         -28.9          -4.9

@@ -1,0 +1,27 @@
+BTE 屏幕批判定（seed42；Δ‰ 正 = 测试批更高；2026-09-25）
+
+== A. B2（linksign seed42） vs full ==
+ds                           f1_wt      f1_mac     sign_f1          ap         auc
+WikiVote                      +3.5       +18.8        -3.9        -1.7        -0.6
+RedditHyperlinkTitle          -1.2        +1.6        -3.6        +2.0        +0.3
+RedditHyperlinkBody           +8.0        -7.4       +20.2        -2.2        -5.0
+BitcoinAlpha                  -0.3        +2.5        -2.2        -1.7        -0.7
+BitcoinOTC                    +9.7       +38.2        +2.8       +12.0        +5.5
+
+== B. B2（sign seed42） vs full ==
+ds                             auc    f1_macro   f1_binary
+WikiVote                      +5.1       -27.5        +1.0
+RedditHyperlinkTitle         +27.7        +2.0        +0.2
+RedditHyperlinkBody           +3.9        -3.6        +0.6
+BitcoinAlpha                  -2.7       +24.1        +0.7
+BitcoinOTC                    -7.7        -4.4        +0.3
+
+== C. sign w/o BTE（seed42） vs full ==
+ds                             auc    f1_macro   f1_binary
+WikiVote                      -4.6        -7.1        -6.5
+RedditHyperlinkTitle         +37.9        +0.2        +0.4
+RedditHyperlinkBody           -4.7        +6.7        +0.9
+BitcoinAlpha                 -27.0       -14.7        -8.3
+BitcoinOTC                   -23.0       -54.4        -8.0
+
+注：单种子屏幕（seed42）；方向为正的数据集才进入 5 种子确认段。
