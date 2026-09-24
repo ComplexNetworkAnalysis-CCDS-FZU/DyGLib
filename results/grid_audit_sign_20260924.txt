@@ -1,0 +1,28 @@
+k×N 网格点审计（sign；单种子 seed42；只作定位，差值无显著性）
+当前点 = 主表配置；最优点 = 图中 f1_macro / auc 各自最大点
+
+===== WikiVote（点数 42）
+  当前点 NN-40.LF-15: f1_macro 0.4442（rank 32/42）  auc 0.7309（rank 10/42）
+  最优 f1_macro: NN-15.LF-15 0.6197  Δ=+0.1755
+  最优 auc    : NN-20.LF-20 0.7521  Δ=+0.0212
+
+===== RedditHyperlinkTitle（点数 42）
+  当前点 NN-100.LF-1: f1_macro 0.4697（rank 39/42）  auc 0.6529（rank 26/42）
+  最优 f1_macro: NN-20.LF-10 0.4787  Δ=+0.0090
+  最优 auc    : NN-15.LF-1 0.6752  Δ=+0.0223
+
+===== RedditHyperlinkBody（点数 42）
+  当前点 NN-60.LF-1: f1_macro 0.4859（rank 5/42）  auc 0.6286（rank 1/42）
+  最优 f1_macro: NN-20.LF-20 0.4875  Δ=+0.0016
+  最优 auc    : NN-60.LF-1 0.6286  Δ=+0.0000
+
+===== BitcoinAlpha（点数 42）
+  当前点 NN-40.LF-15: f1_macro 0.5720（rank 25/42）  auc 0.7424（rank 4/42）
+  最优 f1_macro: NN-15.LF-10 0.6354  Δ=+0.0634
+  最优 auc    : NN-40.LF-1 0.7561  Δ=+0.0137
+
+===== BitcoinOTC（点数 42）
+  当前点 NN-40.LF-15: f1_macro 0.7309（rank 12/42）  auc 0.8775（rank 2/42）
+  最优 f1_macro: NN-15.LF-10 0.7623  Δ=+0.0314
+  最优 auc    : NN-15.LF-10 0.8788  Δ=+0.0013
+
