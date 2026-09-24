@@ -135,6 +135,11 @@ class SignPredictArgs(BaseModel):
     eval_ckpt_name: str = Field(
         "", description="eval-only 装载的 checkpoint 基名（缺省=result_save_name）"
     )
+    # D3b/T15 逐样本转储（2026-09-24）：非空 = 目录；评测时写 {目录}/{result_save_name}.npz
+    # （逐样本 exist/sign 概率与标签，供全零/非全零分组与门控红线自查）。
+    dump_samples: str = Field(
+        "", description="逐样本转储目录（空=关；诊断用，不入结果名）"
+    )
 
     module_repeat_aware_sampler: bool = Field(False, description="启用重复感知邻居采样")
 

@@ -595,6 +595,11 @@ if __name__ == "__main__":
         logger.info(f"get final performance on dataset {args.dataset_name}...")
         model[0].profiler.enable()  # 开启模型内部的Profiler以记录测试阶段的时间
         inference_start_time = time.time()
+        # D3b/T15 逐样本转储（2026-09-24；默认关）
+        _dump_path = None
+        if args.dump_samples:
+            os.makedirs(args.dump_samples, exist_ok=True)
+            _dump_path = f"{args.dump_samples}/{args.result_save_name}.npz"
         (
             test_losses,
             test_metrics,
@@ -612,6 +617,7 @@ if __name__ == "__main__":
             time_gap=args.time_gap,
             sign_best_thr=best_sign_thr,
             exist_best_thr=best_exist_thr,
+            dump_samples=_dump_path,
         )
 
         new_node_test_losses, new_node_test_metrics, _, _ = (

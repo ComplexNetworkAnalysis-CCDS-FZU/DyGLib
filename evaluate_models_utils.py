@@ -42,6 +42,7 @@ def evaluate_model_sign_link_3class_prediction(
     sign_best_thr: Optional[float] = None,
     *,
     reject_support: bool = False,
+    dump_samples: Optional[str] = None,
 ):
     """
     evaluate models on the link sign prediction task
@@ -246,6 +247,36 @@ def evaluate_model_sign_link_3class_prediction(
                 )
             )
 
+        # D3b/T15 逐样本转储（2026-09-24；默认关）
+        if dump_samples:
+            import os as _os
+
+            _os.makedirs(_os.path.dirname(dump_samples) or ".", exist_ok=True)
+            _exist_p = np.concatenate(
+                [v[0].squeeze(-1).detach().cpu().numpy() for v in all_predict]
+            ) if all_predict else np.array([])
+            _sign_p = np.concatenate(
+                [v[1].squeeze(-1).detach().cpu().numpy() for v in all_predict]
+            ) if all_predict else np.array([])
+            _exist_y = np.concatenate(
+                [v[0].squeeze(-1).detach().cpu().numpy() for v in all_label]
+            ) if all_label else np.array([])
+            _sign_y = np.concatenate(
+                [v[1].squeeze(-1).detach().cpu().numpy() for v in all_label]
+            ) if all_label else np.array([])
+            np.savez(
+                dump_samples,
+                exist_p=_exist_p,
+                exist_y=_exist_y,
+                sign_p=_sign_p,
+                sign_y=_sign_y,
+                exist_batch_lens=np.array([len(v[0]) for v in all_predict], dtype=np.int64),
+                sign_batch_lens=np.array([len(v[1]) for v in all_predict], dtype=np.int64),
+                exist_thr=np.array([exist_best_thr], dtype=np.float64),
+                sign_thr=np.array([sign_best_thr], dtype=np.float64),
+            )
+            print(f"[dump_samples] wrote {dump_samples}（pos≈{len(_sign_p)}）")
+
     return evaluate_losses, evaluate_metrics, exist_best_thr, sign_best_thr
 
 
@@ -259,6 +290,7 @@ def evaluate_model_sign_prediction(
     num_neighbors: int = 20,
     time_gap: int = 2000,
     thr: Optional[float] = None,
+    dump_samples: Optional[str] = None,
 ):
     """
     evaluate models on the link sign prediction task
@@ -426,6 +458,22 @@ def evaluate_model_sign_prediction(
                     is_logits=False,
                 )
             )
+
+        # D3b/T15 逐样本转储（2026-09-24；默认关）
+        if dump_samples:
+            import os as _os
+
+            _os.makedirs(_os.path.dirname(dump_samples) or ".", exist_ok=True)
+            _pred = np.concatenate(all_predict) if all_predict else np.array([])
+            _label = np.concatenate(all_label) if all_label else np.array([])
+            np.savez(
+                dump_samples,
+                prob=_pred,
+                label=_label,
+                batch_lens=np.array([len(v) for v in all_predict], dtype=np.int64),
+                thr=np.array([thr], dtype=np.float64),
+            )
+            print(f"[dump_samples] wrote {dump_samples}（n={len(_pred)}）")
 
     return evaluate_losses, evaluate_metrics, thr
 
