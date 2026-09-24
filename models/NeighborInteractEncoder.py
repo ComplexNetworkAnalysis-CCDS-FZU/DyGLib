@@ -110,16 +110,16 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
         # B3：无证据位置的可学习缺省标记（初始化 = 现行 layer(0,0) 默认输出；
         # 仅启用时注册参数 ⇒ 关闭时参数结构与历史严格一致）
+        # 注意（2026-09-25 修复）：构造期 layer 仍在 CPU，init 前向必须用 CPU 张量；
+        # 早期版本用 device=self.device（如 "cuda:0"）导致构造即抛设备不匹配（B3 批 10 行全崩）。
         if self.module_bte_b3_default_marker:
             with torch.no_grad():
-                _init = self.neighbor_sign_effect_layer(
-                    torch.zeros(1, 2, device=self.device)
-                )[0].clone()
+                _init = self.neighbor_sign_effect_layer(torch.zeros(1, 2))[0].clone()
             self.b3_default_marker = nn.Parameter(_init)
         # B4：pos/neg 分通道可学习增益（init=1 ⇒ feat 起点 ≡ full，隔离"学习到的重加权"）
         if self.module_bte_b4_channel_gate:
-            self.b4_gain_pos = nn.Parameter(torch.ones(1, device=self.device))
-            self.b4_gain_neg = nn.Parameter(torch.ones(1, device=self.device))
+            self.b4_gain_pos = nn.Parameter(torch.ones(1))
+            self.b4_gain_neg = nn.Parameter(torch.ones(1))
 
     def sign_neighbor_count(self, node_neighbor_ids, node_neighbor_sign):
         all_ids, inverse_indexes = np.unique(node_neighbor_ids, return_inverse=True)
