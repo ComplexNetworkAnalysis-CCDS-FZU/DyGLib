@@ -1,0 +1,156 @@
+task,dataset,row,metric,mean,std,n
+linksign,WikiVote,full(同批),f1_wt,0.907000,0.002411,5
+linksign,WikiVote,full(同批),f1_mac,0.796120,0.008983,5
+linksign,WikiVote,full(同批),sign_f1,0.871500,0.004383,5
+linksign,WikiVote,full(同批),exist_f1,0.666840,0.000136,5
+linksign,WikiVote,full(同批),f1_mic,0.906440,0.002304,5
+linksign,WikiVote,full(同批),ap,0.816200,0.003005,5
+linksign,WikiVote,full(同批),auc,0.961220,0.000483,5
+linksign,WikiVote,w/o CNAS,f1_wt,0.914480,0.002460,5
+linksign,WikiVote,w/o CNAS,f1_mac,0.800980,0.007410,5
+linksign,WikiVote,w/o CNAS,sign_f1,0.885400,0.003757,5
+linksign,WikiVote,w/o CNAS,exist_f1,0.666940,0.000233,5
+linksign,WikiVote,w/o CNAS,f1_mic,0.915820,0.002248,5
+linksign,WikiVote,w/o CNAS,ap,0.831960,0.002699,5
+linksign,WikiVote,w/o CNAS,auc,0.967440,0.000344,5
+linksign,WikiVote,CNAS-only,f1_wt,0.904540,0.003976,5
+linksign,WikiVote,CNAS-only,f1_mac,0.794120,0.009299,5
+linksign,WikiVote,CNAS-only,sign_f1,0.866120,0.008052,5
+linksign,WikiVote,CNAS-only,exist_f1,0.667000,0.000210,5
+linksign,WikiVote,CNAS-only,f1_mic,0.903020,0.004738,5
+linksign,WikiVote,CNAS-only,ap,0.812900,0.006113,5
+linksign,WikiVote,CNAS-only,auc,0.960480,0.001888,5
+linksign,RedditHyperlinkTitle,full(同批),f1_wt,0.902040,0.002651,5
+linksign,RedditHyperlinkTitle,full(同批),f1_mac,0.697940,0.002764,5
+linksign,RedditHyperlinkTitle,full(同批),sign_f1,0.877860,0.007678,5
+linksign,RedditHyperlinkTitle,full(同批),exist_f1,0.666980,0.000392,5
+linksign,RedditHyperlinkTitle,full(同批),f1_mic,0.894960,0.005479,5
+linksign,RedditHyperlinkTitle,full(同批),ap,0.718420,0.000440,5
+linksign,RedditHyperlinkTitle,full(同批),auc,0.939080,0.000703,5
+linksign,RedditHyperlinkTitle,w/o CNAS,f1_wt,0.895840,0.009195,5
+linksign,RedditHyperlinkTitle,w/o CNAS,f1_mac,0.694800,0.010356,5
+linksign,RedditHyperlinkTitle,w/o CNAS,sign_f1,0.864280,0.020934,5
+linksign,RedditHyperlinkTitle,w/o CNAS,exist_f1,0.666760,0.000120,5
+linksign,RedditHyperlinkTitle,w/o CNAS,f1_mic,0.885080,0.014977,5
+linksign,RedditHyperlinkTitle,w/o CNAS,ap,0.715900,0.007382,5
+linksign,RedditHyperlinkTitle,w/o CNAS,auc,0.938700,0.003587,5
+linksign,RedditHyperlinkTitle,CNAS-only,f1_wt,0.893460,0.005719,5
+linksign,RedditHyperlinkTitle,CNAS-only,f1_mac,0.686000,0.001495,5
+linksign,RedditHyperlinkTitle,CNAS-only,sign_f1,0.861220,0.014149,5
+linksign,RedditHyperlinkTitle,CNAS-only,exist_f1,0.667300,0.001200,5
+linksign,RedditHyperlinkTitle,CNAS-only,f1_mic,0.882420,0.010173,5
+linksign,RedditHyperlinkTitle,CNAS-only,ap,0.701740,0.002273,5
+linksign,RedditHyperlinkTitle,CNAS-only,auc,0.926020,0.002199,5
+linksign,RedditHyperlinkBody,full(同批),f1_wt,0.938920,0.001254,5
+linksign,RedditHyperlinkBody,full(同批),f1_mac,0.672820,0.004384,5
+linksign,RedditHyperlinkBody,full(同批),sign_f1,0.936120,0.003916,5
+linksign,RedditHyperlinkBody,full(同批),exist_f1,0.674500,0.006460,5
+linksign,RedditHyperlinkBody,full(同批),f1_mic,0.940260,0.003296,5
+linksign,RedditHyperlinkBody,full(同批),ap,0.688360,0.004261,5
+linksign,RedditHyperlinkBody,full(同批),auc,0.923540,0.004482,5
+linksign,RedditHyperlinkBody,w/o CNAS,f1_wt,0.933760,0.005987,5
+linksign,RedditHyperlinkBody,w/o CNAS,f1_mac,0.681400,0.009364,5
+linksign,RedditHyperlinkBody,w/o CNAS,sign_f1,0.922340,0.012291,5
+linksign,RedditHyperlinkBody,w/o CNAS,exist_f1,0.666980,0.000691,5
+linksign,RedditHyperlinkBody,w/o CNAS,f1_mic,0.928920,0.010390,5
+linksign,RedditHyperlinkBody,w/o CNAS,ap,0.688000,0.003858,5
+linksign,RedditHyperlinkBody,w/o CNAS,auc,0.922520,0.003932,5
+linksign,RedditHyperlinkBody,CNAS-only,f1_wt,0.940720,0.006570,5
+linksign,RedditHyperlinkBody,CNAS-only,f1_mac,0.669460,0.013011,5
+linksign,RedditHyperlinkBody,CNAS-only,sign_f1,0.941580,0.016983,5
+linksign,RedditHyperlinkBody,CNAS-only,exist_f1,0.670240,0.003476,5
+linksign,RedditHyperlinkBody,CNAS-only,f1_mic,0.945300,0.014775,5
+linksign,RedditHyperlinkBody,CNAS-only,ap,0.684500,0.008108,5
+linksign,RedditHyperlinkBody,CNAS-only,auc,0.919620,0.006339,5
+linksign,BitcoinAlpha,full(同批),f1_wt,0.923380,0.002506,5
+linksign,BitcoinAlpha,full(同批),f1_mac,0.770180,0.004769,5
+linksign,BitcoinAlpha,full(同批),sign_f1,0.920540,0.006128,5
+linksign,BitcoinAlpha,full(同批),exist_f1,0.666700,0.000000,5
+linksign,BitcoinAlpha,full(同批),f1_mic,0.931080,0.004800,5
+linksign,BitcoinAlpha,full(同批),ap,0.810000,0.007930,5
+linksign,BitcoinAlpha,full(同批),auc,0.957380,0.001914,5
+linksign,BitcoinAlpha,w/o CNAS,f1_wt,0.923560,0.004201,5
+linksign,BitcoinAlpha,w/o CNAS,f1_mac,0.769720,0.015143,5
+linksign,BitcoinAlpha,w/o CNAS,sign_f1,0.921960,0.003249,5
+linksign,BitcoinAlpha,w/o CNAS,exist_f1,0.666640,0.000120,5
+linksign,BitcoinAlpha,w/o CNAS,f1_mic,0.932140,0.002811,5
+linksign,BitcoinAlpha,w/o CNAS,ap,0.815220,0.010820,5
+linksign,BitcoinAlpha,w/o CNAS,auc,0.960660,0.003438,5
+linksign,BitcoinAlpha,CNAS-only,f1_wt,0.915000,0.002223,5
+linksign,BitcoinAlpha,CNAS-only,f1_mac,0.748820,0.011000,5
+linksign,BitcoinAlpha,CNAS-only,sign_f1,0.913140,0.002759,5
+linksign,BitcoinAlpha,CNAS-only,exist_f1,0.666700,0.000000,5
+linksign,BitcoinAlpha,CNAS-only,f1_mic,0.924620,0.002089,5
+linksign,BitcoinAlpha,CNAS-only,ap,0.791820,0.008937,5
+linksign,BitcoinAlpha,CNAS-only,auc,0.953520,0.004288,5
+linksign,BitcoinOTC,full(同批),f1_wt,0.945820,0.003072,5
+linksign,BitcoinOTC,full(同批),f1_mac,0.816080,0.007431,5
+linksign,BitcoinOTC,full(同批),sign_f1,0.945180,0.003803,5
+linksign,BitcoinOTC,full(同批),exist_f1,0.666740,0.000080,5
+linksign,BitcoinOTC,full(同批),f1_mic,0.952340,0.003178,5
+linksign,BitcoinOTC,full(同批),ap,0.858140,0.007385,5
+linksign,BitcoinOTC,full(同批),auc,0.970760,0.002540,5
+linksign,BitcoinOTC,w/o CNAS,f1_wt,0.948020,0.001301,5
+linksign,BitcoinOTC,w/o CNAS,f1_mac,0.821160,0.005435,5
+linksign,BitcoinOTC,w/o CNAS,sign_f1,0.947740,0.001089,5
+linksign,BitcoinOTC,w/o CNAS,exist_f1,0.666700,0.000000,5
+linksign,BitcoinOTC,w/o CNAS,f1_mic,0.954520,0.000941,5
+linksign,BitcoinOTC,w/o CNAS,ap,0.875180,0.001920,5
+linksign,BitcoinOTC,w/o CNAS,auc,0.977940,0.000320,5
+linksign,BitcoinOTC,CNAS-only,f1_wt,0.930440,0.003763,5
+linksign,BitcoinOTC,CNAS-only,f1_mac,0.760920,0.017808,5
+linksign,BitcoinOTC,CNAS-only,sign_f1,0.934020,0.002467,5
+linksign,BitcoinOTC,CNAS-only,exist_f1,0.666700,0.000000,5
+linksign,BitcoinOTC,CNAS-only,f1_mic,0.941920,0.002049,5
+linksign,BitcoinOTC,CNAS-only,ap,0.820800,0.003096,5
+linksign,BitcoinOTC,CNAS-only,auc,0.964100,0.000790,5
+sign,WikiVote,full,auc,0.795580,0.002038,5
+sign,WikiVote,full,f1_mac,,,0
+sign,WikiVote,full,f1_binary,0.881240,0.003403,5
+sign,WikiVote,full,acc,0.817220,0.004280,5
+sign,WikiVote,full,f1_weighted,0.801700,0.003484,5
+sign,WikiVote,w/o CNAS,auc,0.817720,0.004188,5
+sign,WikiVote,w/o CNAS,f1_mac,,,0
+sign,WikiVote,w/o CNAS,f1_binary,0.887220,0.002056,5
+sign,WikiVote,w/o CNAS,acc,0.827440,0.002899,5
+sign,WikiVote,w/o CNAS,f1_weighted,0.814240,0.002612,5
+sign,RedditHyperlinkTitle,full,auc,0.674620,0.002844,5
+sign,RedditHyperlinkTitle,full,f1_mac,,,0
+sign,RedditHyperlinkTitle,full,f1_binary,0.939620,0.000382,5
+sign,RedditHyperlinkTitle,full,acc,0.886340,0.000706,5
+sign,RedditHyperlinkTitle,full,f1_weighted,0.833660,0.000344,5
+sign,RedditHyperlinkTitle,w/o CNAS,auc,0.690800,0.002989,5
+sign,RedditHyperlinkTitle,w/o CNAS,f1_mac,,,0
+sign,RedditHyperlinkTitle,w/o CNAS,f1_binary,0.939660,0.000784,5
+sign,RedditHyperlinkTitle,w/o CNAS,acc,0.886400,0.001355,5
+sign,RedditHyperlinkTitle,w/o CNAS,f1_weighted,0.833940,0.000605,5
+sign,RedditHyperlinkBody,full,auc,0.611720,0.035366,5
+sign,RedditHyperlinkBody,full,f1_mac,,,0
+sign,RedditHyperlinkBody,full,f1_binary,0.964100,0.000447,5
+sign,RedditHyperlinkBody,full,acc,0.930800,0.000820,5
+sign,RedditHyperlinkBody,full,f1_weighted,0.898560,0.000287,5
+sign,RedditHyperlinkBody,w/o CNAS,auc,0.609120,0.006747,5
+sign,RedditHyperlinkBody,w/o CNAS,f1_mac,,,0
+sign,RedditHyperlinkBody,w/o CNAS,f1_binary,0.964240,0.000196,5
+sign,RedditHyperlinkBody,w/o CNAS,acc,0.931060,0.000294,5
+sign,RedditHyperlinkBody,w/o CNAS,f1_weighted,0.898480,0.000147,5
+sign,BitcoinAlpha,full,auc,0.787200,0.008551,5
+sign,BitcoinAlpha,full,f1_mac,,,0
+sign,BitcoinAlpha,full,f1_binary,0.927580,0.000458,5
+sign,BitcoinAlpha,full,acc,0.872140,0.000476,5
+sign,BitcoinAlpha,full,f1_weighted,0.844060,0.003310,5
+sign,BitcoinAlpha,w/o CNAS,auc,0.784000,0.007711,5
+sign,BitcoinAlpha,w/o CNAS,f1_mac,,,0
+sign,BitcoinAlpha,w/o CNAS,f1_binary,0.924980,0.000496,5
+sign,BitcoinAlpha,w/o CNAS,acc,0.867380,0.001245,5
+sign,BitcoinAlpha,w/o CNAS,f1_weighted,0.837360,0.005341,5
+sign,BitcoinOTC,full,auc,0.877460,0.005394,5
+sign,BitcoinOTC,full,f1_mac,,,0
+sign,BitcoinOTC,full,f1_binary,0.949380,0.001468,5
+sign,BitcoinOTC,full,acc,0.912400,0.002124,5
+sign,BitcoinOTC,full,f1_weighted,0.902520,0.001837,5
+sign,BitcoinOTC,w/o CNAS,auc,0.894980,0.001361,5
+sign,BitcoinOTC,w/o CNAS,f1_mac,,,0
+sign,BitcoinOTC,w/o CNAS,f1_binary,0.948220,0.001647,5
+sign,BitcoinOTC,w/o CNAS,acc,0.909780,0.003339,5
+sign,BitcoinOTC,w/o CNAS,f1_weighted,0.896060,0.007202,5
