@@ -8,6 +8,7 @@
 用法（仓库根目录）：
     python tools/queue/edit_remote_tasks.py --show 77,84
     python tools/queue/edit_remote_tasks.py --insert-after 82 --lines-file tools/queue/insert_s1_rerun.txt
+    python tools/queue/edit_remote_tasks.py --replace 329 --lines-file tools/queue/line_wv_full.txt
 """
 from __future__ import annotations
 
@@ -48,7 +49,8 @@ def read_tasks() -> list:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--insert-after", type=int, default=0, help="在第 N 行后插入（1-based）")
-    ap.add_argument("--lines-file", help="要插入的行（本地文件，逐行）")
+    ap.add_argument("--replace", type=int, default=0, help="替换第 N 行（1-based）；旧行删除，新行为 lines-file 内容")
+    ap.add_argument("--lines-file", help="要插入/替换的行（本地文件，逐行）")
     ap.add_argument("--show", help="如 77,84 —— 打印 [a,b] 行区间")
     args = ap.parse_args()
 
@@ -61,16 +63,25 @@ def main():
             print(f"{i + 1}: {lines[i]}")
         return
 
-    if not args.insert_after or not args.lines_file:
-        sys.exit("需要 --insert-after 与 --lines-file（或 --show）")
-
-    with open(args.lines_file, encoding="utf-8") as f:
-        new_lines = [l for l in f.read().splitlines() if l.strip()]
-    n = args.insert_after
-    if not (1 <= n <= len(lines)):
-        sys.exit(f"[ERR] 插点 {n} 超出范围 1..{len(lines)}")
-
-    merged = lines[:n] + new_lines + lines[n:]
+    if args.replace:
+        if not args.lines_file:
+            sys.exit("需要 --lines-file")
+        n = args.replace
+        if not (1 <= n <= len(lines)):
+            sys.exit(f"[ERR] 替换点 {n} 超出范围 1..{len(lines)}")
+        with open(args.lines_file, encoding="utf-8") as f:
+            new_lines = [l for l in f.read().splitlines() if l.strip()]
+        merged = lines[: n - 1] + new_lines + lines[n:]
+        print(f"[plan] 替换第 {n} 行 → {len(new_lines)} 行（总 {len(lines)} → {len(merged)}）")
+    elif args.insert_after and args.lines_file:
+        with open(args.lines_file, encoding="utf-8") as f:
+            new_lines = [l for l in f.read().splitlines() if l.strip()]
+        n = args.insert_after
+        if not (1 <= n <= len(lines)):
+            sys.exit(f"[ERR] 插点 {n} 超出范围 1..{len(lines)}")
+        merged = lines[:n] + new_lines + lines[n:]
+    else:
+        sys.exit("需要 --insert-after 或 --replace 配 --lines-file（或 --show）")
     b64 = base64.b64encode(("\n".join(merged) + "\n").encode("utf-8")).decode("ascii")
 
     code = (
@@ -86,8 +97,10 @@ def main():
 
     actual = read_tasks()
     if actual == merged:
-        print(f"[ok] 回读校验通过：{len(actual)} 行（旧 {len(lines)} + 新 {len(new_lines)}）")
-        for i in range(n, n + len(new_lines)):
+        delta = len(merged) - len(lines)
+        print(f"[ok] 回读校验通过：{len(actual)} 行（旧 {len(lines)}，Δ{delta:+d}）")
+        start = n - 1 if args.replace else n
+        for i in range(start, min(start + len(new_lines), len(actual))):
             print(f"{i + 1}: {actual[i]}")
     else:
         first = next(
