@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-24 深夜二（续78·D3b/T17/T13 交付 + G1-EVT 修正批在跑）**：
+  - **D3b/T15 全量出表**（`results/d3b_grouped_20260924.txt`）：5 数据集 × {full,noBTE,G1} × {ALL/ZERO/NONZERO}，own-thr + common-thr 双口径。核心：① "全零处去 BTE 更好"**不成立为一致模式**（ZERO 上 Δ(noBTE−full) f1_wt = −1.0/−1.5/−16.2/**+9.2**/**+17.9**‰；auc 仅 RB/OTC 小幅正）⇒ 按 Paper 预登记应先跑 B2、B5 降级（待其裁定是否撤 B5 行）；② NONZERO 上 Δ(noBTE−full) auc **5/5 为负**（−3.8～−10.4‰）⇒ BTE 增益集中在有证据子集；③ T15 红线：RB 的 G1 收益 auc NONZERO **+9.9‰** vs ZERO −0.2‰（收益只在有证据子集）；RB f1_wt NONZERO −24.7‰（同阈值，非漂移）。
+  - **T17**（`results/t17_metric_slice.{txt,csv}`）：7 方法 × {sign_f1,f1_micro,exist_f1,ap,auc} 全就绪；linksign sign_f1 ours vs DyG = BA **+7.8‰**、OTC **+7.7‰**、RT +0.9‰、RB −0.5‰、WV −13.4‰（3/5 胜）。
+  - **T13**（`results/t13_cns_rows.{txt,csv}`）：CNAS 行绝对值（linksign w/o CNAS + CNAS-only + 同批 full；sign w/o CNAS）+ Δ‰。
+  - **G1-EVT 修正批（330–359）在跑**（去 TF 重评，修正 254–283 的代际混用）。
+  - 交付回执：`mb-20260924-231115-code-af73`。
+
 - **2026-09-24 深夜（续77·D3b 转储落地 + Paper 三件轻活交付 + sign w/o BTE 入队 + BTE 四变体实现入队 + 队列事故修复）**：
   - **D3b/T15 逐样本转储**：`--dump-samples` 实现（`evaluate_models_utils.py` 两评测函数 + 两训练脚本最终测试 + `utils/load_configs.py`；提交 `1e87aff`）；15 行（linksign seed42 × 5 数据集 × {full, noBTE, G1}，eval-only 装载既有 ckpt）入队 **315–329** 并已全部产出 npz（`results/samples_dump/{ds}/`；pos 数 WV=2805、RT/RB=3000，与 `bte_sparsity` 掩码同序）；分析工具 `tools/verify/d3b_grouped_table.py`（掩码对齐 + 全零/非全零 × 三配置 + own-thr/common-thr 双口径）已就绪，取数后出表。
   - **Paper ebcf 三件轻活交付**（回执 `mb-20260924-225625-code-22e9`）：① **代际可加性成立**（42a0e8c→d9cc98d 仅三个默认关旗标 + 命名/JSON 字段；逐文件逐分支核对）；② **种子配对确认**（full=main_tables / w-o-BTE=E-2_ablation/raw_seeds / G1=g1_gate 三批各 25 条，seeds {42..1024}）；③ 导出 `results/bte_margin_20260924.{txt,csv}`：Δ(BTE|G1)=G1−w/oBTE（‰）**AUC 面 ds 5/5 正**（+1.2/+1.6/+6.4/+1.4/+10.1；25 配对 t=3.44 p=.0021）⇒ 预登记"AUC 面全面提升成立"；**AP 5/5**（t=3.81 p=.0009）；F1_mac 4/5；**F1_wt 4/5**（RB −8.5‰，t=−2.71 p=.053）⇒ 不写"判据完全闭合"。
