@@ -117,12 +117,14 @@
 
 ## 最近更新记录
 
-- **2026-09-24 深夜二（续78·D3b/T17/T13 交付 + G1-EVT 修正批在跑）**：
+- **2026-09-24 深夜二（续78·D3b/T17/T13 交付 + CNAS 三组数 + 4ded 回执 + G1-EVT 修正批在跑）**：
   - **D3b/T15 全量出表**（`results/d3b_grouped_20260924.txt`）：5 数据集 × {full,noBTE,G1} × {ALL/ZERO/NONZERO}，own-thr + common-thr 双口径。核心：① "全零处去 BTE 更好"**不成立为一致模式**（ZERO 上 Δ(noBTE−full) f1_wt = −1.0/−1.5/−16.2/**+9.2**/**+17.9**‰；auc 仅 RB/OTC 小幅正）⇒ 按 Paper 预登记应先跑 B2、B5 降级（待其裁定是否撤 B5 行）；② NONZERO 上 Δ(noBTE−full) auc **5/5 为负**（−3.8～−10.4‰）⇒ BTE 增益集中在有证据子集；③ T15 红线：RB 的 G1 收益 auc NONZERO **+9.9‰** vs ZERO −0.2‰（收益只在有证据子集）；RB f1_wt NONZERO −24.7‰（同阈值，非漂移）。
   - **T17**（`results/t17_metric_slice.{txt,csv}`）：7 方法 × {sign_f1,f1_micro,exist_f1,ap,auc} 全就绪；linksign sign_f1 ours vs DyG = BA **+7.8‰**、OTC **+7.7‰**、RT +0.9‰、RB −0.5‰、WV −13.4‰（3/5 胜）。
   - **T13**（`results/t13_cns_rows.{txt,csv}`）：CNAS 行绝对值（linksign w/o CNAS + CNAS-only + 同批 full；sign w/o CNAS）+ Δ‰。
-  - **G1-EVT 修正批（330–359）在跑**（去 TF 重评，修正 254–283 的代际混用）。
-  - 交付回执：`mb-20260924-231115-code-af73`。
+  - **CNAS 三组数**（`results/cnas_status_20260924.txt`；回执 `mb-20260924-231355-code-e643`）：linksign CNAS-only−骨干 **auc 5/5 负**（−6.3～−8.8‰）；full−w/o CNAS 混合（WV/OTC 上去掉更好）；sign w/o CNAS：**WV +22.1、OTC +17.5‰（auc 均 5/5）**；E1a 净效应：auc WV +6.0(5/5)、OTC +5.5(5/5)、BA +4.5(4/5)、RB +3.5(3/5)、RT −0.3；归因句"负效应主要来自 last-CN 截断（修复后 auc 面 4/5 转正，均值 +3.8‰）"。
+  - **4ded 回执**（`mb-20260924-231256-code-bc69`）：超参清单（E1a 无新参、E1c m 逐数据集表、B1 无 τ、B2 无参 1/√k、B3 +50/F、B4 +2、B5 无参 τ=批内中位数）+ **sign 网格一页对照**（当前点 vs 最优点；含代际警示：WV/BA 网格与现协议不可比，仅定位用）+ **配置代际表**（含 OTC sign 09-14 换装、RT/RB 未换装；主表值均修复后复核批定稿；缺"最早候选来源"单据链的诚实标注）。
+  - **G1-EVT 修正批（330–359）在跑**（去 TF 重评，修正 254–283 的代际混用；WV 5/5 完成，其余推进中）。
+  - **掩码重算（含极性 p_sum/n_sum，T15 分组用）**：`bte_sparsity_stats.py` 扩展后在服务器后台重算 linksign 5 数据集（CPU，无卡占用）。
 
 - **2026-09-24 深夜（续77·D3b 转储落地 + Paper 三件轻活交付 + sign w/o BTE 入队 + BTE 四变体实现入队 + 队列事故修复）**：
   - **D3b/T15 逐样本转储**：`--dump-samples` 实现（`evaluate_models_utils.py` 两评测函数 + 两训练脚本最终测试 + `utils/load_configs.py`；提交 `1e87aff`）；15 行（linksign seed42 × 5 数据集 × {full, noBTE, G1}，eval-only 装载既有 ckpt）入队 **315–329** 并已全部产出 npz（`results/samples_dump/{ds}/`；pos 数 WV=2805、RT/RB=3000，与 `bte_sparsity` 掩码同序）；分析工具 `tools/verify/d3b_grouped_table.py`（掩码对齐 + 全零/非全零 × 三配置 + own-thr/common-thr 双口径）已就绪，取数后出表。

@@ -111,6 +111,15 @@ def main():
         sign_real = mask_z["sign"][real]
         az = mask_z["all_zero"][real]
         ratio = mask_z["ratio"][real]
+        # T15 极性分组（2026-09-24 扩展键；旧掩码缺键时自动跳过）
+        pol_groups = []
+        if "p_sum" in mask_z.files and "n_sum" in mask_z.files:
+            p_sum = mask_z["p_sum"][real]
+            n_sum = mask_z["n_sum"][real]
+            pol_groups = [
+                ("POL_BAL", np.where((p_sum == n_sum) & (p_sum > 0))[0]),
+                ("POL_P0", np.where(p_sum == 0)[0]),
+            ]
 
         full = load_dump(full_path)
         nob = load_dump(nob_path)
@@ -140,6 +149,11 @@ def main():
             ap_(f"-- own-thr")
             for nm, idx in (("ALL", idx_all), ("ZERO", idx_z), ("NONZERO", idx_nz)):
                 ap_(table_row(f"{tag}:{nm}", metrics_for(pos_e, neg_e, s_p, s_y, idx, ethr, sthr)))
+            for nm, idx in pol_groups:
+                ap_(table_row(f"{tag}:{nm}", metrics_for(pos_e, neg_e, s_p, s_y, idx, ethr, sthr)))
+        if pol_groups:
+            shares = " | ".join(f"{nm}={len(idx)}/{len(az)} ({len(idx)/len(az)*100:.1f}%)" for nm, idx in pol_groups)
+            ap_(f"极性分组份额：{shares}")
         ap_("")
 
     # ---- 汇总：关键差值（own-thr 与 common-thr 两口径；三指标面）----
