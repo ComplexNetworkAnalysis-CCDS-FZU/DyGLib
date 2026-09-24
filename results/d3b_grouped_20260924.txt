@@ -1,0 +1,128 @@
+D3b/T15 分组拆解（linksign · seed42 · full/noBTE/G1 × 全样本/全零子集/非全零子集）
+口径：own-thr = 各 run 自带验证阈值；common-thr = 统一用 full 侧阈值。指标=仓库函数（is_logits=False）。
+
+===== WikiVote  |  全零占比 34.0%（953/2805）  阈值 full=(0.01,0.61) noBTE=(0.01, 0.73) G1=(0.01, 0.71)
+config          f1_wt   f1_mac  sign_f1 exist_f1       ap      auc
+-- own-thr
+full:ALL       0.9048   0.8020   0.8833   0.6667   0.8330   0.9660
+full:ZERO      0.8993   0.8090   0.8686   0.6667   0.8390   0.9651
+full:NONZERO   0.9073   0.7966   0.8904   0.6668   0.8303   0.9665
+-- own-thr
+noBTE:ALL      0.9029   0.8038   0.8754   0.6669   0.8250   0.9628
+noBTE:ZERO     0.8983   0.8186   0.8537   0.6674   0.8277   0.9627
+noBTE:NONZERO   0.9040   0.7905   0.8854   0.6667   0.8265   0.9627
+-- own-thr
+G1:ALL         0.9072   0.8121   0.8812   0.6667   0.8362   0.9667
+G1:ZERO        0.9022   0.8206   0.8648   0.6669   0.8411   0.9652
+G1:NONZERO     0.9094   0.8051   0.8890   0.6667   0.8333   0.9670
+
+===== RedditHyperlinkTitle  |  全零占比 41.0%（1230/3000）  阈值 full=(0.01,0.53) noBTE=(0.01, 0.47) G1=(0.01, 0.48)
+config          f1_wt   f1_mac  sign_f1 exist_f1       ap      auc
+-- own-thr
+full:ALL       0.9026   0.6968   0.8811   0.6667   0.7092   0.9386
+full:ZERO      0.9391   0.6938   0.9376   0.6667   0.7061   0.9452
+full:NONZERO   0.8759   0.6879   0.8368   0.6667   0.7046   0.9287
+-- own-thr
+noBTE:ALL      0.8974   0.6962   0.8678   0.6667   0.7026   0.9334
+noBTE:ZERO     0.9376   0.7124   0.9291   0.6667   0.7062   0.9451
+noBTE:NONZERO   0.8683   0.6814   0.8196   0.6667   0.6954   0.9217
+-- own-thr
+G1:ALL         0.9036   0.6992   0.8825   0.6667   0.7039   0.9338
+G1:ZERO        0.9386   0.7144   0.9310   0.6667   0.7080   0.9438
+G1:NONZERO     0.8788   0.6872   0.8455   0.6667   0.6939   0.9228
+
+===== RedditHyperlinkBody  |  全零占比 40.5%（1216/3000）  阈值 full=(0.01,0.48) noBTE=(0.01, 0.56) G1=(0.01, 0.48)
+config          f1_wt   f1_mac  sign_f1 exist_f1       ap      auc
+-- own-thr
+full:ALL       0.9377   0.6750   0.9329   0.6667   0.6796   0.9247
+full:ZERO      0.9407   0.6745   0.9414   0.6667   0.6663   0.9067
+full:NONZERO   0.9356   0.6748   0.9270   0.6667   0.6849   0.9336
+-- own-thr
+noBTE:ALL      0.9330   0.6765   0.9221   0.6670   0.6831   0.9224
+noBTE:ZERO     0.9245   0.6696   0.9060   0.6665   0.6768   0.9095
+noBTE:NONZERO   0.9388   0.6814   0.9328   0.6673   0.6889   0.9310
+-- own-thr
+G1:ALL         0.9195   0.6929   0.8867   0.6808   0.6868   0.9312
+G1:ZERO        0.9299   0.6793   0.9162   0.6665   0.6672   0.9065
+G1:NONZERO     0.9109   0.6953   0.8652   0.6909   0.6955   0.9435
+
+===== BitcoinAlpha  |  全零占比 34.1%（1233/3618）  阈值 full=(0.01,0.13) noBTE=(0.01, 0.11) G1=(0.01, 0.04)
+config          f1_wt   f1_mac  sign_f1 exist_f1       ap      auc
+-- own-thr
+full:ALL       0.9261   0.7888   0.9271   0.6667   0.8243   0.9604
+full:ZERO      0.9168   0.7514   0.9277   0.6667   0.8228   0.9599
+full:NONZERO   0.9297   0.8039   0.9267   0.6667   0.8288   0.9616
+-- own-thr
+noBTE:ALL      0.9168   0.7669   0.9149   0.6667   0.7857   0.9523
+noBTE:ZERO     0.9259   0.7965   0.9235   0.6667   0.8042   0.9547
+noBTE:NONZERO   0.9120   0.7510   0.9104   0.6667   0.7774   0.9512
+-- own-thr
+G1:ALL         0.9252   0.7865   0.9261   0.6667   0.8174   0.9576
+G1:ZERO        0.9195   0.7636   0.9272   0.6667   0.8182   0.9568
+G1:NONZERO     0.9276   0.7965   0.9255   0.6667   0.8226   0.9579
+
+===== BitcoinOTC  |  全零占比 26.7%（1423/5339）  阈值 full=(0.14,0.09) noBTE=(0.01, 0.11) G1=(0.01, 0.12)
+config          f1_wt   f1_mac  sign_f1 exist_f1       ap      auc
+-- own-thr
+full:ALL       0.9401   0.8209   0.9389   0.6669   0.8580   0.9704
+full:ZERO      0.8979   0.7642   0.9041   0.6667   0.8622   0.9633
+full:NONZERO   0.9544   0.8460   0.9512   0.6670   0.8715   0.9737
+-- own-thr
+noBTE:ALL      0.9333   0.7942   0.9356   0.6667   0.8442   0.9688
+noBTE:ZERO     0.9158   0.8180   0.9073   0.6667   0.8668   0.9655
+noBTE:NONZERO   0.9390   0.7719   0.9449   0.6667   0.8216   0.9688
+-- own-thr
+G1:ALL         0.9476   0.8465   0.9448   0.6667   0.8787   0.9760
+G1:ZERO        0.9137   0.8112   0.9076   0.6667   0.8618   0.9642
+G1:NONZERO     0.9599   0.8638   0.9574   0.6667   0.8891   0.9803
+
+===== 关键差值（own-thr；‰；正 = 前者更大）=====
+-- f1_wt
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                              -1.0                   -3.3               2.9                 2.1
+RedditHyperlinkTitle                  -1.5                   -7.6              -0.5                 3.0
+RedditHyperlinkBody                  -16.2                    3.2             -10.7               -24.7
+BitcoinAlpha                           9.2                  -17.7               2.7                -2.1
+BitcoinOTC                            17.9                  -15.4              15.8                 5.5
+
+-- sign_f1
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                             -15.0                   -5.0              -3.9                -1.4
+RedditHyperlinkTitle                  -8.5                  -17.2              -6.6                 8.6
+RedditHyperlinkBody                  -35.4                    5.8             -25.2               -61.8
+BitcoinAlpha                          -4.2                  -16.3              -0.5                -1.2
+BitcoinOTC                             3.3                   -6.3               3.6                 6.2
+
+-- auc
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                              -2.4                   -3.8               0.2                 0.6
+RedditHyperlinkTitle                  -0.1                   -7.0              -1.4                -5.9
+RedditHyperlinkBody                    2.8                   -2.6              -0.2                 9.9
+BitcoinAlpha                          -5.1                  -10.4              -3.0                -3.7
+BitcoinOTC                             2.2                   -4.9               0.9                 6.6
+
+===== 关键差值（common-thr；‰；正 = 前者更大）=====
+-- f1_wt
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                              -1.6                   -3.2               5.2                 2.0
+RedditHyperlinkTitle                 -31.9                  -25.5             -28.5               -15.0
+RedditHyperlinkBody                    6.2                   15.0             -10.7               -24.7
+BitcoinAlpha                           7.4                  -16.9              -6.6                -5.4
+BitcoinOTC                            14.7                  -17.4               1.8                 5.3
+
+-- sign_f1
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                              -3.5                    9.7               8.1                 8.0
+RedditHyperlinkTitle                 -78.6                  -66.4             -72.0               -38.7
+RedditHyperlinkBody                   16.1                   37.0             -25.2               -61.8
+BitcoinAlpha                         -10.3                  -18.1             -35.3               -17.5
+BitcoinOTC                             2.3                   -5.9               0.6                 8.0
+
+-- auc
+ds                      Δ(noBTE−full) ZERO  Δ(noBTE−full) NONZERO   Δ(G1−full) ZERO  Δ(G1−full) NONZERO
+WikiVote                              -2.4                   -3.8               0.2                 0.6
+RedditHyperlinkTitle                  -0.1                   -7.0              -1.4                -5.9
+RedditHyperlinkBody                    2.8                   -2.6              -0.2                 9.9
+BitcoinAlpha                          -5.1                  -10.4              -3.0                -3.7
+BitcoinOTC                             2.2                   -4.9               0.9                 6.6
+
