@@ -122,8 +122,8 @@
   - **Paper ebcf 三件轻活交付**（回执 `mb-20260924-225625-code-22e9`）：① **代际可加性成立**（42a0e8c→d9cc98d 仅三个默认关旗标 + 命名/JSON 字段；逐文件逐分支核对）；② **种子配对确认**（full=main_tables / w-o-BTE=E-2_ablation/raw_seeds / G1=g1_gate 三批各 25 条，seeds {42..1024}）；③ 导出 `results/bte_margin_20260924.{txt,csv}`：Δ(BTE|G1)=G1−w/oBTE（‰）**AUC 面 ds 5/5 正**（+1.2/+1.6/+6.4/+1.4/+10.1；25 配对 t=3.44 p=.0021）⇒ 预登记"AUC 面全面提升成立"；**AP 5/5**（t=3.81 p=.0009）；F1_mac 4/5；**F1_wt 4/5**（RB −8.5‰，t=−2.71 p=.053）⇒ 不写"判据完全闭合"。
   - **sign × w/o BTE 屏幕批**入队 **330–334**（5 ds × seed42；非 TF 代对齐主表；`--no-module-balance-theory-encoder`）。
   - **BTE 四变体实现**（提交 `9f990ee`）：B2 密度归一（无参 1/√k）｜B3 缺省标记（+F 参数，init=layer(0,0)）｜B4 分通道增益（+2 参数，init 恒等）｜B5 连续门控（无参，g=min(1,√(n/τ))，τ=批内中位数）；A 族 G1/B5/B3 互斥断言；标签 `.B2/.B3/.B4/.B5`；冒烟 7/7 PASS（本地 + 服务器 CPU）。**40 行第一段筛查批入队 335–374**（4 变体 × 10 runs seed42）。
-  - **队列事故与修复**：daemon 按"非空行号 = dispatch 计数"取行；插入前 1 分钟网格 #314 已被自动派发（RT/RB 网格 21:52 起跑）→ 终止其进程树（子先父后；GPU0 T16 组合训练未受影响）；WV full 转储行经 `edit_remote_tasks.py --replace`（本次新增能力）补到 329；RT/RB 网格替补行移至队尾。**现队列 376 行**（375=网格 BA/OTC/WV、376=网格 RT/RB）。
-  - 待办备注：G1-EVT 批（254–283）命令行含 `--cnas-tail-fill` 但装载非 TF ckpt `.G1`——结果落地后核对与训练批一致性；若确为代际混用则去掉 TF 重评（eval-only 便宜）。
+  - **队列事故与修复**：daemon 按"非空行号 = dispatch 计数"取行；插入前 1 分钟网格 #314 已被自动派发（RT/RB 网格 21:52 起跑）→ 终止其进程树（子先父后；GPU0 T16 组合训练未受影响）；WV full 转储行经 `edit_remote_tasks.py --replace`（本次新增能力）补到 329；RT/RB 网格替补行移至队尾。**修正批插入后队列 406 行**：315–329=D3b 转储｜330–359=G1-EVT 修正批｜360–364=sign noBTE 屏幕｜365–404=BTE 四变体第一段｜405/406=网格（BA/OTC/WV、RT/RB）。
+  - **G1-EVT 代际混用发现与修正**（深夜核查）：原 G1-EVT 批（254–283）命令行含 `--cnas-tail-fill` 但装载非 TF 代 `.G1` ckpt——实证同一权重两跑 AUC 漂移（WV 0.9673 vs 0.9615、RB 0.9327 vs 0.9304、OTC 0.9761 vs 0.9732）⇒ 特征代际混用、判定失真。**修正批 30 行**（同 ckpt、同固定阈值、**去 TF**）插至 **330–359**（`tools/queue/insert_g1evt_fix_20260924.txt`；WV/RT/RB seed42 阈值沿用 RLF 对角等价 0.61/0.53/0.48）。原 `.TF-E` 污染档保留在服务器（文件名含 TF-E，不覆盖）。
 
 - **2026-09-24 晚（续76·四批全出：RB m=80 / G1 / EVT 漂移 / sign 扩批）**：
   - 队列 252/252 全部派发完毕（含 A+B/EVT/RB 确认；此后网格 251/252 继续跑）。四批取数全量归档（`results/g1_gate/`、`results/e1a_tailfill/evt/`、`results/sign_tailfill5/`、`results/e1c_rb80/`）。
