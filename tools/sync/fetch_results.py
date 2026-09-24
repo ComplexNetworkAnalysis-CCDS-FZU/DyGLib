@@ -521,6 +521,43 @@ SETS = {
         )
         for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
     ],
+    # ---- 固定阈值评测批（`.TF-E.EVT.FX`；27 行 + seed42 补齐 3 行）----
+    "evt": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.EVT.FX.json",
+            "results/e1a_tailfill/evt/linksign/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
+    ] + [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.EVT.FX.json",
+            "results/e1a_tailfill/evt/sign/" + ds,
+            None,
+            1,
+        )
+        for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
+    ],
+    # ---- sign 空白填补扩批（B 批：5 数据集 × 5 种子；`.TF-E`）----
+    "signb": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.json",
+            "results/sign_tailfill5/raw/" + ds,
+            None,
+            5,
+        )
+        for ds, (nn, lf) in E1A_SIGN_PARAMS.items()
+    ],
+    # ---- E1c RB m=80 五种籽确认（#223；`.RK-80`）----
+    "e1crb80": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.RK-80.json",
+            "results/e1c_rb80/raw",
+            None,
+            5,
+        ),
+    ],
     # ---- E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 代际标记；linksign seed42；RT/RB/WV 三数据集）----
     "e1c": [
         (
