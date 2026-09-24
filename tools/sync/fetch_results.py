@@ -35,6 +35,7 @@
     python tools/sync/fetch_results.py --set e1a    # E1a 空白填补批（#176–189；linksign 5×5 + sign 5×1；`.TF-E` 标记）
     python tools/sync/fetch_results.py --set e1a-base # E1a 对位基线（同配置 full，无 `.TF-E`）
     python tools/sync/fetch_results.py --set e1c --allow-partial # E1c 双块窗口 m-sweep（#190–204；`.RK-{m}` 标记）
+    python tools/sync/fetch_results.py --set dumps --allow-partial # D3b/T15 逐样本转储（linksign seed42 × {full,noBTE,G1}）
     python tools/sync/fetch_results.py --set all     # e2 + e5
 
 纪律（2026-09-11 用户指示）：
@@ -568,6 +569,15 @@ SETS = {
         )
         for ds, (nn, lf) in E1A_LINKSIGN_PARAMS.items()
         if ds in ("RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote")
+    ],
+    # ---- D3b/T15 逐样本转储（2026-09-24；linksign seed42 × {full,noBTE,G1} = 15 npz）----
+    "dumps": [
+        (
+            "results/samples_dump/{ds}/*.npz",
+            "results/samples_dump/{ds}",
+            ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"],
+            3,
+        )
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]

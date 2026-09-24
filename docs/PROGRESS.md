@@ -117,6 +117,14 @@
 
 ## 最近更新记录
 
+- **2026-09-24 深夜（续77·D3b 转储落地 + Paper 三件轻活交付 + sign w/o BTE 入队 + BTE 四变体实现入队 + 队列事故修复）**：
+  - **D3b/T15 逐样本转储**：`--dump-samples` 实现（`evaluate_models_utils.py` 两评测函数 + 两训练脚本最终测试 + `utils/load_configs.py`；提交 `1e87aff`）；15 行（linksign seed42 × 5 数据集 × {full, noBTE, G1}，eval-only 装载既有 ckpt）入队 **315–329** 并已全部产出 npz（`results/samples_dump/{ds}/`；pos 数 WV=2805、RT/RB=3000，与 `bte_sparsity` 掩码同序）；分析工具 `tools/verify/d3b_grouped_table.py`（掩码对齐 + 全零/非全零 × 三配置 + own-thr/common-thr 双口径）已就绪，取数后出表。
+  - **Paper ebcf 三件轻活交付**（回执 `mb-20260924-225625-code-22e9`）：① **代际可加性成立**（42a0e8c→d9cc98d 仅三个默认关旗标 + 命名/JSON 字段；逐文件逐分支核对）；② **种子配对确认**（full=main_tables / w-o-BTE=E-2_ablation/raw_seeds / G1=g1_gate 三批各 25 条，seeds {42..1024}）；③ 导出 `results/bte_margin_20260924.{txt,csv}`：Δ(BTE|G1)=G1−w/oBTE（‰）**AUC 面 ds 5/5 正**（+1.2/+1.6/+6.4/+1.4/+10.1；25 配对 t=3.44 p=.0021）⇒ 预登记"AUC 面全面提升成立"；**AP 5/5**（t=3.81 p=.0009）；F1_mac 4/5；**F1_wt 4/5**（RB −8.5‰，t=−2.71 p=.053）⇒ 不写"判据完全闭合"。
+  - **sign × w/o BTE 屏幕批**入队 **330–334**（5 ds × seed42；非 TF 代对齐主表；`--no-module-balance-theory-encoder`）。
+  - **BTE 四变体实现**（提交 `9f990ee`）：B2 密度归一（无参 1/√k）｜B3 缺省标记（+F 参数，init=layer(0,0)）｜B4 分通道增益（+2 参数，init 恒等）｜B5 连续门控（无参，g=min(1,√(n/τ))，τ=批内中位数）；A 族 G1/B5/B3 互斥断言；标签 `.B2/.B3/.B4/.B5`；冒烟 7/7 PASS（本地 + 服务器 CPU）。**40 行第一段筛查批入队 335–374**（4 变体 × 10 runs seed42）。
+  - **队列事故与修复**：daemon 按"非空行号 = dispatch 计数"取行；插入前 1 分钟网格 #314 已被自动派发（RT/RB 网格 21:52 起跑）→ 终止其进程树（子先父后；GPU0 T16 组合训练未受影响）；WV full 转储行经 `edit_remote_tasks.py --replace`（本次新增能力）补到 329；RT/RB 网格替补行移至队尾。**现队列 376 行**（375=网格 BA/OTC/WV、376=网格 RT/RB）。
+  - 待办备注：G1-EVT 批（254–283）命令行含 `--cnas-tail-fill` 但装载非 TF ckpt `.G1`——结果落地后核对与训练批一致性；若确为代际混用则去掉 TF 重评（eval-only 便宜）。
+
 - **2026-09-24 晚（续76·四批全出：RB m=80 / G1 / EVT 漂移 / sign 扩批）**：
   - 队列 252/252 全部派发完毕（含 A+B/EVT/RB 确认；此后网格 251/252 继续跑）。四批取数全量归档（`results/g1_gate/`、`results/e1a_tailfill/evt/`、`results/sign_tailfill5/`、`results/e1c_rb80/`）。
   - **A. RB m=80 5 种子**：f1_wt **+1.0‰（4/5，ns）**（不再为负；单种子 +1.9‰ 未坐实）；auc +3.3‰（3/5）；f1_mac +9.2‰（4/5，p=.11）。
