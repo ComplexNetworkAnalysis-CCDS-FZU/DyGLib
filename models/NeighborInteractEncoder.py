@@ -34,6 +34,10 @@ class NeighborCooccurrenceEncoder(nn.Module):
         module_balance_theory_encoder: bool = True,
         module_common_neighbor_encoder: bool = True,
         module_bte_evidence_gate: bool = False,
+        module_bte_b2_density_norm: bool = False,
+        module_bte_b3_default_marker: bool = False,
+        module_bte_b4_channel_gate: bool = False,
+        module_bte_b5_continuous_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
         time_scaling_factor: float = 1e-6,
@@ -58,6 +62,20 @@ class NeighborCooccurrenceEncoder(nn.Module):
         # G1 证据存在性门控（2026-09-22 用户批准）：True = 无证据位置（(pos,neg) 双零）
         # 的 BTE 分支输出严格置零（含 layer(0) 偏置项）；默认 False = 零行为变更。
         self.module_bte_evidence_gate = module_bte_evidence_gate
+        # ---- BTE 微调四变体（B2/B3/B4/B5；2026-09-24 Paper d350，用户已批）----
+        # 统一约束：不新增模块、不动 BTE 公式；默认关 = 零行为变更；结果名加 .B2/.B3/.B4/.B5。
+        # A 族（"无证据位置怎么处理"）互斥：G1 / B5 / B3 至多开一个；
+        # B 族（"有证据时怎么缩放"）：B2 / B4，独立旋钮，可各自与 A 族组合。
+        self.module_bte_b2_density_norm = module_bte_b2_density_norm
+        self.module_bte_b3_default_marker = module_bte_b3_default_marker
+        self.module_bte_b4_channel_gate = module_bte_b4_channel_gate
+        self.module_bte_b5_continuous_gate = module_bte_b5_continuous_gate
+        _n_a = (
+            int(module_bte_evidence_gate)
+            + int(module_bte_b5_continuous_gate)
+            + int(module_bte_b3_default_marker)
+        )
+        assert _n_a <= 1, "A 族（G1/B5/B3）互斥：至多启用一个"
         # 时间衰减：lambda 为 None 即不启用（用 Optional 判断）
         self.time_decay_mode = time_decay_lambda is not None
         self.time_decay_lambda = time_decay_lambda
@@ -89,6 +107,19 @@ class NeighborCooccurrenceEncoder(nn.Module):
         with torch.no_grad():
             self.neighbor_sign_effect_layer[0].weight *= 10.0
             self.neighbor_sign_effect_layer[0].bias *= 10.0
+
+        # B3：无证据位置的可学习缺省标记（初始化 = 现行 layer(0,0) 默认输出；
+        # 仅启用时注册参数 ⇒ 关闭时参数结构与历史严格一致）
+        if self.module_bte_b3_default_marker:
+            with torch.no_grad():
+                _init = self.neighbor_sign_effect_layer(
+                    torch.zeros(1, 2, device=self.device)
+                )[0].clone()
+            self.b3_default_marker = nn.Parameter(_init)
+        # B4：pos/neg 分通道可学习增益（init=1 ⇒ feat 起点 ≡ full，隔离"学习到的重加权"）
+        if self.module_bte_b4_channel_gate:
+            self.b4_gain_pos = nn.Parameter(torch.ones(1, device=self.device))
+            self.b4_gain_neg = nn.Parameter(torch.ones(1, device=self.device))
 
     def sign_neighbor_count(self, node_neighbor_ids, node_neighbor_sign):
         all_ids, inverse_indexes = np.unique(node_neighbor_ids, return_inverse=True)
@@ -573,6 +604,47 @@ class NeighborCooccurrenceEncoder(nn.Module):
 
         return out
 
+    # ---- BTE 四变体辅助（2026-09-24 Paper d350，用户已批；均默认关）----
+    def _b2_density_scale(self, x):
+        """B2：按"样本内非零证据位置数 k"做 sqrt 归一化（无参）。
+
+        返回 [B, 1, 1] 缩放子 = 1/sqrt(max(k,1))；k=0（全零样本）时为 1（特征本就全零）。
+        """
+        k = (x.abs().sum(dim=-1) > 0).sum(dim=1, keepdim=True).float()  # [B,1]
+        return 1.0 / torch.sqrt(torch.clamp(k, min=1.0)).unsqueeze(-1)  # [B,1,1]
+
+    def _b4_channel_adjust(self, x):
+        """B4：pos/neg 分通道路径增量（可学习增益 s_p/s_n，init=1 ⇒ 恒等）。
+
+        feat_new = feat_full + (s_p−1)·m_p·f_p + (s_n−1)·m_n·f_n，其中
+          f_p = layer([pos,0])、f_n = layer([0,neg])（分通道过 MLP 的输出）
+          m_p = 1[pos>0]、m_n = 1[neg>0]
+        ⇒ 仅 pos 位置沿 pos 路径缩放、仅 neg 位置沿 neg 路径缩放；
+          双有/全零位置仅加回可读增量，不改变缺省行为（与 A 族正交）。
+        """
+        pos = x[..., 0:1]
+        neg = x[..., 1:2]
+        zero = torch.zeros_like(pos)
+        f_p = self.neighbor_sign_effect_layer(torch.cat([pos, zero], dim=-1))
+        f_n = self.neighbor_sign_effect_layer(torch.cat([zero, neg], dim=-1))
+        m_p = (pos > 0).float()
+        m_n = (neg > 0).float()
+        return (
+            (self.b4_gain_pos - 1.0).view(1, 1, 1) * m_p * f_p
+            + (self.b4_gain_neg - 1.0).view(1, 1, 1) * m_n * f_n
+        )
+
+    def _b5_gate(self, x):
+        """B5：连续门控 g = min(1, sqrt(n / τ))，n = pos+neg（位置证据量），
+        τ = 批内非零位置证据量的中位数（无参规则；批内无可证据时 τ=1）。
+        返回 [B, L, 1]；n=0 ⇒ g=0（与 G1 的零位置处理兼容）。
+        """
+        n = x.sum(dim=-1).float()  # [B, L]
+        nz = n[n > 0]
+        tau = nz.median() if nz.numel() > 0 else torch.tensor(1.0, device=x.device)
+        tau = torch.clamp(tau, min=1e-6)
+        return torch.clamp(torch.sqrt(n / tau), max=1.0).unsqueeze(-1)
+
     def forward(
         self,
         src_ids: np.ndarray,
@@ -663,6 +735,56 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dst_padded_nodes_sign_effect_features = self.node_sign_effect_mapping(
                     dst_padded_nodes_sign_effect
                 )
+
+                # ---- B4 符号感知分通道加权（B 族；init 恒等）----
+                if self.module_bte_b4_channel_gate:
+                    src_padded_nodes_sign_effect_features = (
+                        src_padded_nodes_sign_effect_features
+                        + self._b4_channel_adjust(src_padded_nodes_sign_effect)
+                    )
+                    dst_padded_nodes_sign_effect_features = (
+                        dst_padded_nodes_sign_effect_features
+                        + self._b4_channel_adjust(dst_padded_nodes_sign_effect)
+                    )
+
+                # ---- B2 证据密度归一化（B 族；无参）----
+                if self.module_bte_b2_density_norm:
+                    src_padded_nodes_sign_effect_features = (
+                        src_padded_nodes_sign_effect_features
+                        * self._b2_density_scale(src_padded_nodes_sign_effect)
+                    )
+                    dst_padded_nodes_sign_effect_features = (
+                        dst_padded_nodes_sign_effect_features
+                        * self._b2_density_scale(dst_padded_nodes_sign_effect)
+                    )
+
+                # ---- B5 连续门控（A 族；无参：按批内中位数归一）----
+                if self.module_bte_b5_continuous_gate:
+                    src_padded_nodes_sign_effect_features = (
+                        src_padded_nodes_sign_effect_features
+                        * self._b5_gate(src_padded_nodes_sign_effect)
+                    )
+                    dst_padded_nodes_sign_effect_features = (
+                        dst_padded_nodes_sign_effect_features
+                        * self._b5_gate(dst_padded_nodes_sign_effect)
+                    )
+
+                # ---- B3 缺省证据标记（A 族；可学习常量，仅无证据位置替换）----
+                if self.module_bte_b3_default_marker:
+                    src_has = (
+                        src_padded_nodes_sign_effect.abs().sum(dim=-1, keepdim=True) > 0
+                    ).float()
+                    dst_has = (
+                        dst_padded_nodes_sign_effect.abs().sum(dim=-1, keepdim=True) > 0
+                    ).float()
+                    src_padded_nodes_sign_effect_features = (
+                        src_padded_nodes_sign_effect_features * src_has
+                        + self.b3_default_marker.view(1, 1, -1) * (1.0 - src_has)
+                    )
+                    dst_padded_nodes_sign_effect_features = (
+                        dst_padded_nodes_sign_effect_features * dst_has
+                        + self.b3_default_marker.view(1, 1, -1) * (1.0 - dst_has)
+                    )
 
                 # ---- G1 证据存在性门控（2026-09-22 用户批准）----
                 # 无证据位置（(pos,neg) 双零）⇒ 门控=0：把该位置的 BTE 分支输出严格

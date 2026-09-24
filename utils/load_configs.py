@@ -175,6 +175,22 @@ class SignPredictArgs(BaseModel):
         False, description="G1 证据存在性门控（无证据位置 BTE 分支置零；结果名加 .G1）"
     )
 
+    # ---- BTE 微调四变体（2026-09-24 Paper d350，用户已批）----
+    # 统一：不新增模块、不动 BTE 公式；默认关 = 零行为变更；结果名加 .B2/.B3/.B4/.B5。
+    # A 族（无证据位置处理）互斥：G1 / B5 / B3；B 族（有证据时缩放）：B2 / B4，独立旋钮。
+    module_bte_b2_density_norm: bool = Field(
+        False, description="B2 证据密度归一化（按样本非零证据位置数 sqrt 归一；无参；结果名加 .B2）"
+    )
+    module_bte_b3_default_marker: bool = Field(
+        False, description="B3 缺省证据标记（无证据位置可学习常量，init=现行默认；+F 参数；结果名加 .B3）"
+    )
+    module_bte_b4_channel_gate: bool = Field(
+        False, description="B4 符号分通道加权（pos/neg 分通道路径可学习增益，init 恒等；+2 参数；结果名加 .B4）"
+    )
+    module_bte_b5_continuous_gate: bool = Field(
+        False, description="B5 连续门控（g=min(1,sqrt(n/τ))，τ=批内中位数；无参；结果名加 .B5）"
+    )
+
     # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
     time_decay_lambda: Optional[float] = Field(
         None, description="时间衰减系数 λ；不提供(None)则不启用时间衰减"
@@ -269,6 +285,11 @@ class SignPredictArgs(BaseModel):
 
         # G1 证据存在性门控标记（2026-09-22）：启用时追加 .G1（代际标记）
         g1_tag = ".G1" if self.module_bte_evidence_gate else ""
+        # BTE 微调四变体标记（2026-09-24）：各自追加 .B2/.B3/.B4/.B5
+        b2_tag = ".B2" if self.module_bte_b2_density_norm else ""
+        b3_tag = ".B3" if self.module_bte_b3_default_marker else ""
+        b4_tag = ".B4" if self.module_bte_b4_channel_gate else ""
+        b5_tag = ".B5" if self.module_bte_b5_continuous_gate else ""
 
         # 固定阈值 / eval-only 标记（2026-09-23 用户批准；防覆盖正常训练结果）
         evt_tag = ".EVT" if self.eval_only else ""
@@ -290,7 +311,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}{evt_tag}{fx_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}{b2_tag}{b3_tag}{b4_tag}{b5_tag}{evt_tag}{fx_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )
