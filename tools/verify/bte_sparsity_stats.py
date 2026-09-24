@@ -142,6 +142,9 @@ def run_dataset(task: str, ds: str, batch_size: int, out_dir: pathlib.Path, verb
     ratio_indirect = np.full(n, np.nan)
     direct_only = np.zeros(n, dtype=bool)
     l_eff_arr = np.zeros(n, dtype=np.int64)
+    # 2026-09-24 扩展：逐样本极性总量（T15 的 p==n>0 vs p==0 分组用）
+    p_sum = np.zeros(n, dtype=np.int64)
+    n_sum = np.zeros(n, dtype=np.int64)
 
     for b0 in range(0, n, batch_size):
         b1 = min(n, b0 + batch_size)
@@ -186,12 +189,17 @@ def run_dataset(task: str, ds: str, batch_size: int, out_dir: pathlib.Path, verb
             all_zero[b0 + i] = nz == 0
             direct_only[b0 + i] = (nz > 0) and (nz_ind == 0)
             l_eff_arr[b0 + i] = le
+            # 极性总量（src+dst 两侧 pos/neg 邻层计数之和）
+            p_sum[b0 + i] = int(s_pe[i, :le_s, 0].sum() + d_pe[i, :le_d, 0].sum())
+            n_sum[b0 + i] = int(s_pe[i, :le_s, 1].sum() + d_pe[i, :le_d, 1].sum())
         if verbose and (b0 // batch_size) % 10 == 0:
             print(f"  {b1}/{n}", flush=True)
 
     real = sg != 0
     def q(a, p):
         return float(np.nanquantile(a, p))
+    polarity_balanced = ((p_sum == n_sum) & (p_sum > 0))
+    polarity_pos_zero = (p_sum == 0)
     summary = {
         "task": task,
         "dataset": ds,
@@ -208,6 +216,8 @@ def run_dataset(task: str, ds: str, batch_size: int, out_dir: pathlib.Path, verb
         "D2_allzero_share_all": float(all_zero.mean()),
         "D2_directonly_share_real": float(direct_only[real].mean()),
         "avg_L_eff_real": float(l_eff_arr[real].mean()),
+        "P1_p==n>0_share_real": float(polarity_balanced[real].mean()),
+        "P2_p==0_share_real": float(polarity_pos_zero[real].mean()),
     }
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
@@ -217,6 +227,8 @@ def run_dataset(task: str, ds: str, batch_size: int, out_dir: pathlib.Path, verb
         direct_only=direct_only,
         L_eff=l_eff_arr,
         sign=sg,
+        p_sum=p_sum,
+        n_sum=n_sum,
     )
     return summary
 

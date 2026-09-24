@@ -580,6 +580,24 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- G1-EVT 修正批（去 TF；`.TE.G1.EVT.FX`；2026-09-24 深夜）----
+    "g1fix": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G1.EVT.FX.json",
+            "results/g1_fixevt/raw/linksign/" + ds,
+            None,
+            5,
+        )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ] + [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G1.EVT.FX.json",
+            "results/g1_fixevt/raw/sign/" + ds,
+            None,
+            1,
+        )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
 SETS["all"] = SETS["e2"] + SETS["e5"]
