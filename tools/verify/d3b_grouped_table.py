@@ -32,7 +32,7 @@ METRICS = ["f1_wt", "f1_mac", "sign_f1", "exist_f1", "ap", "auc"]
 def pick(paths):
     hits = glob.glob(paths)
     if len(hits) != 1:
-        sys.exit(f"[ERR] glob 命中 {len(hits)}：{paths}")
+        raise FileNotFoundError(f"glob 命中 {len(hits)}：{paths}")
     return hits[0]
 
 
@@ -86,23 +86,35 @@ def table_row(name, m):
 
 
 def main():
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--datasets", nargs="+", default=DS)
+    args = ap.parse_args()
     L = []
     ap_ = L.append
     ap_("D3b/T15 分组拆解（linksign · seed42 · full/noBTE/G1 × 全样本/全零子集/非全零子集）")
     ap_("口径：own-thr = 各 run 自带验证阈值；common-thr = 统一用 full 侧阈值。指标=仓库函数（is_logits=False）。")
     ap_("")
     per_ds = {}
-    for ds in DS:
+    for ds in args.datasets:
+        ddir = ROOT / f"results/samples_dump/{ds}"
+        try:
+            full_path = pick(str(ddir / "*BTE-E.CNAS-E.P1.TE.EVT.npz"))
+            nob_path = pick(str(ddir / "*BTE-D*EVT.npz"))
+            g1_path = pick(str(ddir / "*.G1.EVT.npz"))
+        except FileNotFoundError as e:
+            ap_(f"[跳过] {ds}：缺档（{e}）")
+            continue
         mask_z = np.load(ROOT / f"results/bte_sparsity/linksign_{ds}.npz")
         real = mask_z["sign"] != 0
         sign_real = mask_z["sign"][real]
         az = mask_z["all_zero"][real]
         ratio = mask_z["ratio"][real]
 
-        ddir = ROOT / f"results/samples_dump/{ds}"
-        full = load_dump(pick(str(ddir / "*BTE-E.CNAS-E.P1.TE.EVT.npz")))
-        nob = load_dump(pick(str(ddir / "*BTE-D*EVT.npz")))
-        g1 = load_dump(pick(str(ddir / "*.G1.EVT.npz")))
+        full = load_dump(full_path)
+        nob = load_dump(nob_path)
+        g1 = load_dump(g1_path)
 
         cfg = {}
         for tag, d in (("full", full), ("noBTE", nob), ("G1", g1)):
@@ -137,7 +149,7 @@ def main():
             ap_(f"-- {key}")
             ap_(f"{'ds':<22}{'Δ(noBTE−full) ZERO':>20}{'Δ(noBTE−full) NONZERO':>23}"
                 f"{'Δ(G1−full) ZERO':>18}{'Δ(G1−full) NONZERO':>20}")
-            for ds in DS:
+            for ds in per_ds:
                 cfg, az, ratio, ethr_full, sthr_full = per_ds[ds]
                 idx_z, idx_nz = np.where(az)[0], np.where(~az)[0]
                 row = []
