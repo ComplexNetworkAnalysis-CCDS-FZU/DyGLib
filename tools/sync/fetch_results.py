@@ -573,11 +573,12 @@ SETS = {
     # ---- D3b/T15 逐样本转储（2026-09-24；linksign seed42 × {full,noBTE,G1} = 15 npz）----
     "dumps": [
         (
-            "results/samples_dump/{ds}/*.npz",
-            "results/samples_dump/{ds}",
-            ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"],
+            "results/samples_dump/" + ds + "/*.npz",
+            "results/samples_dump/" + ds,
+            None,
             3,
         )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
