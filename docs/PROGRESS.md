@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-25 凌晨三（续79·G1 修正判定交付 + B2/noBTE 屏幕判定 + B3 事故修复 + T16 组合判定）**：
+  - **G1-EVT 修正版判定**（`results/g1_fixevt_verdict_20260924.txt`；交付 `mb-20260925-025759-code-59b6`）：RB auc **+8.0‰（5/5,p=.009）**、ap +7.0（5/5,p=.021）、f1_mac +2.7（ns）；**f1_wt −24.0（0/5,ns）⇒ 主指标未修复、非漂移**；OTC f1_wt **+2.4（5/5）** + f1_mac **+13.9（5/5）**；RT f1_mac −7.0（0/5,p=.019）负效应坐实；WV ≈0。
+  - **B2 屏幕（10 runs）**：linksign f1_wt RB +8.0/OTC +9.7/WV +3.5（3/5 正）；OTC f1_mac +38.2；sign auc RT +27.7。**sign×w/o BTE 屏幕**：仅 RT auc +37.9 为正，其余负（BA −27.0/OTC −23.0）⇒ 默认不补种子。
+  - **B3 事故与修复**：B3 行 10/10 构造期设备 bug（layer CPU vs cuda 张量）→ 修复（CPU init）+ 设备回归探针服务器 PASS；**重跑 10 行插至 405–414**。B4 运行中（385–394），B5 其后（395–404）。
+  - **T16 组合判定**（`results/t16_combo_verdict_20260925.txt`）：RB m=80×G1（5 种子）auc **+8.0‰（5/5,p=.030）✅**、ap +7.3（5/5,p=.017）✅、f1_mac **+13.0（5/5,p=.002）✅**；**f1_wt −0.8（2/5,ns）** ⇒ A 档不满足、**B 档（排序面修复）成立**。
+  - **T16 伴行竞态修正**：原伴行（284–288）在组合训练未完时派发（seed42 加载中间 best，auc 0.9210 vs 最终 0.9321）→ 4 行崩溃 + seed42 污染；**5 行重跑已插 415–419**（网格顺延 420/421）。
+
 - **2026-09-24 深夜二（续78·D3b/T17/T13 交付 + CNAS 三组数 + 4ded 回执 + G1-EVT 修正批在跑）**：
   - **D3b/T15 全量出表**（`results/d3b_grouped_20260924.txt`）：5 数据集 × {full,noBTE,G1} × {ALL/ZERO/NONZERO}，own-thr + common-thr 双口径。核心：① "全零处去 BTE 更好"**不成立为一致模式**（ZERO 上 Δ(noBTE−full) f1_wt = −1.0/−1.5/−16.2/**+9.2**/**+17.9**‰；auc 仅 RB/OTC 小幅正）⇒ 按 Paper 预登记应先跑 B2、B5 降级（待其裁定是否撤 B5 行）；② NONZERO 上 Δ(noBTE−full) auc **5/5 为负**（−3.8～−10.4‰）⇒ BTE 增益集中在有证据子集；③ T15 红线：RB 的 G1 收益 auc NONZERO **+9.9‰** vs ZERO −0.2‰（收益只在有证据子集）；RB f1_wt NONZERO −24.7‰（同阈值，非漂移）。
   - **T17**（`results/t17_metric_slice.{txt,csv}`）：7 方法 × {sign_f1,f1_micro,exist_f1,ap,auc} 全就绪；linksign sign_f1 ours vs DyG = BA **+7.8‰**、OTC **+7.7‰**、RT +0.9‰、RB −0.5‰、WV −13.4‰（3/5 胜）。

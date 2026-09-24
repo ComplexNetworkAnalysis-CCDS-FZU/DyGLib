@@ -620,6 +620,21 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- T16 组合（RB：m=80 × G1；训练 5 种子 + 固定阈值伴行）----
+    "combo": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.RK-80.G1.json",
+            "results/t16_combo/raw",
+            None,
+            5,
+        ),
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody/SignDyGFormer_seed*.NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.RK-80.G1.EVT.FX.json",
+            "results/t16_combo/evt",
+            None,
+            5,
+        ),
+    ],
     # ---- BTE 稀疏/极性掩码（重算含 p_sum/n_sum；2026-09-25）----
     "sparsity": [
         (
