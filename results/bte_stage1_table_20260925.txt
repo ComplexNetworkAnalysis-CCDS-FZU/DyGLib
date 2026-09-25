@@ -1,0 +1,68 @@
+BTE 四变体第一段总表（seed42 屏幕；Δ‰ 正 = 变体更高；2026-09-25）
+
+===== linksign =====
+-- B2
+ds                           f1_wt      f1_mac     sign_f1          ap         auc
+WikiVote                      +3.5       +18.8        -3.9        -1.7        -0.6
+RedditHyperlinkTitle          -1.2        +1.6        -3.6        +2.0        +0.3
+RedditHyperlinkBody           +8.0        -7.4       +20.2        -2.2        -5.0
+BitcoinAlpha                  -0.3        +2.5        -2.2        -1.7        -0.7
+BitcoinOTC                    +9.7       +38.2        +2.8       +12.0        +5.5
+
+-- B3
+ds                           f1_wt      f1_mac     sign_f1          ap         auc
+WikiVote                      +4.4       +23.2        -5.3        +1.5        +1.1
+RedditHyperlinkTitle          -0.9        -0.6        -2.3        -8.7        -6.9
+RedditHyperlinkBody           -3.6        -5.8        -7.1        -8.4        -4.7
+BitcoinAlpha                  +1.5       +11.5        -2.9        -0.3        -0.7
+BitcoinOTC                    +3.8        +1.0        +8.5       +14.5        +4.6
+
+-- B4
+ds                           f1_wt      f1_mac     sign_f1          ap         auc
+WikiVote                      -0.1       +10.7        -6.9        -2.5        -1.0
+RedditHyperlinkTitle          +5.0       +11.8        +7.9        +0.2        -1.7
+RedditHyperlinkBody           +2.0        -7.4        +6.2        -6.1        -8.5
+BitcoinAlpha                  +2.5       +11.4        -1.8        -1.3        +0.9
+BitcoinOTC                   +10.0       +24.7       +11.3       +25.1        +7.5
+
+-- B5
+ds                           f1_wt      f1_mac     sign_f1          ap         auc
+WikiVote                      +2.8       +17.2        -2.8        +2.2        +0.8
+RedditHyperlinkTitle          +2.1        -3.0        +6.9        -6.6        -6.2
+RedditHyperlinkBody           -2.6        +7.2        -7.8        -0.1        +4.1
+BitcoinAlpha                  -0.8        -3.8        +0.1        -2.3        +1.7
+BitcoinOTC                   +12.4       +39.1       +11.5       +24.4        +7.2
+
+===== sign =====
+-- B2
+ds                             auc    f1_macro   f1_binary
+WikiVote                      +5.1       -27.5        +1.0
+RedditHyperlinkTitle         +27.7        +2.0        +0.2
+RedditHyperlinkBody           +3.9        -3.6        +0.6
+BitcoinAlpha                  -2.7       +24.1        +0.7
+BitcoinOTC                    -7.7        -4.4        +0.3
+
+-- B3
+ds                             auc    f1_macro   f1_binary
+WikiVote                      +0.0        -6.5        -3.5
+RedditHyperlinkTitle         +11.5        +8.4        +0.3
+RedditHyperlinkBody           -0.3        -3.6        +0.6
+BitcoinAlpha                  +0.1        +1.7        -0.6
+BitcoinOTC                    +0.8        +8.6        +1.1
+
+-- B4
+ds                             auc    f1_macro   f1_binary
+WikiVote                      -0.1       -22.4        -1.1
+RedditHyperlinkTitle          +0.6        +0.0        +0.0
+RedditHyperlinkBody           -2.6        -3.6        +0.6
+BitcoinAlpha                  +3.0       -14.6        -0.3
+BitcoinOTC                   -25.7       -42.7        -7.9
+
+-- B5
+ds                             auc    f1_macro   f1_binary
+WikiVote                      +4.4       -18.5        -1.2
+RedditHyperlinkTitle          -8.5        +3.7        -1.5
+RedditHyperlinkBody          -24.5        -3.6        +0.6
+BitcoinAlpha                 -51.1        +1.1        -7.1
+BitcoinOTC                    -8.9       -24.8        -6.1
+
