@@ -66,11 +66,24 @@
 - `d3b_grouped_table.py` — **D3b/T15 逐样本分组拆解**：读 `results/samples_dump/{ds}/*.npz`（`--dump-samples` 产物）与 `results/bte_sparsity/linksign_*.npz` 掩码；输出 full/noBTE/G1 × {全样本/全零/非全零} × 6 指标 + own-thr/common-thr 双口径 + 三指标面 Δ 汇总 → `results/d3b_grouped_20260924.txt`。用法：`python tools/verify/d3b_grouped_table.py`（需先 `fetch_results.py --set dumps`）。
 - `t13_cns_rows.py` — **CNAS 行绝对值（T13）**：linksign 的 w/o CNAS、CNAS-only 与同批 full（E-2 raw_seeds）配对 + sign w/o CNAS（sign_wocnas）Δ（‰）→ `results/t13_cns_rows.{txt,csv}`。用法：`python tools/verify/t13_cns_rows.py`。
 - `t17_metric_slice.py` — **7 方法指标切片（T17）**：gcn/sgcn/sigat/tgn/semba/DyGFormer/ours × 5 数据集 × {sign_f1, f1_micro, exist_f1, ap, auc}（linksign）/ {ap, f1_binary, auc}（sign）→ `results/t17_metric_slice.{txt,csv}`。用法：`python tools/verify/t17_metric_slice.py`。
+- `g1_fix_verdict.py` — **G1-EVT 修正批判定（去 TF）**：G1-EVT（固定阈值）vs full（raw_base），逐 ds Δ‰/(正/5)/p → `results/g1_fixevt_verdict_20260924.txt`。用法：`python tools/verify/g1_fix_verdict.py`（先 `fetch_results --set g1fix`）。
+- `bte_screen_verdict.py` — **BTE 屏幕批判定**：B2（linksign+sign）/ sign×w-o-BTE vs 同代 full（seed42 单点）→ `results/bte_screen_verdict_20260925.txt`。
+- `bte_stage1_table.py` — **四变体第一段总表**（B2/B3/B4/B5 × 5 ds × 2 任务 × Δ‰）→ `results/bte_stage1_table_20260925.{txt,csv}`。
+- `bte_stage2_verdict.py` — **阶段二 5 种子配对判定**（B2/B4/B5 vs full；含 B2-RB 预登记行）→ `results/bte_stage2_verdict_20260925.txt`。
+- `t16_combo_verdict.py` — **T16 组合判定**（m=80×G1，5 种子 + 固定阈值伴行）→ `results/t16_combo_verdict_20260925.txt`。
+- `t14b_full_keys.py` — **T14b 全键切片**（7 方法 × 2 任务 × 5 ds × 全指标，826 行）→ `results/t14b_full_keys_20260925.{csv,txt}`。
+- `d6_config_table.py` — **D6 配置来源底表**（10 行 + 来源批次 + seed42 sha256）→ `results/d6_config_source_table_20260925.{csv,md}`。
+- `t15_gate_stats.py` — **T15 门控分布**（位置级证据占比 + ratio 分位）→ `results/t15_gate_distribution_20260925.txt`。
+- `cnas_status_summary.py` — **CNAS 现状三组数**（2×2/LOO/wocnas/E1a/E1c）→ `results/cnas_status_20260924.txt`。
+- `grid_point_audit.py` — **sign 旧网格点审计**（当前点 vs 最优点，含代际警示）→ `results/grid_audit_sign_20260924.txt`。
+- `grid_new_audit.py` — **新网格（方案 B）审计**：3 ds × 2 任务 × 25 格；当前点 vs 最优点 + **Δ/σ 升级判据**（>2×单点噪声标 ★候选）→ `results/grid_new_audit_20260925.txt`。
+- `grid_diff_table.py` — **新旧网格差异**（符号分布/|Δ| 分位/最优点易位；sign 旧档 25/25，linksign 旧档部分）→ `results/grid_diff_20260925.txt`。
 ### tools/sync/
 - `fetch_results.py` — **结果归档同步**（只读服务器，ssh 读取，不 scp）：把服务器已完成的实验 JSON 拉取到本地 `results/**/raw/`，保持归档与服务器一致；输出 sha256 清单并追加 `results/_sync_raw_log.csv`。用法：`python tools/sync/fetch_results.py --set e2|e2b|e2d|e3|e3x|e4|e5|nh5|base-gpu|main-a|main-b|main-c|main-d|main-e|dens2|rasradius|s1|all`（`main-*` = 主表分批次；`nh5` = 第 2 批补充集（胜者 5 种子 + 复核 5 种子/OTC·WV 邻域/RT 探边，32）；`e2s` = ⓑ 5 种子加深（full/vanilla/CNAS-only 各 25）；`e2c` = E-2c 5 种子（BTE-only/base 各 25 + RT 的 +RAS/+RAE 各 5）；`base-gpu` = Baseline GPU 产物（30 JSON + 2 summary CSV → `results/baseline_m5/`）；`dens2` = 密度补跑 5（#85–89）；`rasradius` = 双半径验证批（#90–109，全模型 linksign 单种子 42，含 `RLF-{k_r}` 标记）；`s1` = S1 真基线 DyGFormer（RT/RB × sign/linksign ×5 种子）；**硬校验数量**，不符即中止）。**服务器访问须用户逐次明确许可。**
 
 ### tools/fig/
 - `gen_p_patch_heatmap.py` — **R2-11 P 敏感性热力图（2026-09-14）**：读 `results/E-3_patch/raw/`（E-3 v3 CN 修复版，linksign、seed42、NN/LF-Best、TE；只读）绘制 **5 数据集 × P{1,3,5,7}** 双面板热力图（AUC 主面板 + $F1_{wt}$ 副面板），运行时与 `E3_patch_summary.md` 做 84/84 交叉校验；**配色与布局对齐仓库既有热力图**（`analysis/param-graph.py`：seaborn `cmap="crest"`、`annot/fmt=".4f"`、显示名映射 WikiRfA/RedditTitle/RedditBody、轴标签 14pt）。产物：`figures/fig_p_patch_heatmap.{png,pdf,csv}`（PNG 300dpi）。用法：`python tools/fig/gen_p_patch_heatmap.py`（仓库根目录运行，不触服务器）。**注：图产物（png/pdf/csv）不入库**（用户 2026-09-14 指示：二进制不便管理）——按需本地重新生成即可（脚本确定性，仅依赖已归档 raw JSON）。
+- `gen_grid_heatmaps.py` — **网格方案 B 热力图（2026-09-25）**：读 `results/grid_new/raw/{task}/{ds}/`（新代际 seed42，25 格 轴 NN{15,40,60,80,100}×LF{1,3,5,10,15}）绘制 **3 ds × 2 任务** 双面板热力图（主指标 | AUC），红框标当前配置点；同款 crest 风格。产物：`figures/fig_grid_{task}_{ds}.{png,pdf}` + `figures/fig_grid_heatmap.csv`。用法：`python tools/fig/gen_grid_heatmaps.py`（仓库根；先 `fetch_results --set gridnew`）。
 
 ## 待议（尚未迁移的既有脚本）
 
