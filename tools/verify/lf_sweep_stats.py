@@ -54,7 +54,7 @@ for ds, nn in CFG.items():
         cap = nn + m - 1 if m > 0 else nn - 1
         cap = max(1, cap)
         ap(f"  -- m={m}（cap={cap}）--")
-        ap(f"     LF | union/侧 | kept/侧 | C存活 | R存活 | 上下文位 | 锚点存活率")
+        ap(f"     LF | union/侧 | kept/侧 | C存活 | R存活 | 上下文位 | 对齐编码位 | 锚点存活率")
         for lf in LF_LIST:
             kw = dict(
                 sample_neighbor_strategy="recent",
@@ -68,11 +68,13 @@ for ds, nn in CFG.items():
             s = get_neighbor_sampler(data=full_data, module_common_neighbor_sampler=True, **kw)
             nb = s.undirected_nodes_neighbor
             un, kp, ck, rk, ctx = [], [], [], [], []
+            enc_list = []
             surv = []
             for j in idxs:
                 u, v = int(test_data.src_node_ids[j]), int(test_data.dst_node_ids[j])
                 t = float(test_data.node_interact_times[j])
                 out = s.history_neighbors_sampling(np.array([u]), np.array([v]), np.array([t]))
+                side_kept = []
                 for side, (node, counterpart) in enumerate(((u, v), (v, u))):
                     ids_all = nb.ids[node]
                     n = int(np.searchsorted(nb.times[node], t))
@@ -95,6 +97,7 @@ for ds, nn in CFG.items():
                     un.append(L)
                     take = min(cap, L)
                     tail_ids = o_ids[L - take :]
+                    side_kept.append(tail_ids)
                     nC_k = int(np.isin(tail_ids, common).sum()) if len(common) else 0
                     nR_k = int((tail_ids == counterpart).sum())
                     kp.append(take)
@@ -103,8 +106,15 @@ for ds, nn in CFG.items():
                     ctx.append(take - nC_k - nR_k)
                     if (nC_all + nR_all) > 0:
                         surv.append((nC_k + nR_k) / (nC_all + nR_all))
+                if len(side_kept) == 2:
+                    s0set, s1set = set(side_kept[0].tolist()), set(side_kept[1].tolist())
+                    enc = sum(1 for x in side_kept[0] if x in s1set) + sum(
+                        1 for x in side_kept[1] if x in s0set
+                    )
+                    enc_list.append(enc)
             ap(
                 f"     {lf:>2} | {np.mean(un):7.1f} | {np.mean(kp):7.1f} | {np.mean(ck):5.2f} | {np.mean(rk):5.2f} | {np.mean(ctx):7.1f} | "
+                f"{np.mean(enc_list) if enc_list else 0:9.2f} | "
                 f"{np.mean(surv) * 100 if surv else float('nan'):5.1f}%（n={len(surv)}）"
             )
     ap(f"  [用时 {time.time() - t0:.1f}s]")
