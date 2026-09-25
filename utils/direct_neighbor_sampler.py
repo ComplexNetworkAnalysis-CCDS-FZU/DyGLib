@@ -127,6 +127,7 @@ class DirectedNeighborSampler:
         module_common_neighbor_sampler: bool = True,
         cnas_tail_fill: bool = False,
         recent_block: int = 0,
+        e2_self_recent: int = 0,
     ):
         """
         Neighbor sampler.
@@ -155,6 +156,11 @@ class DirectedNeighborSampler:
         # 窗口 = 最近 m 个事件（recency 块）∪ CNAS+RAS 锚点窗并集（证据块）；
         # 模型上限 = NN + m（两块各自保底）。m=0 = 零行为变更；结果名带 .RK-{m}。
         self.recent_block = recent_block
+        # E2 自历史锚点（2026-09-25 Paper 立项、用户已批）：
+        # 锚点集合新增 R_self = 每侧最近 k 个历史交互（平铺并入、不扩窗；与 E1c 同机制、参数更小）。
+        # 注意：无共同邻居且无重复的边走全历史回退（已含最近段），E2 净增量落在有锚点的边上。
+        # k=0 = 零行为变更；结果名带 .E2-{k}；模型上限 = NN + k。
+        self.e2_self_recent = e2_self_recent
 
         # list of each node's neighbor ids, edge ids and interaction times, which are sorted by interaction times
         # 无符号时使用的邻居，不考虑邻居符号信息
@@ -400,6 +406,7 @@ class DirectedNeighborSampler:
                 and self.ras_look_forward == self.common_neighbors_look_forward
                 and not self.cnas_tail_fill
                 and self.recent_block == 0
+                and self.e2_self_recent == 0
             ):
                 _nb = self.nodes_neighbors_selector(neighbor_ty)
                 with prof.timer("Sampling: Accel K1"):
@@ -522,7 +529,7 @@ class DirectedNeighborSampler:
                     )
                     dst_idxs.sort()
 
-                if self.cnas_tail_fill or self.recent_block > 0:
+                if self.cnas_tail_fill or self.recent_block > 0 or self.e2_self_recent > 0:
                     if self.cnas_tail_fill:
                         # E1a 空白填补：取消 last-CN 截断——窗口并集尾部从"最后一个锚点"
                         # 延伸至查询前一日（最新段）；模型侧 NN 截断将优先保留最新事件。
@@ -554,7 +561,20 @@ class DirectedNeighborSampler:
                             dst_idxs = np.union1d(
                                 dst_idxs, np.arange(max(0, _n - _m), _n, dtype=np.int64)
                             )
-                    # 护栏断言（strict-past；目标边自身 t=t_query 天然排除；两模式共用）
+                    if self.e2_self_recent > 0:
+                        # E2：把每侧最近 k 个自历史事件并入锚点集合（union1d 去重、升序）
+                        _k = int(self.e2_self_recent)
+                        _n = len(src_node_neighbor_ids)
+                        if _n > 0:
+                            src_idxs = np.union1d(
+                                src_idxs, np.arange(max(0, _n - _k), _n, dtype=np.int64)
+                            )
+                        _n = len(dst_node_neighbor_ids)
+                        if _n > 0:
+                            dst_idxs = np.union1d(
+                                dst_idxs, np.arange(max(0, _n - _k), _n, dtype=np.int64)
+                            )
+                    # 护栏断言（strict-past；目标边自身 t=t_query 天然排除；E1a/E1c/E2 共用）
                     if len(src_idxs) > 0:
                         assert np.all(
                             src_node_neighbor_times[src_idxs] < interact_time
@@ -960,6 +980,7 @@ def get_neighbor_sampler(
     module_common_neighbor_sampler: bool = True,
     cnas_tail_fill: bool = False,
     recent_block: int = 0,
+    e2_self_recent: int = 0,
 ):
     """
     get neighbor sampler
@@ -1018,4 +1039,5 @@ def get_neighbor_sampler(
         module_common_neighbor_sampler=module_common_neighbor_sampler,
         cnas_tail_fill=cnas_tail_fill,
         recent_block=recent_block,
+        e2_self_recent=e2_self_recent,
     )

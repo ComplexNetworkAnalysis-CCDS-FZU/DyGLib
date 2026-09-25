@@ -58,10 +58,12 @@
 - `cnas_last_cn_stats.py` — **CNAS 窗口结构离线统计（纯 CPU）**：验证「CNAS 加密→recent-N」退化的结构性残余——last-CN 截断（~15% 最新事件恒被丢弃）、窗口并集覆盖率（@LF/@20）、no-CN 率。用法：`python tools/verify/cnas_last_cn_stats.py --edges 2000`。
 - `bte_sparsity_stats.py` — **BTE 稀疏性统计（D1/D2，模型侧口径；纯 CPU）**：对测试期真实边逐样本重放 CNAS+RAS 窗口，统计「无证据（全零）样本/位置占比」（linksign：RT 41.0%、RB 40.5%、WV 34.0%、BA 34.1%、OTC 26.7%）并落盘逐样本掩码 `results/bte_sparsity/*.npz`（ratio/all_zero/direct_only/L_eff/sign）供 D3b 分组评估对齐。用法：`python tools/verify/bte_sparsity_stats.py [--edges 2000]`（仓库根）。
 - `test_sampling_guard.py` — **采样护栏单测（2026-09-22）**：4 例合成样本——(i) 仅目标边存在 ⇒ 队列排除目标边；(ii) 历史重复边可入队（R 锚点）但 t=t_query 边排除；(iii) 开启 `--recent-block` 时 strict-past 护栏仍成立；(iv) 无锚点回退=全历史（模型侧 pad 后即「最近 N」语义）。用法：`python tools/verify/test_sampling_guard.py`（仓库根；纯 CPU）。
+- `test_e2_guard.py` — **E2 自历史锚点护栏单测（2026-09-25，af3e 立项要求）**：5 例合成样本——(a) 仅目标边存在+E2 ⇒ 目标边排除；(b) 含历史重复+E2 ⇒ 重复可经最近块入队、目标边排除；(c) 有锚点边 ⇒ E2 最近 k 块保底并入且为超集（不挤窗）；(d) k=0 与基线**逐位一致**（零行为变更）；(e) E2+E1a+E1c 组合护栏。用法：`python tools/verify/test_e2_guard.py`（仓库根；纯 CPU）。
 - `e1a_pair_table.py` — **E1a（`.TF-E` 空白填补）正式批配对判定表（2026-09-23）**：linksign 5×5 + sign 5×1，读 `results/e1a_tailfill/raw{,_base}/`，输出各指标 mean±pstd、Δ、配对 t/p、同向计数与判据核对（Δ≥+0.005 且 p<0.05 且 ≥3/5）。用法：`python tools/verify/e1a_pair_table.py`（需 scipy：torch_venv python）。
 - `e1c_curve_table.py` — **E1c 双块窗口（`.RK-{m}`）m 曲线表（2026-09-23）**：对照 m=0（full seed42）输出每数据集按 m 升序的 auc/f1_wt/f1_mac/ap 及 Δ。用法：`python tools/verify/e1c_curve_table.py`。
 - `_probe_tailfill_smoke.py` / `_probe_recent_block_smoke.py` / `_probe_g1_smoke.py` — **E1a/E1c/G1 接口冒烟**（`_` 前缀=临时验证脚本）：tail-fill 尾部延伸、recent-block 窗口并集、G1 门控「无证据位置置零 + 有证据位置逐位不变（同权重切换）」。用法：`python tools/verify/_probe_*.py`（仓库根；纯 CPU）。
 - `_probe_b2345_smoke.py` — **BTE 四变体冒烟（2026-09-24）**：全默认关 == mapping 直算；B2 公式 1/√k；B3 公式与 init=layer(0,0)；B4 恒等/增益缩放公式；B5 公式（τ=中位数，n=0 置零）；A 族互斥断言；参数量增量（0/F/2/0）。用法：`python tools/verify/_probe_b2345_smoke.py`（纯 CPU）。
+- `_probe_e2_smoke.py` — **E2 自历史锚点真实数据冒烟（2026-09-25）**：WikiVote 40 边——最近 k 块保底包含性（缺失侧数=0）、strict-past/升序、与 baseline 相比序列改变边数>0（实测 37/40）、k=0 逐位一致、上限属性 NN+k=90。用法：`python tools/verify/_probe_e2_smoke.py`（仓库根；纯 CPU）。
 - `bte_margin_table.py` — **BTE 边际三指标面导出（G1 配置；Paper ebcf 轻活 3）**：full（main_tables）/ w-o-BTE（E-2 raw_seeds）/ G1（g1_gate）三批 5 种子配对；Δ(BTE|G1)=G1−w/oBTE；输出 `results/bte_margin_20260924.{txt,csv}`。用法：`python tools/verify/bte_margin_table.py`。
 - `d3b_grouped_table.py` — **D3b/T15 逐样本分组拆解**：读 `results/samples_dump/{ds}/*.npz`（`--dump-samples` 产物）与 `results/bte_sparsity/linksign_*.npz` 掩码；输出 full/noBTE/G1 × {全样本/全零/非全零} × 6 指标 + own-thr/common-thr 双口径 + 三指标面 Δ 汇总 → `results/d3b_grouped_20260924.txt`。用法：`python tools/verify/d3b_grouped_table.py`（需先 `fetch_results.py --set dumps`）。
 - `t13_cns_rows.py` — **CNAS 行绝对值（T13）**：linksign 的 w/o CNAS、CNAS-only 与同批 full（E-2 raw_seeds）配对 + sign w/o CNAS（sign_wocnas）Δ（‰）→ `results/t13_cns_rows.{txt,csv}`。用法：`python tools/verify/t13_cns_rows.py`。
@@ -72,6 +74,8 @@
 - `bte_stage2_verdict.py` — **阶段二 5 种子配对判定**（B2/B4/B5 vs full；含 B2-RB 预登记行）→ `results/bte_stage2_verdict_20260925.txt`。
 - `t16_combo_verdict.py` — **T16 组合判定**（m=80×G1，5 种子 + 固定阈值伴行）→ `results/t16_combo_verdict_20260925.txt`。
 - `t14b_full_keys.py` — **T14b 全键切片**（7 方法 × 2 任务 × 5 ds × 全指标，826 行）→ `results/t14b_full_keys_20260925.{csv,txt}`。
+- `t14b_compact_slice.py` — **T14b 紧凑切片（d1c9 交付）**：linksign{sign_f1,f1_wt,f1_mac} + sign{f1_macro,auc,f1_binary} × 7 方法 × 5 ds（均 5 种子）→ `results/t14b_compact_20260925.{txt,csv}`。用法：`python tools/verify/t14b_compact_slice.py`。
+- `ours_vs_dyg_endtoend.py` — **端到端 ours vs DyG 对照（aaa9 最重要请求）**：linksign{f1_wt,f1_mac,f1_mic,acc,auc,ap} + sign{f1_macro,auc,f1_binary,acc,ap} × 5 ds，5 种子配对 t/p（Δ‰）→ `results/ours_vs_dyg_endtoend_20260925.txt`。用法：`python tools/verify/ours_vs_dyg_endtoend.py`。
 - `d6_config_table.py` — **D6 配置来源底表**（10 行 + 来源批次 + seed42 sha256）→ `results/d6_config_source_table_20260925.{csv,md}`。
 - `t15_gate_stats.py` — **T15 门控分布**（位置级证据占比 + ratio 分位）→ `results/t15_gate_distribution_20260925.txt`。
 - `cnas_status_summary.py` — **CNAS 现状三组数**（2×2/LOO/wocnas/E1a/E1c）→ `results/cnas_status_20260924.txt`。

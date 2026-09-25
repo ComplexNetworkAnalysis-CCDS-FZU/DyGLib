@@ -80,6 +80,7 @@ if __name__ == "__main__":
         module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
         cnas_tail_fill=args.cnas_tail_fill,
         recent_block=args.recent_block,
+        e2_self_recent=args.e2_self_recent,
     )
 
     # initialize validation and test neighbor sampler to retrieve temporal graph
@@ -94,6 +95,7 @@ if __name__ == "__main__":
         module_common_neighbor_sampler=args.module_common_neighbor_aware_sampler,
         cnas_tail_fill=args.cnas_tail_fill,
         recent_block=args.recent_block,
+        e2_self_recent=args.e2_self_recent,
     )
 
     # initialize negative samplers, set seeds for validation and testing so negatives are the same across different runs

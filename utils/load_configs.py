@@ -168,6 +168,13 @@ class SignPredictArgs(BaseModel):
     recent_block: int = Field(
         0, description="E1c 最近块大小 m（0=关；结果名加 .RK-m）"
     )
+    # ---- E2 自历史锚点（2026-09-25 Paper 立项、用户已批）----
+    # 锚点集合新增 R_self = 每侧最近 k 个历史交互（平铺并入；与 E1c 同机制、参数更小）。
+    # 注意：无共同邻居且无重复的边走全历史回退（已含最近段），E2 净增量落在有锚点边上。
+    # k=0 = 零行为变更；k>0 时结果名加 .E2-{k}；模型上限 = NN + k。
+    e2_self_recent: int = Field(
+        0, description="E2 自历史锚点：每侧最近 k 个事件并入锚点集合（0=关；结果名加 .E2-k）"
+    )
     # ---- G1 证据存在性门控（2026-09-22 用户批准；对抗"全零 BTE 有害"假设）----
     # True = 无证据位置（(pos,neg) 双零）的 BTE 分支输出置零；默认 False = 零行为变更；
     # 结果名加 .G1（代际标记）。
@@ -282,6 +289,7 @@ class SignPredictArgs(BaseModel):
 
         # E1c 双块窗口标记（2026-09-22）：m>0 时追加 .RK-{m}（代际标记）
         rk_tag = f".RK-{self.recent_block}" if self.recent_block > 0 else ""
+        e2_tag = f".E2-{self.e2_self_recent}" if self.e2_self_recent > 0 else ""
 
         # G1 证据存在性门控标记（2026-09-22）：启用时追加 .G1（代际标记）
         g1_tag = ".G1" if self.module_bte_evidence_gate else ""
@@ -311,7 +319,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{g1_tag}{b2_tag}{b3_tag}{b4_tag}{b5_tag}{evt_tag}{fx_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{e2_tag}{g1_tag}{b2_tag}{b3_tag}{b4_tag}{b5_tag}{evt_tag}{fx_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )
@@ -322,7 +330,12 @@ class SignPredictArgs(BaseModel):
     @property
     def max_input_sequence_length(self):
         # E1c 双块窗口：模型上限 = NN + m（证据块 N + 最近块 m；m=0 时为原值）
-        return self.num_neighbors + max(0, self.recent_block)
+        # E2（2026-09-25）：上限再叠加 k（每侧最近 k 保底；两块都与 NN 互不挤）
+        return (
+            self.num_neighbors
+            + max(0, self.recent_block)
+            + max(0, self.e2_self_recent)
+        )
 
 def get_sign_prediction_args(is_evaluation=False):
     import pydantic_argparse
