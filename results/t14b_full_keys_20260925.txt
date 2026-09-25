@@ -1,0 +1,24 @@
+T14b 全键切片（7 方法 × 2 任务 × 5 数据集 × 全指标；同协议）
+总行数：826
+[linksign] 指标键（25）：acc, ap, auc, auc_macro, auc_wt, balanced_acc, exist_f1, exist_precision, exist_recall, f1_mac, f1_macro, f1_mic, f1_micro, f1_weighted, f1_wt, mcc, precision_exist, precision_neg, precision_pos, recall_exist, recall_neg, recall_pos, sign_f1, thr_exist, thr_sign
+[sign] 指标键（11）：acc, ap, auc, balanced_acc, f1_binary, f1_macro, f1_weighted, mcc, precision, recall, threshold
+
+覆盖核对（apps）：
+-- linksign
+method        ds 数     指标数
+gcn              5      15
+sgcn             5      15
+sigat            5      15
+tgn              5      15
+semba            5      15
+DyGFormer        5      10
+ours             5      18
+-- sign
+method        ds 数     指标数
+gcn              5      11
+sgcn             5      11
+sigat            5      11
+tgn              5      11
+semba            5      11
+DyGFormer        5       6
+ours             5       6
