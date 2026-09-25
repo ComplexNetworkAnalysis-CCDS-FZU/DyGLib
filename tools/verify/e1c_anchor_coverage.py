@@ -82,6 +82,8 @@ for ds, (nn, k) in CFG.items():
     n_sides_le80 = 0
     r_sides = 0
     r_cover3, r_cover10, r_cover30, r_cover80, r_win_in80 = [], [], [], [], []
+    r_band3, r_band10, r_band30, r_band80 = [], [], [], []
+    c_band3, c_band10, c_band30, c_band80 = [], [], [], []
     r_len = []
     edges_all_r_covered = 0
     edges_with_r = 0
@@ -115,6 +117,15 @@ for ds, (nn, k) in CFG.items():
                 n_sides_le80 += 1
             hist_ids = ids[:n]
             R = np.where(hist_ids == counterpart)[0]
+            # C 锚点（共邻居位置，proxy：id 集合交集；重复感知差异忽略）
+            other = v if side == 0 else u
+            n_other = int(np.searchsorted(nb.times[other], t))
+            hist_other = nb.ids[other][:n_other]
+            if n_other > 0:
+                common_arr = np.intersect1d(np.unique(hist_ids), np.unique(hist_other))
+            else:
+                common_arr = np.array([], dtype=hist_ids.dtype)
+            C = np.where(np.isin(hist_ids, common_arr))[0] if len(common_arr) else np.array([], dtype=int)
             # 分支：m=0 输出长度 == n 视为回退/无差异（块在语义上无操作）
             o0_side = o0[0 if side == 0 else 4][0]
             o80_side = o80[0 if side == 0 else 4][0]
@@ -142,8 +153,13 @@ for ds, (nn, k) in CFG.items():
                 r_cover30.append(tail30.mean())
                 r_cover80.append(tail80.mean())
                 r_win_in80.append(((R - k) >= n - 80).mean())
+                for _mm, _lst in ((3, r_band3), (10, r_band10), (30, r_band30), (80, r_band80)):
+                    _lst.append((((np.asarray(R) >= (n - _mm)) & (np.asarray(R) - k < (n - _mm)))).mean())
                 if not tail80.all():
                     edge_all_covered = False
+            if len(C) > 0:
+                for _mm, _lst in ((3, c_band3), (10, c_band10), (30, c_band30), (80, c_band80)):
+                    _lst.append((((np.asarray(C) >= (n - _mm)) & (np.asarray(C) - k < (n - _mm)))).mean())
             # 有效 R（模型侧截断后）
             cp_u = v if side == 0 else u
             idx_side = 0 if side == 0 else 4
@@ -172,6 +188,8 @@ for ds, (nn, k) in CFG.items():
     ap(f"  R-bearing 侧占比 {r_sides / max(1, n_sides) * 100:.1f}%；R 数/侧 均值 {np.mean(r_len) if r_len else 0:.2f}")
     ap(f"  R 位置覆盖率：@m=3 {np.mean(r_cover3) if r_cover3 else 0:.3f} | @m=10 {np.mean(r_cover10) if r_cover10 else 0:.3f} | @m=30 {np.mean(r_cover30) if r_cover30 else 0:.3f} | @m=80 {np.mean(r_cover80) if r_cover80 else 0:.3f}")
     ap(f"  R 回看窗整窗入块率 @80 {np.mean(r_win_in80) if r_win_in80 else 0:.3f}（乐观口径，未计锚点间截断）")
+    ap(f"  R 近带锚点率（严格分区变体移除对象：块下前文 ≤k 条/锚点）：@3 {np.mean(r_band3) if r_band3 else 0:.3f} | @10 {np.mean(r_band10) if r_band10 else 0:.3f} | @30 {np.mean(r_band30) if r_band30 else 0:.3f} | @80 {np.mean(r_band80) if r_band80 else 0:.3f}")
+    ap(f"  C 近带锚点率：@3 {np.mean(c_band3) if c_band3 else 0:.3f} | @10 {np.mean(c_band10) if c_band10 else 0:.3f} | @30 {np.mean(c_band30) if c_band30 else 0:.3f} | @80 {np.mean(c_band80) if c_band80 else 0:.3f}")
     ap(f"  全 R 覆盖边占比 @80：{edges_all_r_covered}/{edges_with_r} = {edges_all_r_covered / max(1, edges_with_r) * 100:.1f}%")
     ap(f"  块净增量/侧 均值 {np.mean(new_side_vals) if new_side_vals else 0:.2f}（上限 80）；吸收度均值 {np.mean(absorb_sides) if absorb_sides else 0:.3f}；完全吸收侧占比 {fully_absorbed_sides / max(1, n_sides) * 100:.1f}%")
     ap(f"  回退边占比（两侧 m0=全历史）{fallback_edges / len(idxs) * 100:.1f}%")
