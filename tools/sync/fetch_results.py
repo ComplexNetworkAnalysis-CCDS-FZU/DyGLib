@@ -598,13 +598,13 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
-    # ---- BTE 四变体第一段（B2/B3/B4/B5；2026-09-24 起）----
+    # ---- BTE 四变体（阶段一 seed42 + 阶段二 5 种子；2026-09-24 起）----
     "bte1": [
         (
-            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.*." + tag + ".json",
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.*." + tag + ".json",
             "results/bte_stage1/raw/" + task + "/" + ds,
             None,
-            1,
+            5,
         )
         for task, d in (("linksign", "SignLinkPrediction"), ("sign", "LinkSign"))
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
