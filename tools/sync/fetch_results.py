@@ -635,6 +635,16 @@ SETS = {
             5,
         ),
     ],
+    # ---- 旧网格备份（网格方案 B 重置前的 3 ds linksign 旧件；混合代，仅差异页用）----
+    "gridbak": [
+        (
+            "results/grid_oldgen_backup/linksign/" + ds + "/*.json",
+            "results/grid_oldgen_backup/linksign/" + ds,
+            None,
+            n,
+        )
+        for ds, n in (("RedditHyperlinkTitle", 34), ("RedditHyperlinkBody", 7), ("WikiVote", 7))
+    ],
     # ---- BTE 稀疏/极性掩码（重算含 p_sum/n_sum；2026-09-25）----
     "sparsity": [
         (
