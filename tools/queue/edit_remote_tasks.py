@@ -9,6 +9,8 @@
     python tools/queue/edit_remote_tasks.py --show 77,84
     python tools/queue/edit_remote_tasks.py --insert-after 82 --lines-file tools/queue/insert_s1_rerun.txt
     python tools/queue/edit_remote_tasks.py --replace 329 --lines-file tools/queue/line_wv_full.txt
+    python tools/queue/edit_remote_tasks.py --replace-range 432,617 --lines-file tools/queue/reorder_tail.txt
+    python tools/queue/edit_remote_tasks.py --dump 432,617 --out /tmp/tail.txt
 """
 from __future__ import annotations
 
@@ -50,12 +52,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--insert-after", type=int, default=0, help="在第 N 行后插入（1-based）")
     ap.add_argument("--replace", type=int, default=0, help="替换第 N 行（1-based）；旧行删除，新行为 lines-file 内容")
+    ap.add_argument("--replace-range", help="区间替换，如 432,617：把 A..B 行（含）替换为 lines-file 内容")
+    ap.add_argument("--dump", help="区间导出，如 432,617（配 --out 写入本地文件）")
+    ap.add_argument("--out", help="--dump 的本地输出文件")
     ap.add_argument("--lines-file", help="要插入/替换的行（本地文件，逐行）")
     ap.add_argument("--show", help="如 77,84 —— 打印 [a,b] 行区间")
     args = ap.parse_args()
 
     lines = read_tasks()
     print(f"[remote] tasks.txt 当前 {len(lines)} 行")
+
+    if args.dump:
+        a, b = (int(x) for x in args.dump.split(","))
+        if not (1 <= a <= b <= len(lines)):
+            sys.exit(f"[ERR] dump 区间 {a},{b} 超出 1..{len(lines)}")
+        if not args.out:
+            sys.exit("需要 --out")
+        with open(args.out, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines[a - 1 : b]) + "\n")
+        print(f"[ok] 已导出 {b - a + 1} 行 → {args.out}")
+        return
 
     if args.show:
         a, b = (int(x) for x in args.show.split(","))
@@ -73,6 +89,19 @@ def main():
             new_lines = [l for l in f.read().splitlines() if l.strip()]
         merged = lines[: n - 1] + new_lines + lines[n:]
         print(f"[plan] 替换第 {n} 行 → {len(new_lines)} 行（总 {len(lines)} → {len(merged)}）")
+    elif args.replace_range:
+        if not args.lines_file:
+            sys.exit("需要 --lines-file")
+        a, b = (int(x) for x in args.replace_range.split(","))
+        if not (1 <= a <= b <= len(lines)):
+            sys.exit(f"[ERR] 替换区间 {a},{b} 超出 1..{len(lines)}")
+        with open(args.lines_file, encoding="utf-8") as f:
+            new_lines = [l for l in f.read().splitlines() if l.strip()]
+        merged = lines[: a - 1] + new_lines + lines[b:]
+        print(
+            f"[plan] 替换区间 {a}..{b}（{b - a + 1} 行）→ {len(new_lines)} 行"
+            f"（总 {len(lines)} → {len(merged)}）"
+        )
     elif args.insert_after and args.lines_file:
         with open(args.lines_file, encoding="utf-8") as f:
             new_lines = [l for l in f.read().splitlines() if l.strip()]
@@ -99,9 +128,16 @@ def main():
     if actual == merged:
         delta = len(merged) - len(lines)
         print(f"[ok] 回读校验通过：{len(actual)} 行（旧 {len(lines)}，Δ{delta:+d}）")
-        start = n - 1 if args.replace else n
-        for i in range(start, min(start + len(new_lines), len(actual))):
-            print(f"{i + 1}: {actual[i]}")
+        if args.replace_range:
+            a, b = (int(x) for x in args.replace_range.split(","))
+            end = a - 1 + len(new_lines)
+            show_idx = list(range(a - 1, min(a + 2, end))) + list(range(max(a + 2, end - 3), end))
+            for i in sorted(set(show_idx)):
+                print(f"{i + 1}: {actual[i]}")
+        else:
+            start = n - 1 if args.replace else n
+            for i in range(start, min(start + len(new_lines), len(actual))):
+                print(f"{i + 1}: {actual[i]}")
     else:
         first = next(
             (i for i, (a, b) in enumerate(zip(actual, merged)) if a != b),
