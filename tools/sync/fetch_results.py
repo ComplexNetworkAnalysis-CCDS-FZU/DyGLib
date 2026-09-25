@@ -635,6 +635,17 @@ SETS = {
             5,
         ),
     ],
+    # ---- 新网格（方案 B：3 ds；seed42；2026-09-25 新代际）----
+    "gridnew": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-[0-9]*.LF-[0-9]*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/grid_new/raw/" + task + "/" + ds,
+            None,
+            42,
+        )
+        for task, d in (("linksign", "SignLinkPrediction"), ("sign", "LinkSign"))
+        for ds in ["RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote"]
+    ],
     # ---- 旧网格备份（网格方案 B 重置前的 3 ds linksign 旧件；混合代，仅差异页用）----
     "gridbak": [
         (
