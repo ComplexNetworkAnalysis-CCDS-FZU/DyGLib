@@ -666,6 +666,37 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- LF 单变量扫描（LF30；固定 NN=best；seed42；2026-09-26 用户验证批）----
+    "lf30": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-"
+            + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "results/lf30/raw/" + task + "/" + ds,
+            None,
+            1,
+        )
+        for (task, d, ds, nn) in (
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkTitle", 60),
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkBody", 80),
+            ("linksign", "SignLinkPrediction", "WikiVote", 15),
+            ("sign", "LinkSign", "RedditHyperlinkTitle", 100),
+            ("sign", "LinkSign", "RedditHyperlinkBody", 60),
+            ("sign", "LinkSign", "WikiVote", 40),
+        )
+        for lf in (1, 3, 5, 10, 15)
+    ],
+    # ---- E2 段一（k∈{3,10,30}；seed42；2026-09-26 起；配 --allow-partial 做进度快照）----
+    "e2run": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-*.LF-*."
+            "RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.E2-*.json",
+            "results/e2_stage1/raw/" + task + "/" + ds,
+            None,
+            3,
+        )
+        for task, d in (("linksign", "SignLinkPrediction"), ("sign", "LinkSign"))
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ],
 }
 SETS["main-all"] = SETS["main-a"] + SETS["main-b"] + SETS["main-c"] + SETS["main-d"] + SETS["main-e"]
 SETS["all"] = SETS["e2"] + SETS["e5"]
