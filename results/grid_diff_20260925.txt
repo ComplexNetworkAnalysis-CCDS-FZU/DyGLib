@@ -1,0 +1,8 @@
+新旧网格差异（新=09-25 新代际；旧=sign_param 完整 / linksign=gridbak 混合代；共同 25 格）
+
+===== linksign/RedditHyperlinkTitle：无共同格（new 0 / old 16）
+===== linksign/RedditHyperlinkBody：无共同格（new 0 / old 1）
+===== linksign/WikiVote：无共同格（new 0 / old 1）
+===== sign/RedditHyperlinkTitle：无共同格（new 0 / old 25）
+===== sign/RedditHyperlinkBody：无共同格（new 0 / old 25）
+===== sign/WikiVote：无共同格（new 0 / old 25）

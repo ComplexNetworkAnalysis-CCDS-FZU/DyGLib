@@ -1,0 +1,8 @@
+新网格（方案 B·新代际）审计：当前点 vs 最优点（单种子 seed42；差值为定位性、无显著性）
+
+===== linksign/RedditHyperlinkTitle: （暂无数据）
+===== linksign/RedditHyperlinkBody: （暂无数据）
+===== linksign/WikiVote: （暂无数据）
+===== sign/RedditHyperlinkTitle: （暂无数据）
+===== sign/RedditHyperlinkBody: （暂无数据）
+===== sign/WikiVote: （暂无数据）
