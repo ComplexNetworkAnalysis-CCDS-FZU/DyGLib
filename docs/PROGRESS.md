@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-09-26 晚间（续91·E2 段一 12 行失败修复 + 网格 LF30 重复行裁剪【用户认可】+ Queue MCP 暂缓）**：
+  - **发现**：E2 段一 30 行中 **12 行失败**（全部 BA/OTC × 2 任务 × k{3,10,30}；09:48–13:12 daemon 记 WARN `failed to stay alive`，5 秒内即崩）。根因：`FileNotFoundError: processed_data/BitcoinAlpha|BitcoinOTC/ml_*_tail20000.csv`——**BA/OTC 在服务器从未有 tail20000 数据（规范配置 = 全量，不带 `--tail-num`）**；生成 `e2_stage1_20260925.txt` 时误给 BA/OTC 行统一加了 `--tail-num 20000`（WV/RT/RB 行正确，18 行全部成功）。
+  - **修复**：12 行去掉 `--tail-num 20000` 后作为**补行插队**（指针后、网格前，保持「E2 段一收尾在网格前」排程语义；预计 ~3–6h 完成）；BA/OTC Full 对照件（无 tail 主运行）已核实在库（linksign BA/OTC 09-20/09-24；sign BA/OTC 09-21）。
+  - **网格裁剪（用户“1 认可”）**：删除网格区间中 LF30 重复格 **25 行**（6 块 best-NN 组各 LF-1/3/5/10/15）；LF30 文件即网格格，矩阵完整性不受影响；**已跑重复 5 格**（linksign RT NN-60 组，13:xx–16:xx 已重跑，浪费 ~1.5h，无法回收）。
+  - **单次区间替换**（`edit_remote_tasks.py` 备份 + 回读校验通过）：tasks.txt **647→634 行**（+12−25）；已派发区 1–518 未动；第 519 非空行 = 修正版补行①（linksign BA E2-3）；尾部 B5×5 + signRT 原样（629–634）；daemon 已识别 `task#519 pending, no free GPU -> waiting`。
+  - **Queue MCP（用户“2 暂缓”）**：`docs/QUEUE_MCP_PLAN.md` Q1 拍板——**暂缓**（只读切片亦不先做，统一 9-30 后）。
+  - **教训（已入 repo memory）**：① 生成队列行时 flag 集必须从**同任务同数据集**的历史成功行复制，勿全局统一加 `--tail-num`（BA/OTC=全量）；② 脚本名↔任务映射易混：`train_sign_link_3class_prediction.py`→SignLinkPrediction(linksign)、`train_link_sign_prediction.py`→LinkSign(sign)；③ 取数/分析一律用精确全名模式（宽通配命中旧变体名会混代际）。
+  - **影响与 ETA**：E2 段一 30/30 预计 **9-27 上午**出齐 → 门禁②判定 9-27 上午（交付信含网格 ETA 修正）；网格全量顺延 ~3–6h（≈9-28 晚—9-29 早）。
+
 - **2026-09-26 上午—中午（续90·sync #2：服务器恢复 + LF30 30/30 完成 + B4 判定刷新 + E2 段一启动）**：
   - 网络恢复（10:07 复查可达；队列指针 468）。服务器侧训练/daemon 一切照常。
   - **LF30 30/30 完成**（正规名文件时间 03:42–09:06，逐格 mtime 核验 30/30 均今日新件）。⚠️ 排查澄清：昨日探针「8 格旧文件」系通配符命中旧代际**变体名**文件（`RAS-D`、无 `.TE`、`RLF-*`、`P3/P5/P7` 等历史命名）——**无混合代际问题**。教训：取数/分析一律用**精确全名模式**。
