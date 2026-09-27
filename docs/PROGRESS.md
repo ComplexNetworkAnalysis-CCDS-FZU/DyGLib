@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-27 上午（续92·门禁②：E2 段一方向判定【不通过→按预登记跳过段二】+ 网格过半）**：
+  - E2 段一 **30/30 出齐**（补行 12 件 9-26 22:20–9-27 01:16 产出；今晨核验）。对照 = 同代际 Full（linksign: `e1a_tailfill/raw_base` seed42；sign: `sign_valthr/raw` seed42；NN/LF 逐项对齐；绝对值抽查通过）。
+  - **判定（预登记 af3e §四）**：① 靶心 RB linksign f1_wt：k3/k10/k30 = **−4.3/−12.6/−3.9‰ 全负 ❌**；② 一般判据（Δ≥+5‰ 且 ≥3/5 同向）：linksign k10=3/5 正但仅 2/5 达 +5‰；sign 正 ≤2/5、无 ≥+5‰ ❌ ⇒ **方向零/负 → 跳过段二（50 runs）、直接进 N 支**；E2 线终止，不再占服务器。
+  - 全指标亮色（供附录）：linksign OTC +13.6/+9.2/+9.6‰（f1_mac +26~+38‰）；WV +5.2~+6.3‰；RT 不稳、RB/BA 负或平；与 B 系列同型（机制异质、无普适增益；RB 未获益）。
+  - 工具：新增 `tools/verify/e2_stage1_verdict.py` → `results/e2_stage1_verdict_20260927.txt`；交付单已发 Paper（`code-e2stage1-verdict-20260927`）。
+  - 网格进度：指针 561（09:36）；昨夜 21:30–今晨产出 ~33 格（累计 ~60/125）→ **9-28 午前—中午出齐**（门禁③ 9-29 提前满足）；B5（5）+ sign-RT（1）9-28 午后。
+
 - **2026-09-26 晚间（续91·E2 段一 12 行失败修复 + 网格 LF30 重复行裁剪【用户认可】+ Queue MCP 暂缓）**：
   - **发现**：E2 段一 30 行中 **12 行失败**（全部 BA/OTC × 2 任务 × k{3,10,30}；09:48–13:12 daemon 记 WARN `failed to stay alive`，5 秒内即崩）。根因：`FileNotFoundError: processed_data/BitcoinAlpha|BitcoinOTC/ml_*_tail20000.csv`——**BA/OTC 在服务器从未有 tail20000 数据（规范配置 = 全量，不带 `--tail-num`）**；生成 `e2_stage1_20260925.txt` 时误给 BA/OTC 行统一加了 `--tail-num 20000`（WV/RT/RB 行正确，18 行全部成功）。
   - **修复**：12 行去掉 `--tail-num 20000` 后作为**补行插队**（指针后、网格前，保持「E2 段一收尾在网格前」排程语义；预计 ~3–6h 完成）；BA/OTC Full 对照件（无 tail 主运行）已核实在库（linksign BA/OTC 09-20/09-24；sign BA/OTC 09-21）。
