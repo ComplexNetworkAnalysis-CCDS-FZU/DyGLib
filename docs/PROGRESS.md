@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-27 上午（续93·对账结清【DyG sign RT/RB 双代际冲突】+ N 支三件接收 + 基线 f1_mac 切片交付 + 网格过半）**：
+  - Paper 判 `300e`：E2 照签（跳过段二 ✓）；**N 支三件（9-28 前）**：① 网格+配置审计页；② 阶段二全量表+落差汇总；③ 5 公共基线的 linksign `f1_mac` 并列列。
+  - **对账结清**（Paper 必须结清项，已回执 `f57e`）：冲突根源 = **val-thr 双代际**——`raw/sign`（09-16 默认阈值批）：RT **.8180** / RB **.8571**（539b 误取，**作废**）；`raw_valthr/sign`（09-17 刷新正典）：RT **.9400** / RB **.9644**（与 Paper 一致）。逐种子表（f1_bin/auc/acc）+ sha256（本地=服务器、mtime 均 09-17、未被覆盖）+ 配对 t（RT −2.26、RB −1.04）全部交付；结论：**以 raw_valthr 为准，F1 家族为平**。根因：val-thr 只改判决阈值（两版 auc 逐位相同）。⚠️ 同陷阱提示：`baseline_compare_20260923.txt` 中 DyG sign RT/RB 的 f1_macro 亦为旧档（RT .5494 vs valthr .4707）。
+  - **新工具**：`tools/verify/baseline5_f1mac_slice.py` → `results/baseline5_f1mac_tables_20260927.{txt,csv}`（gcn/sgcn/sigat/tgn/semba × 2 任务 × 5 ds 的 f1_mac；附 ours/DyG 对照行；semba RT linksign n=4 标注）。已随 f57e 贴表交付。
+  - 网格进度：~60/125（09:42 指针 561，正在 linksign WV 块 NN-80；剩 ~65 行）→ **9-28 晨出齐**；B5（5）+ sign-RT（1）9-28 午后。
+
 - **2026-09-27 上午（续92·门禁②：E2 段一方向判定【不通过→按预登记跳过段二】+ 网格过半）**：
   - E2 段一 **30/30 出齐**（补行 12 件 9-26 22:20–9-27 01:16 产出；今晨核验）。对照 = 同代际 Full（linksign: `e1a_tailfill/raw_base` seed42；sign: `sign_valthr/raw` seed42；NN/LF 逐项对齐；绝对值抽查通过）。
   - **判定（预登记 af3e §四）**：① 靶心 RB linksign f1_wt：k3/k10/k30 = **−4.3/−12.6/−3.9‰ 全负 ❌**；② 一般判据（Δ≥+5‰ 且 ≥3/5 同向）：linksign k10=3/5 正但仅 2/5 达 +5‰；sign 正 ≤2/5、无 ≥+5‰ ❌ ⇒ **方向零/负 → 跳过段二（50 runs）、直接进 N 支**；E2 线终止，不再占服务器。
