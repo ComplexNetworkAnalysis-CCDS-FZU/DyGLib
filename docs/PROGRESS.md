@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-09-27 上午—中午（续94·三问询处置：补充基线取数+F1 退化发现 / DySDGNN 四项初查+硬对照 / 波二直接入队 30 行）**：
+  - Paper 三单（`3e58`/`2436`/`0521`）处置：
+    - **取数**：DySDGNN/DynamiSE 的 F1_bin 5 种子表已出（acc 缺键，转 Baseline）；⚠️ **F1_bin 退化发现**：全部零方差且 = test 窗多数类 F1 **逐位相等**（BA .9417=.9417、OTC .9668=.9668）⇒ 报告值为“全预测为正”的退化值，无信息量（附表需标）。
+    - **四项核查初查**：① npy 首维未用（csv-only）⇒ OTC 0.9119 非 L1 泄漏；② 快照内转导已声明（t′>t + 目标边自身入图；对 CTDG 不可复制）；③ 切分 = 快照等宽窗 70/15/15（≠ 主表 quantile 切分）；④ OTC 逐种子 AUC 已列。**附加硬对照 pair-copy**（覆盖 3.3–5%、AUC≈.50）⇒ 无平凡复制捷径。
+    - **波二入队**：DyG-Mamba #635–649 + ScaDyG #650–664（tasks.txt 664 行；≈9-28 午后自动开跑）；前置已核（仓 c158743、dygmamba/scadyg env、数据/分片备齐、pure mamba shim）。
+  - 回执：Paper `b786`（交付）、Baseline `d677`（转单：四项定稿 + 对照重跑方案 + 波二修正窗口）。⚠️ 本轮 **MCP 被禁用** → 改用 **mailbox CLI**（`python -m mailbox.cli send`，经 `tools/verify/_cli_send.py` 包装）——契约允许的正式通道 ✓。
+
 - **2026-09-27 上午（续93·对账结清【DyG sign RT/RB 双代际冲突】+ N 支三件接收 + 基线 f1_mac 切片交付 + 网格过半）**：
   - Paper 判 `300e`：E2 照签（跳过段二 ✓）；**N 支三件（9-28 前）**：① 网格+配置审计页；② 阶段二全量表+落差汇总；③ 5 公共基线的 linksign `f1_mac` 并列列。
   - **对账结清**（Paper 必须结清项，已回执 `f57e`）：冲突根源 = **val-thr 双代际**——`raw/sign`（09-16 默认阈值批）：RT **.8180** / RB **.8571**（539b 误取，**作废**）；`raw_valthr/sign`（09-17 刷新正典）：RT **.9400** / RB **.9644**（与 Paper 一致）。逐种子表（f1_bin/auc/acc）+ sha256（本地=服务器、mtime 均 09-17、未被覆盖）+ 配对 t（RT −2.26、RB −1.04）全部交付；结论：**以 raw_valthr 为准，F1 家族为平**。根因：val-thr 只改判决阈值（两版 auc 逐位相同）。⚠️ 同陷阱提示：`baseline_compare_20260923.txt` 中 DyG sign RT/RB 的 f1_macro 亦为旧档（RT .5494 vs valthr .4707）。
