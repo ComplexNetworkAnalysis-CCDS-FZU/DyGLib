@@ -636,15 +636,19 @@ SETS = {
         ),
     ],
     # ---- 新网格（方案 B：3 ds；seed42；2026-09-25 新代际）----
+    # 2026-09-27 收紧：逐格枚举精确名（原 `NN-[0-9]*.LF-[0-9]*` 通配曾误拉旧代际/旧轴文件，见 PROGRESS 续96）
     "gridnew": [
         (
-            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-[0-9]*.LF-[0-9]*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
+            "saved_results/" + d + "/SignDyGFormer/" + ds + "/SignDyGFormer_seed42.NN-"
+            + str(nn) + ".LF-" + str(lf) + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json",
             "results/grid_new/raw/" + task + "/" + ds,
             None,
-            42,
+            1,
         )
         for task, d in (("linksign", "SignLinkPrediction"), ("sign", "LinkSign"))
         for ds in ["RedditHyperlinkTitle", "RedditHyperlinkBody", "WikiVote"]
+        for nn in [15, 40, 60, 80, 100]
+        for lf in [1, 3, 5, 10, 15]
     ],
     # ---- 旧网格备份（网格方案 B 重置前的 3 ds linksign 旧件；混合代，仅差异页用）----
     "gridbak": [
