@@ -20,3 +20,9 @@
 - 原始 JSON 命名即配置指纹：`{Model}_seed{N}.NN-{n}.LF-{l}.RAS-{E/D}.RASE-{E/D}.BTE-{E/D}.CNAS-{E/D}.P{p}.{TE/TD}.json`
 - 每份汇总表须含：数据集/任务/配置位/设备/seed，附一句结论。
 - 归档同步：`python tools/sync/fetch_results.py --set e2|e3|e4|e5|main-a|all`（只读服务器；sha256 清单见 `_sync_raw_log.csv`）；关键指标快照：`python tools/verify/snapshot_results.py`。
+
+## 代际归档声明（2026-09-27 对账结清；Paper 9932 §三.②）
+
+- `s1_refresh/raw/` = **默认阈值旧代际**（DyG sign RT/RB 的 f1 族，如 RT f1_bin 均值 .8180 / f1_macro .5494）——**勿引用**；
+- `s1_refresh/raw_valthr/` = **正典**（val-thr 协议；RT f1_bin .9400 / f1_macro .4707；RB .9644），与 09-17 交付一致；
+- 同一数据集两套值并存时，一律以 **val-thr 代际**为准；引用前核对 mtime 与 sha256（见 `_sync_raw_log.csv`）。
