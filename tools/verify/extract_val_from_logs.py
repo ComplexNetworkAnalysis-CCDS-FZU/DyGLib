@@ -47,7 +47,7 @@ DEFAULT_SPECS = [
 
 TASK_DIR = {"linksign": "SignLinkPrediction", "sign": "LinkSign"}
 
-VAL_RE = re.compile(r"- root - INFO - validate ([a-z_0-9]+), ([-\d.eE]+)$")
+VAL_RE = re.compile(r"- root - INFO - validate ([a-z_0-9]+), ([\d.eE+-]+)$")
 SAVE_RE = re.compile(r"- root - INFO - save model (.+\.pkl)")
 
 # 已观察到的 val 指标名（防把别的行误当指标）
@@ -86,7 +86,7 @@ def parse_log(path: str) -> dict:
     with open(path, "r", encoding="utf-8", errors="ignore") as fh:
         for line in fh:
             m = VAL_RE.search(line)
-            if m and m.group(1) in KNOWN_METRICS:
+            if m:
                 cur[m.group(1)] = float(m.group(2))
                 last_time = line[:19]
                 continue
