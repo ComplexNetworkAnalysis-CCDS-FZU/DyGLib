@@ -681,6 +681,24 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- 网格候选点 5 种子确认批（2026-09-29；`.G2` 代际标记；5 点 × 5 seeds）----
+    "gconfirm": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds
+            + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf)
+            + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G2.json",
+            "results/grid_confirm/raw/" + task + "/" + ds,
+            None,
+            5,
+        )
+        for (task, d, ds, nn, lf) in (
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkTitle", 15, 3),
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkBody", 60, 1),
+            ("sign", "LinkSign", "RedditHyperlinkTitle", 60, 3),
+            ("sign", "LinkSign", "RedditHyperlinkBody", 40, 1),
+            ("sign", "LinkSign", "WikiVote", 15, 10),
+        )
+    ],
     # ---- sign-RT noBTE 5 种子（RT；seed42 旧件 + 123/456/789/1024 新件）----
     "signrt5": [
         (

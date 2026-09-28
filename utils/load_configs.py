@@ -198,6 +198,13 @@ class SignPredictArgs(BaseModel):
         False, description="B5 连续门控（g=min(1,sqrt(n/τ))，τ=批内中位数；无参；结果名加 .B5）"
     )
 
+    # ---- 网格候选点 5 种子确认批代际标记（2026-09-29 Paper a43d，用户已批"批"）----
+    # 仅命名用途（零行为变更）：候选点确认批（种子/配置与网格屏幕批不同）结果名加 .G2，
+    # 与网格屏幕批（seed42）、Full 基线在文件名上区分，防跨代覆盖/混算。
+    grid_confirm_g2: bool = Field(
+        False, description="网格候选点确认批代际标记（仅命名；结果名加 .G2）"
+    )
+
     # ---- E-4: 时间衰减证据构造（lambda 为 None 表示不启用）----
     time_decay_lambda: Optional[float] = Field(
         None, description="时间衰减系数 λ；不提供(None)则不启用时间衰减"
@@ -298,6 +305,8 @@ class SignPredictArgs(BaseModel):
         b3_tag = ".B3" if self.module_bte_b3_default_marker else ""
         b4_tag = ".B4" if self.module_bte_b4_channel_gate else ""
         b5_tag = ".B5" if self.module_bte_b5_continuous_gate else ""
+        # 网格候选点确认批标记（2026-09-29）：仅命名，与屏幕批/基线区分
+        g2_tag = ".G2" if self.grid_confirm_g2 else ""
 
         # 固定阈值 / eval-only 标记（2026-09-23 用户批准；防覆盖正常训练结果）
         evt_tag = ".EVT" if self.eval_only else ""
@@ -319,7 +328,7 @@ class SignPredictArgs(BaseModel):
             f".RAS-{bool2str(enable_RAS)}.RASE-{bool2str(enable_RASE)}"
             f".BTE-{bool2str(enable_BTE)}.CNAS-{bool2str(enable_CNAS)}"
             f".P{self.patch_size}"
-            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{e2_tag}{g1_tag}{b2_tag}{b3_tag}{b4_tag}{b5_tag}{evt_tag}{fx_tag}"
+            f".{td_tag}{noise_tag}{cne_tag}{tf_tag}{rk_tag}{e2_tag}{g1_tag}{b2_tag}{b3_tag}{b4_tag}{b5_tag}{g2_tag}{evt_tag}{fx_tag}"
             # BTE 门控标记（预留接口，默认禁用；启用时避免与无门控结果互相覆盖）
             + (".GATE" if self.module_balance_theory_gate else "")
         )
