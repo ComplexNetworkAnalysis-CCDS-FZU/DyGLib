@@ -10,10 +10,16 @@
 解析规则：跟踪当前 validate 块；每次遇 `save model ...pkl`（排除 hyper param）时快照
 当前块；取最后一次快照 = 最终被测试的 checkpoint 的 val 指标。同时记录"save 时刻"。
 
+匹配注意（2026-09-29 教训）：同名 ckpt 历史多次出现（跨任务/跨批），必须同时校验
+① 保存路径含 `./saved_models/{SignLinkPrediction|LinkSign}/`（任务过滤）；
+② 文件名以 `<ckpt_base>.pkl` **精确结尾**（防 `.TF-E.RK-*` / `.E2-*` 后缀件误配）。
+
 用法（服务器仓库根；仅 stdlib）：
-  python3 tools/verify/extract_val_from_logs.py                # 内置 Gate-1 十点（网格 seed42）
-  python3 tools/verify/extract_val_from_logs.py --spec-file F  # 每行一条 spec: task,ds,nn,lf,seed[,suffix]
-输出：TSV（制表符分隔），每 spec 一行。
+  python3 tools/verify/extract_val_from_logs.py                     # 内置 Gate-1 十点
+  python3 tools/verify/extract_val_from_logs.py --spec-file F       # 每行: task,ds,nn,lf,seed[,note]
+  python3 tools/verify/extract_val_from_logs.py --spec-file F --window "09-25,09-27"
+  --newest-only：每 spec 只输出最新匹配。
+输出：每匹配日志一行 JSON（含全部 val 指标）。
 """
 from __future__ import annotations
 
@@ -51,22 +57,22 @@ KNOWN_METRICS = {
 }
 
 
-def find_log(ds: str, seed: int, ckpt_base: str) -> str | None:
-    """在 seed 目录下找含该 ckpt 名字的日志（多条取最新 mtime）。"""
+def all_matches(task: str, ds: str, seed: int, ckpt_base: str) -> list:
+    """找所有含该 ckpt 精确保存行的日志（任务路径过滤：SignLinkPrediction/LinkSign）。"""
     d = f"logs/SignDyGFormer/{ds}/SignDyGFormer_seed{seed}"
-    cands = []
-    for f in glob.glob(os.path.join(d, "*.log")):
+    tdir = TASK_DIR[task]
+    out = []
+    for f in sorted(glob.glob(os.path.join(d, "*.log"))):
         try:
             with open(f, "r", encoding="utf-8", errors="ignore") as fh:
                 for line in fh:
-                    if "save model" in line and ckpt_base in line and line.rstrip().endswith(".pkl"):
-                        cands.append(f)
+                    m = SAVE_RE.search(line)
+                    if m and f"/saved_models/{tdir}/" in line and m.group(1).endswith(f"/{ckpt_base}.pkl"):
+                        out.append(f)
                         break
         except OSError:
             continue
-    if not cands:
-        return None
-    return max(cands, key=os.path.getmtime)
+    return out
 
 
 def parse_log(path: str) -> dict:
@@ -92,49 +98,55 @@ def parse_log(path: str) -> dict:
     return {"snap": snap, "snap_time": snap_time, "n_saves": n_blocks, "last_time": last_time}
 
 
+def in_window(path: str, window: str) -> bool:
+    if not window:
+        return True
+    lo, hi = [w.strip() for w in window.split(",")]
+    import time
+    t = time.strftime("%m-%d %H:%M", time.localtime(os.path.getmtime(path)))
+    return lo <= t <= hi
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--spec-file", default="", help="每行: task,ds,nn,lf,seed[,suffix]")
-    ap.add_argument("--suffix", default="", help="附加后缀（如 .G2；默认空）")
+    ap.add_argument("--spec-file", default="", help="每行: task,ds,nn,lf,seed[,note]")
+    ap.add_argument("--suffix", default="", help="名称后缀（如 .G2；默认空）")
+    ap.add_argument("--window", default="", help='mtime 窗口过滤，如 "09-25 00:00,09-27 00:00"')
+    ap.add_argument("--newest-only", action="store_true", help="每 spec 只输出最新一条匹配")
     args = ap.parse_args()
 
-    specs = []
     if args.spec_file:
+        specs = []
         with open(args.spec_file, encoding="utf-8") as fh:
             for line in fh:
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
                 parts = [p.strip() for p in line.split(",")]
-                task, ds, nn, lf, seed = parts[0], parts[1], int(parts[2]), int(parts[3]), int(parts[4])
                 note = parts[5] if len(parts) > 5 else ""
-                specs.append((task, ds, nn, lf, seed, note))
+                specs.append((parts[0], parts[1], int(parts[2]), int(parts[3]), int(parts[4]), note))
     else:
         specs = DEFAULT_SPECS
 
-    cols = ["task", "ds", "nn", "lf", "seed", "note", "log_mtime", "save_time",
-            "n_saves", "f1_wt", "f1_mac", "auc", "ap", "sign_f1", "exist_f1",
-            "f1_mic", "thr_sign", "thr_exist", "log_path"]
-    print("\t".join(cols))
     for (task, ds, nn, lf, seed, note) in specs:
         base = (f"SignDyGFormer_seed{seed}.NN-{nn}.LF-{lf}"
                 f".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE{args.suffix}")
-        ckpt_base = base
-        logf = find_log(ds, seed, ckpt_base)
-        if logf is None:
-            print("\t".join([task, ds, str(nn), str(lf), str(seed), note,
-                             "LOG_NOT_FOUND", "", "", "", "", "", "", "", "", "", "", base]))
+        matches = [f for f in all_matches(task, ds, seed, base) if in_window(f, args.window)]
+        matches = sorted(matches, key=os.path.getmtime)
+        if args.newest_only:
+            matches = matches[-1:]
+        if not matches:
+            print(json.dumps({"task": task, "ds": ds, "nn": nn, "lf": lf, "seed": seed,
+                              "note": note, "base": base, "status": "NO_MATCH"}, ensure_ascii=False))
             continue
-        r = parse_log(logf)
-        s = r["snap"]
-        g = lambda k: (f"{s[k]:.4f}" if k in s else "")  # noqa: E731
-        print("\t".join([
-            task, ds, str(nn), str(lf), str(seed), note,
-            f"{os.path.getmtime(logf):.0f}", r["snap_time"], str(r["n_saves"]),
-            g("f1_wt"), g("f1_mac"), g("auc"), g("ap"), g("sign_f1"), g("exist_f1"),
-            g("f1_mic"), g("thr_sign"), g("thr_exist"), logf,
-        ]))
-    print("", file=sys.stderr)
+        for f in matches:
+            r = parse_log(f)
+            print(json.dumps({
+                "task": task, "ds": ds, "nn": nn, "lf": lf, "seed": seed, "note": note,
+                "log": f, "log_mtime": round(os.path.getmtime(f)),
+                "n_saves": r["n_saves"], "save_time": r["snap_time"],
+                "metrics": {k: round(v, 4) for k, v in sorted(r["snap"].items())},
+            }, ensure_ascii=False))
 
 
 if __name__ == "__main__":
