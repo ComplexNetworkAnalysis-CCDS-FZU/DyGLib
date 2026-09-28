@@ -670,6 +670,41 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- E1a×E1c 组合批（2026-09-27 入队；`...P1.TE.TF-E.RK-{m}`；5 ds × 5 seeds）----
+    "e1x": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds
+            + "/SignDyGFormer_seed*.NN-*.LF-*.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.RK-*.json",
+            "results/e1x/raw/" + ds,
+            None,
+            5,
+        )
+        for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
+    ],
+    # ---- sign-RT noBTE 5 种子（RT；seed42 旧件 + 123/456/789/1024 新件）----
+    "signrt5": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/RedditHyperlinkTitle/SignDyGFormer_seed*.NN-100.LF-1.RAS-E.RASE-E.BTE-D.CNAS-E.P1.TE.json",
+            "results/sign_rt5/raw",
+            None,
+            5,
+        ),
+    ],
+    # ---- 波二（DyG-Mamba / ScaDyG 全量产物；repro outputs 绝对路径）----
+    "wave2": [
+        (
+            "/home/fedsa/DynamiSE_DySDGNN_repro/outputs/DyG-Mamba/*.json",
+            "results/wave2/raw/DyG-Mamba",
+            None,
+            15,
+        ),
+        (
+            "/home/fedsa/DynamiSE_DySDGNN_repro/outputs/ScaDyG/*.json",
+            "results/wave2/raw/ScaDyG",
+            None,
+            15,
+        ),
+    ],
     # ---- LF 单变量扫描（LF30；固定 NN=best；seed42；2026-09-26 用户验证批）----
     "lf30": [
         (
