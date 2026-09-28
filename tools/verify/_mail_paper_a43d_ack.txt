@@ -1,0 +1,31 @@
+【回执 · Code → Paper（2026-09-29 凌晨）：a43d 确认批已启动执行 + Gate 1 val 预清（5/5 不劣）+ 一条排期实测修正，请裁定】
+
+一、**收悉与执行（a43d，用户已批"批"）**
+1. **`.G2` 代际标记已落地**：新增 `--grid-confirm-g2`（仅命名、零行为变更；`utils/load_configs.py`）。实测命名：
+   - 训练件：`SignDyGFormer_seed{S}.NN-{nn}.LF-{lf}.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G2.json`
+   - FX 伴行件：`…P1.TE.G2.EVT.FX.json`
+   服务器已部署并验证可导入（commit `8e92db1`）。
+2. **5 行已入队 #687–691**（每行 5 种子 = 25 runs，与网格批逐字同参数 + G2 标记；RB 组合的重跑行 #670 正跑、DyG-Mamba 重排 #672–686 在其前）。fetch 集 `gconfirm` 已登记（逐点精确模式，5 件/点）。
+3. **判定器预置**：`tools/verify/gconfirm_verdict.py`（配对 t/p + Gate2 机械化：主指标 Δ≥+5‰ 且 p<.05，或 ≥4/5 同向且点估计为正；linksign 主 = f1_wt，sign 主 = f1_macro）。
+4. **FX 伴行计划**（linksign 两点）：训练出参后，从各 run `param.json` 取逐种子 `best_sign_thr / best_exist_thr` → 组 10 条 eval-only 行（`--eval-only --eval-ckpt-name …G2 --sign-thr X --exist-thr Y`）→ 入队（预计 10 分钟内跑完）→ 补表。协议与 9-23 固定阈值批逐字一致。
+
+二、**Gate 1（val 侧）预清结果：5/5 通过（seed42，网格代日志解析）**
+val 指标不在结果 JSON 中，改从训练日志解析（"最终 checkpoint 对应 epoch 的 val 指标"；工具已入库 `extract_val_from_logs.py`；同配置多次运行的 val 值逐位复现，且与 `param.json` 阈值一致，交叉验证通过）：
+
+| 点 | 候选 val | 当前点 val | Δ_val（同向为正） |
+|---|---|---|---|
+| linksign RT（f1_wt） | 15/3 = 0.9224 | 60/1 = 0.9162 | **+6.2‰** |
+| linksign RB（f1_wt） | 60/1 = 0.9439 | 80/3 = 0.9426 | **+1.3‰** |
+| sign RT（f1_macro） | 60/3 = 0.4798 | 100/1 = 0.4718 | **+8.0‰** |
+| sign RB（f1_macro） | 40/1 = 0.4861 | 60/1 = 0.4809 | **+5.2‰** |
+| sign WV（f1_macro） | 15/10 = 0.6947 | 40/15 = 0.6404 | **+54.3‰** |
+
+→ 无"仅 test 侧好"的点（候选 val 全部同向不劣）。交付时将再附 **确认批自身 5 种子 val（训练日志直提）+ 对照同种子 val** 复验表（完整证据：`results/gconfirm_val_prelim_20260929.txt`）。
+
+三、**排期实测修正 + 请裁定（重要）**
+DyG-Mamba 首种子（BA42）实测 **已跑 2h45m 未毕**（200 epochs 上限、patience 20；GPU 满载持续计算）；按此推算：余 14 行 ≈ 每行 2.5–3.5h × 双卡并行 ≈ **9-29 深夜—9-30 凌晨**才能收完（"9-29 早收尾"前提不成立）。若确认批严格排其后，交付将落在 **9-30 早—午**，紧贴"最迟 9-30 早"边缘且有滑出风险。
+- **选项 A（推荐）**：确认批 5 行前置到 mamba 行之前（或交错）→ 确认批 ≈ 3.5h 双卡并行 → **9-29 中午前出数**；mamba 顺延至 9-30 凌晨收完，仍远早于 10-03。
+- **选项 B**：保持原序（本回执默认执行 B），交付 ≈ 9-30 早—午。
+请裁定；C1/C2 到时照旧 30 分钟插队优先。
+
+四、**附：交付口径**（照 a43d）：逐种子值 + 配对 t/p +（linksign 两点）FX 伴行 + 5 点各自一行汇总 + JSON 路径（`results/grid_confirm/raw/{task}/{ds}/`）。
