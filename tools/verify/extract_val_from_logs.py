@@ -47,7 +47,7 @@ DEFAULT_SPECS = [
 
 TASK_DIR = {"linksign": "SignLinkPrediction", "sign": "LinkSign"}
 
-VAL_RE = re.compile(r"- root - INFO - validate ([a-z_]+), ([-\d.eE]+)$")
+VAL_RE = re.compile(r"- root - INFO - validate ([a-z_0-9]+), ([-\d.eE]+)$")
 SAVE_RE = re.compile(r"- root - INFO - save model (.+\.pkl)")
 
 # 已观察到的 val 指标名（防把别的行误当指标）
@@ -92,7 +92,9 @@ def parse_log(path: str) -> dict:
                 continue
             m = SAVE_RE.search(line)
             if m:
-                if cur and ("thr_sign" in cur or "f1_wt" in cur or "f1_mac" in cur):
+                if "hyper param" in line:
+                    continue
+                if len(cur) >= 8:
                     snap = dict(cur)
                     snap_time = line[:19]
                     n_blocks += 1
