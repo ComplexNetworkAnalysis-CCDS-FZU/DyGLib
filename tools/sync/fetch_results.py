@@ -724,6 +724,54 @@ SETS = {
             ("RedditHyperlinkBody", 60, 1),
         )
     ],
+    # ---- BTE×RB 交叉复核 A/B（90d1；`.BTE-D` 删 BTE 件；RB linksign）----
+    "ab": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody"
+            "/SignDyGFormer_seed*.NN-80.LF-3.RAS-E.RASE-E.BTE-D.CNAS-E.P1.TE.TF-E.RK-80.json",
+            "results/ab_bte_rb/raw/A",
+            None,
+            5,
+        ),
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody"
+            "/SignDyGFormer_seed*.NN-60.LF-1.RAS-E.RASE-E.BTE-D.CNAS-E.P1.TE.G2.json",
+            "results/ab_bte_rb/raw/B",
+            None,
+            5,
+        ),
+    ],
+    # ---- CNS 行（f8c2 §三-1；采纳 3 组合 + 采样器替换 `.CNAS-D`，5 种子）----
+    "cns": [
+        (
+            "saved_results/" + d + "/SignDyGFormer/" + ds
+            + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf)
+            + ".RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.G2.json",
+            "results/cns_g2/raw/" + task + "/" + ds,
+            None,
+            5,
+        )
+        for (task, d, ds, nn, lf) in (
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkTitle", 15, 3),
+            ("linksign", "SignLinkPrediction", "RedditHyperlinkBody", 60, 1),
+            ("sign", "LinkSign", "RedditHyperlinkTitle", 60, 3),
+        )
+    ],
+    # ---- CNS 行 FX 伴行（linksign 两点 × CNS；`.CNAS-D…G2.EVT.FX`，2026-09-30）----
+    "cnsfx": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds
+            + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf)
+            + ".RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.G2.EVT.FX.json",
+            "results/cns_g2/fx/" + ds,
+            None,
+            5,
+        )
+        for (ds, nn, lf) in (
+            ("RedditHyperlinkTitle", 15, 3),
+            ("RedditHyperlinkBody", 60, 1),
+        )
+    ],
     # ---- sign-RT noBTE 5 种子（RT；seed42 旧件 + 123/456/789/1024 新件）----
     "signrt5": [
         (
