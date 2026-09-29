@@ -94,7 +94,9 @@ def parse_log(path: str) -> dict:
             if m:
                 if "hyper param" in line:
                     continue
-                if len(cur) >= 8:
+                # 兼容两代格式：新契约（≥8 指标）与 9-18 前旧契约（sign 仅 6 指标）。
+                # 以"关键指标在场"为准：
+                if cur and any(k in cur for k in ("f1_macro", "f1_mac", "f1_wt", "thr", "thr_sign")):
                     snap = dict(cur)
                     snap_time = line[:19]
                     n_blocks += 1

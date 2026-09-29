@@ -681,6 +681,16 @@ SETS = {
         )
         for ds in ["WikiVote", "RedditHyperlinkTitle", "RedditHyperlinkBody", "BitcoinAlpha", "BitcoinOTC"]
     ],
+    # ---- E1a×E1c 组合批 FX 固定阈值伴行（RB；`.TF-E.RK-80.EVT.FX`，2026-09-29）----
+    "e1xfx": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/RedditHyperlinkBody"
+            "/SignDyGFormer_seed*.NN-80.LF-3.RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.TF-E.RK-80.EVT.FX.json",
+            "results/e1x/fx/raw",
+            None,
+            5,
+        ),
+    ],
     # ---- 网格候选点 5 种子确认批（2026-09-29；`.G2` 代际标记；5 点 × 5 seeds）----
     "gconfirm": [
         (
@@ -697,6 +707,21 @@ SETS = {
             ("sign", "LinkSign", "RedditHyperlinkTitle", 60, 3),
             ("sign", "LinkSign", "RedditHyperlinkBody", 40, 1),
             ("sign", "LinkSign", "WikiVote", 15, 10),
+        )
+    ],
+    # ---- 网格确认批 FX 固定阈值伴行（linksign 两点；`.G2.EVT.FX`，2026-09-29）----
+    "gcfx": [
+        (
+            "saved_results/SignLinkPrediction/SignDyGFormer/" + ds
+            + "/SignDyGFormer_seed*.NN-" + str(nn) + ".LF-" + str(lf)
+            + ".RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.G2.EVT.FX.json",
+            "results/grid_confirm/fx/" + ds,
+            None,
+            5,
+        )
+        for (ds, nn, lf) in (
+            ("RedditHyperlinkTitle", 15, 3),
+            ("RedditHyperlinkBody", 60, 1),
         )
     ],
     # ---- sign-RT noBTE 5 种子（RT；seed42 旧件 + 123/456/789/1024 新件）----
