@@ -781,6 +781,15 @@ SETS = {
             5,
         ),
     ],
+    # ---- C0/C1/C2 可见性对照（Baseline 648c3fe；repro outputs；一次出三档）----
+    "c1c2": [
+        (
+            "/home/fedsa/DynamiSE_DySDGNN_repro/outputs/DySDGNN_visibility/*_C012.json",
+            "results/c1c2/raw",
+            None,
+            15,
+        ),
+    ],
     # ---- 波二（DyG-Mamba / ScaDyG 全量产物；repro outputs 绝对路径）----
     "wave2": [
         (

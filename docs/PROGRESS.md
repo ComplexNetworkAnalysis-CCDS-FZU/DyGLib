@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-09-30 深夜 22:40（续107·CNS-FX 10/10 齐 + Baseline 自实现 C1/C2 到位并插队执行）**：
+  - **CNS-FX 补齐 10/10**：linksign RT 与 RB 各 5 件，**全指标 Δ=+0.0‰（5/5 逐位一致）**；表 `results/cns_fx_table_20260930.txt` 已刷新 ⇒ CNS 行结论不受阈值选择驱动。交付 Paper `3f8d`。
+  - **C1/C2 归属落定 = 方案 1（Baseline 主写）**：Baseline `4357` 已交付实现 + 自检（commit **`648c3fe`**）。按 `8c91` §二，**Code 转为「执行 + 独立复核」、不落库**；我的设计草案 `tools/repro_patch/C1C2_DESIGN.md` 仅作交叉校验口径。
+    - **代码到位**：本地 `648c3fe` → 服务器裸库 `/home/fedsa/git/DynamiSE_DySDGNN.git`（`c158743..648c3fe`，fast-forward）；服务器 repro 工作副本 `git pull --ff-only` 到位；校验 `scripts/verify_visibility.py` 就位、`scripts/m5_run.py` 含 `--eval-protocol {C0,C1,C2,C1_approx_windown,ALL}`。
+    - **执行插队（#723–725，队首）**：#723 = 2 min 冒烟（BA/seed42）；#724 = seeds 42/123/456；#725 = seeds 789/1024（3 ds × `--eval-protocol ALL`，两分区共用 `--out-subdir DySDGNN_visibility`——已核 `m5_run.py` 文件名含 seed、无共享索引 ⇒ 并发安全）。**15 runs 覆盖 3 ds×5 seed×3 档**（同 run 同 ckpt，免"分别训练"混淆）。
+    - **Baseline 自检证据（待我方独立复核）**：`encode_clips_with_bufs` vs 原 `encode_clips` z_stack **逐位一致（max|Δ|=0）**；C1 抽 15 边仅改 focal 两行；C2 motif 全掩蔽 + MT-SA 不含 k；合判 PASS；2-epoch 冒烟 C0 .6956 / C1 .6692 / **C2 .5436**，F1_bin 三档恒 .9417（多数类退化 ⇒ 与附表 DySDGNN F1_bin 退化解释同向）。
+  - **顺带**：Baseline 已把 DyG-Mamba **triton 预导入**落库（`648c3fe`）⇒ 后续 mamba 队列行将切到不带 wrapper 的直调（先小样验证）。
+  - **队列**：**728 行**，指针 722（WV mamba 两卡均在跑）；C1/C2 三行排其后队首。回执 Baseline `1a65`。
+
 - **2026-09-30 夜 21:30（续106·Paper 批「方案 2」= C1/C2 开工授权 + 护栏路径 bug 修复 + C1/C2 设计草案）**：
   - **Paper `8c91`（行动项）**：用户已批**方案 2**（跨工作区写入）；已通知 Baseline，**异议截止 10-01 09:00**；无异议则 Code 直接开工（不必二次确认）。边界：**只动服务器 repro 工作副本分支、不碰 main**；交付 = patch + `eval_protocol`/`approx`/`approx_kind` JSON 字段 + `results/` 材料（sha256）；口径严格按 0915（C1=逐边精确 mask-self；C2=严格过去=每窗一次前向；近似档只作鲁棒性）；45 runs（3 ds×5 seed×3 档）；优先 RB 与 sign RT。已回执 `8d7c`。
   - **开工前准备（未落库、未碰 repro）**：`tools/repro_patch/C1C2_DESIGN.md` —— 存档 3 条已核代码事实 + **正确性论证**：`encode_clips` 逐 clip 递推、`layer_buf` 在 k 处只依赖 clips<k 的**未掩蔽**结果 ⇒ C2 精确 = 一条未掩蔽链 + 每窗一次掩蔽前向；**掩蔽前向不得写回 `layer_buf`**（否则 k+1 继承污染）；C1 精确 = 每测试边一次前向（+2–5 min/run）。自检闸门：C0 须与既有数**位级一致**、C2 链不污染断言、C1 抽样 20 边手算。

@@ -1,0 +1,21 @@
+【补发 · Code → Paper（2026-09-30 深夜）：CNS-FX 全 10 件齐（逐位一致 Δ=0.0‰）+ C1/C2 状态变更（Baseline 已自实现，我方转「执行 + 自检」）】
+
+一、**CNS-FX 补齐确认**（`17bf` 的余件已到齐）：**10/10**
+- linksign RT 15/3：f1_wt/f1_mac/auc/ap **Δ=+0.0‰（5/5 逐位一致）**，主 0.8972 / 0.6890 / 0.9347 / 0.7105
+- linksign RB 60/1：f1_wt/f1_mac/auc/ap **Δ=+0.0‰（5/5 逐位一致）**，主 0.9354 / 0.6833 / 0.9265 / 0.6937
+- 表：`results/cns_fx_table_20260930.txt`（已刷新）；JSON 10 件 sha256 入账。
+⇒ **CNS 行结论（RT 全面负 / RB·sign-RT 分裂）不受阈值选择驱动**，可放心入表。
+
+二、**C1/C2 状态变更（重要）**：Baseline 已**自行实现并交付**（信箱 `4357`，commit `648c3fe`）——即走 `0915`/`8c91` 的**方案 1（原路径）**。
+- 按 `8c91` §二，我方**转「执行 + 自检」、不落库**（我在 `tools/repro_patch/C1C2_DESIGN.md` 的设计草案转为**交叉校验口径**用，不实施）。
+- 已把 `648c3fe` 推到服务器裸库（`c158743..648c3fe`，fast-forward）并让 repro 工作副本 pull 到位，**校验通过**：`scripts/verify_visibility.py` 就位、`scripts/m5_run.py` 含 `--eval-protocol`（含 `ALL`）。
+- **执行安排（插队优先，已入队 #723–725）**：① 2 min 冒烟（BA/seed42）；② seeds 42/123/456；③ seeds 789/1024（两卡分区并行、输出同目录、文件名含 seed 无冲突）。
+- **规模优化（采用 Baseline 建议）**：`--eval-protocol ALL` 在**同一 run、同一 ckpt** 内算 C0/C1/C2 三档 ⇒ **15 runs 覆盖「3 ds × 5 seed × 3 档」**，无需 45 runs，且消除"分别训练致权重不同"的混淆。
+- **ETA**：两卡现在被 WV mamba 占用（#722 21:39 起、另一 18:30 起）；C1/C2 三行排在其后**队首**，GPU 一空即开跑；单卡估 30–45 min ⇒ 预计 **10-01 凌晨～上午**出齐。出数后我出 **C0/C1/C2 对照表 +「哪些结论跨档改变」**，连同 Baseline 自检证据一并交付。
+
+三、**Baseline 自检证据摘要（供你先看，我 10-01 会独立复核）**
+- `encode_clips_with_bufs` 与原 `model.encode_clips` 的 z_stack **逐位一致（max|Δ|=0）** ⇒ 既有主表数字不受影响（= 我方"C0 位级复现"闸门）；
+- C1 契约：抽检 15 条测试边，剔除后仅改 focal 两行；C2 契约：motif 全掩蔽 + MT-SA 不含 k；合判 `PASS`；
+- 2-epoch 端到端冒烟（仅证机制）：C0 .6956 / C1 .6692 / **C2 .5436**；F1_bin 三档恒 .9417（多数类退化——与附表注里 DySDGNN 的 F1_bin 退化解释**同向**，可作为该注的机制侧佐证）。
+
+四、顺带：Baseline 已把 DyG-Mamba triton **预导入**落库（`648c3fe`）⇒ 后续 mamba 命令可去掉 wrapper（两法兼容）。波二（mamba/ScaDyG）进度 10/15，WV×5 顺延。

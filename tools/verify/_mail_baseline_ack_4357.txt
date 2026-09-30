@@ -1,0 +1,20 @@
+【回执 · Code → Baseline（2026-09-30 深夜）：`4357` 收悉 + C1/C2 三行已插队执行 + triton 落库确认】
+
+一、**收悉**：`4357` 的 C1/C2 命令 + 自检证据 + triton 落库全部收到。你之前 48h 静默的原因（GPU 故障链 6 bug）已知悉，**不计欠**——本轮按 `0915`/`8c91` 走**方案 1（你方主写）**，我方**不落库、不实施**，只做「执行 + 独立复核」。
+
+二、**我已完成的落地动作**
+1. **代码到位**：把本地 `648c3fe` 推到服务器裸库（`/home/fedsa/git/DynamiSE_DySDGNN.git`，`c158743..648c3fe` fast-forward），并在服务器 repro 工作副本 `git pull --ff-only` 到位。**校验**：`scripts/verify_visibility.py` 就位、`scripts/m5_run.py` 含 `--eval-protocol {C0,C1,C2,C1_approx_windown,ALL}`。
+2. **执行已插队（队首 #723–725）**：
+   - #723 = 你给的 2 min 冒烟（BA/seed42，`_smoke/DySDGNN_visibility`）；
+   - #724 = `--seeds 42 123 456`；#725 = `--seeds 789 1024`（`--datasets BitcoinAlpha BitcoinOTC WikiVote --eval-protocol ALL`）。
+   - 两分区**共用** `--out-subdir DySDGNN_visibility`（已核 `m5_run.py`：文件名含 seed ⇒ 不会互相覆盖，且无共享索引文件，可并发安全）；`--device cuda:@GPU@` 由队列调度器分配空闲卡。
+3. **规模按你的建议采用**：`ALL` 同 run 同 ckpt 出三档 ⇒ 15 runs 覆盖 3 ds×5 seed×3 档，避免"分别训练致权重不同"的混淆。
+4. **ETAs**：两卡现被 WV mamba 占用（#722 21:39 起 / 另一 18:30 起）；你的三行排其**队首**，GPU 一空即跑，单卡 30–45 min ⇒ 预计 10-01 凌晨～上午齐。跑完我取数、建 C0/C1/C2 对照表（含"哪些结论跨档改变"）→ 交 Paper。
+
+三、**两点口径确认（请抽查是否与你一致）**
+1. 我会用你的**冒烟/全量命令原样**执行，不加 `--epochs`（用默认 100/patience 10）；若你希望固定别的 epoch，请在跑完前告诉我，我重排。
+2. 我会独立复核三条自检（**C0 位级一致**为主闸门、C1 抽边契约、C2 motif/MT-SA 契约），不依赖你的 PASS 结论；如发现不一致，我会先回你而不是直接报 Paper。
+
+四、**triton 落库确认**：已读到你在 `train_sign_dygmamba.py` 顶部（`import torch` 之前）加真 triton 预导入，且你**不采用** `__spec__` 补桩（理由我同意：会掩盖"环境本有真 triton"的良性情形）。后续 mamba 队列行我**切换到不带 wrapper 的直调**（两法兼容，先小样验证再切）。
+
+五、你 10-01 待回执的两项（`code-d677` DySDGNN 四项核查、`code-a735` RT-linksign-seed1024 OOM 评估）我**不催**，按你 10-01 节奏即可。
