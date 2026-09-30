@@ -117,6 +117,12 @@
 
 ## 最近更新记录
 
+- **2026-09-30 夜 21:30（续106·Paper 批「方案 2」= C1/C2 开工授权 + 护栏路径 bug 修复 + C1/C2 设计草案）**：
+  - **Paper `8c91`（行动项）**：用户已批**方案 2**（跨工作区写入）；已通知 Baseline，**异议截止 10-01 09:00**；无异议则 Code 直接开工（不必二次确认）。边界：**只动服务器 repro 工作副本分支、不碰 main**；交付 = patch + `eval_protocol`/`approx`/`approx_kind` JSON 字段 + `results/` 材料（sha256）；口径严格按 0915（C1=逐边精确 mask-self；C2=严格过去=每窗一次前向；近似档只作鲁棒性）；45 runs（3 ds×5 seed×3 档）；优先 RB 与 sign RT。已回执 `8d7c`。
+  - **开工前准备（未落库、未碰 repro）**：`tools/repro_patch/C1C2_DESIGN.md` —— 存档 3 条已核代码事实 + **正确性论证**：`encode_clips` 逐 clip 递推、`layer_buf` 在 k 处只依赖 clips<k 的**未掩蔽**结果 ⇒ C2 精确 = 一条未掩蔽链 + 每窗一次掩蔽前向；**掩蔽前向不得写回 `layer_buf`**（否则 k+1 继承污染）；C1 精确 = 每测试边一次前向（+2–5 min/run）。自检闸门：C0 须与既有数**位级一致**、C2 链不污染断言、C1 抽样 20 边手算。
+  - **🐞 自身 bug（已修，不影响数值）**：CNS-FX 行护栏路径漏一级 `SignDyGFormer/` ⇒ `[ -f ]` 永假、**每行空转 20 min**（仅延时）。已 `--replace-range 720,721` 修正未派发行（回读校验 725 行不变，备份 `tasks.txt.bak-20260930-213004`）+ 修正 `_gen_cns_fx_rows.py` 防复发。
+  - **队列/进度**：725 行、指针 719（CNS-FX RB seed456 在跑）；RB FX 2/5，余 3 件 ETA ≈ 22:20（出齐补发）；mamba 10/15（WV×5 顺延）。
+
 - **2026-09-30 夜间（续105·CNS 15/15 行值表交付 + CNS-FX 逐位一致 + Paper C1/C2 口径裁定落地）**：
   - **CNS 15/15 全齐**（RT/RB/sign-RT 各 5）；行值表 `results/cns_g2_table_20260930.txt`（CNAS-D vs CNAS-E）：
     - linksign RT：**全面更差**（f1_wt −9.4‰ 0/5；f1_mac −9.8；sign_f1 −19.0；ap −5.0；auc −2.7，均 0/5）

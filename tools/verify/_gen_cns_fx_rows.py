@@ -25,8 +25,10 @@ thr = json.load(open(THR_FILE, encoding="utf-8"))
 # 护栏：等该点"训练结果 JSON"出现（= 训练行已收尾；防 FX 取到中间 ckpt）
 GUARD = ('@for _i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 '
          '31 32 33 34 35 36 37 38 39 40; do '
-         '[ -f "saved_results/SignLinkPrediction/{ds}/SignDyGFormer_seed{s}.NN-{nn}.LF-{lf}'
+         '[ -f "saved_results/SignLinkPrediction/SignDyGFormer/{ds}/SignDyGFormer_seed{s}.NN-{nn}.LF-{lf}'
          '.RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.G2.json" ] && break; sleep 30; done; ')
+# 2026-09-30 修正：原路径漏了 `SignDyGFormer/` 一级 → [ -f ] 永假，每行多等 20 min（护栏空转）。
+# 已对未派发的 720/721 行 --replace-range 修正；此后生成的护栏一律用上面这条。
 
 rows = []
 for (ds, nn, lf) in POINTS:
