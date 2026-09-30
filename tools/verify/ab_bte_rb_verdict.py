@@ -8,12 +8,16 @@ B = 采纳配置（60/1）+ 删 BTE；   对照 = 既有 .G2 件（results/grid_
 输出：results/ab_bte_rb_verdict_20260930.txt
 """
 import glob
+import io
 import json
 import re
 import statistics as st
+import sys
 from pathlib import Path
 
 from scipy import stats
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 ROOT = Path(__file__).resolve().parents[2]
 M = [("f1_wt", "f1_wt‰"), ("f1_mac", "f1_mac‰"), ("auc", "auc‰"), ("ap", "ap‰")]
@@ -46,7 +50,7 @@ def say(s=""):
     print(s)
 
 
-say("BTE×RB 结构交叉复核 A/B 判定（预登记 90d1；Δ = f1_wt(full − NoBTE)，同种子配对）")
+say("BTE×RB 结构交叉复核 A/B 判定（预登记 90d1；Δ = f1_wt(full - NoBTE)，同种子配对）")
 say("通过 = Δ≥+5‰ 且 p<.05，或 ≥4/5 同向且点估计为正")
 say()
 results = {}
