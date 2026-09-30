@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-09-30 夜间（续105·CNS 15/15 行值表交付 + CNS-FX 逐位一致 + Paper C1/C2 口径裁定落地）**：
+  - **CNS 15/15 全齐**（RT/RB/sign-RT 各 5）；行值表 `results/cns_g2_table_20260930.txt`（CNAS-D vs CNAS-E）：
+    - linksign RT：**全面更差**（f1_wt −9.4‰ 0/5；f1_mac −9.8；sign_f1 −19.0；ap −5.0；auc −2.7，均 0/5）
+    - linksign RB：**分裂**（f1_wt −6.7‰ 0/5、sign_f1 −17.9 0/5 vs f1_mac **+10.7 (5/5)**、ap +6.5 (5/5)、auc +5.3 (5/5)）
+    - sign RT：**同型分裂**（f1_macro −3.5‰ 0/5 vs auc **+23.4 (5/5)**、ap +5.5 (5/5)；f1_binary 持平）
+  - **CNS-FX 复评逐位一致（Δ=0.0‰ 全指标）**：RT 5/5 ✓、RB 2/5（余 3 件在跑）；表 `results/cns_fx_table_20260930.txt`。交付 `17bf`。
+  - **Paper 0915 裁定**：B 入稿按**双面写法 + 条件性报告**（不得写 significant；结构敏感性句定稿）。**C1/C2 两级重定采纳合并发现**：C1=逐边精确 mask-self（逐边一次前向）；C2=严格过去（**每窗一次前向即精确**，更便宜）；近似档须 `approx=true`+`approx_kind` 且仅作鲁棒性；交付 3 ds×5 seed×{C0,C1,C2} + JSON `eval_protocol`。**跨工作区写入未获授权（等用户）→ 未动 repro**；附录 B 方法注句已供。
+  - 队列 725 行；mamba 10/15（WV×5 顺延，ETA 10-01 早）。
+
 - **2026-09-30 晚间（续104·A/B 完整判定交付 + CNS 收尾中 + C1/C2 自实现可行性回报）**：
   - **BTE×RB A/B 完整判定**（护栏重排后 B 行 13:13–15:23 出齐）：**A 未过**（Δf1_wt +2.4‰ 3/5 p=.196）；**B 通过主指标**（Δf1_wt **+4.9‰ 4/5** p=.198；逐种子 +4.6/+5.0/+8.2/−6.3/+13.0）⇒ 结论"**采纳配置下 BTE 在 RB 转正**"；但 **B 方向分裂**（f1_mac −11.2‰、auc −6.6‰、ap −6.4‰，各 1/5 正、ns）→ 建议 §4.3 双面写法 + "BTE 收益依赖采样窗口配置"的结构敏感性句。交付 `5329`；表 `results/ab_bte_rb_verdict_20260930.txt`。
   - **CNS 三行**：RT 5/5 ✓、sign RT 5/5 ✓、RB 4/5（最后一 seed 收尾）→ 今晚连同 CNS-FX 交付（工具已备：`cns_g2_table.py`、`_collect_cns_thr.sh`、`_gen_cns_fx_rows.py`）。

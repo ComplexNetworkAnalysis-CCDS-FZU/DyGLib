@@ -21,6 +21,13 @@ POINTS = [("RedditHyperlinkTitle", 15, 3), ("RedditHyperlinkBody", 60, 1)]
 SEEDS = (42, 123, 456, 789, 1024)
 
 thr = json.load(open(THR_FILE, encoding="utf-8"))
+
+# 护栏：等该点"训练结果 JSON"出现（= 训练行已收尾；防 FX 取到中间 ckpt）
+GUARD = ('@for _i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 '
+         '31 32 33 34 35 36 37 38 39 40; do '
+         '[ -f "saved_results/SignLinkPrediction/{ds}/SignDyGFormer_seed{s}.NN-{nn}.LF-{lf}'
+         '.RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.G2.json" ] && break; sleep 30; done; ')
+
 rows = []
 for (ds, nn, lf) in POINTS:
     for s in SEEDS:
@@ -29,7 +36,10 @@ for (ds, nn, lf) in POINTS:
         base = (f"SignDyGFormer_seed{s}.NN-{nn}.LF-{lf}"
                 f".RAS-E.RASE-E.BTE-E.CNAS-D.P1.TE.G2")
         rows.append(
-            PREFIX + "train_sign_link_3class_prediction.py"
+            GUARD.format(ds=ds, nn=nn, lf=lf, s=s)
+            + "cd /home/fedsa/DyGLib && source /home/fedsa/anaconda3/etc/profile.d/conda.sh "
+            "&& conda activate gc && python "
+            + "train_sign_link_3class_prediction.py"
             f" --dataset-name {ds} --model SignDyGFormer --gpu @GPU@ --seeds {s}"
             " --early-stop-notice f1_wt f1_mic ap f1_mac auc"
             " --module-repeat-aware-sampler --module-repeat-aware-sign-encoder"
