@@ -1,0 +1,20 @@
+【回报 · Code → Paper（2026-09-30 晚）：C1/C2 自实现可行性评估（应 c7f8 §三）+ 一个关键技术发现（近似档会合并）】
+
+一、**结论：可行**，工程成本 ≈ **0.5–1 个工作日（含单测）**；跑数 ≈ **1–2 h GPU**（30 runs）；取数/回报 ≈ 0.5 h。**唯一卡点 = 仓库归属**（repro 仓库属 Baseline 工作区，需授权方案，见四）。
+
+二、**已核代码事实（只读检查，`train_eval/dysdgnn.py`，与 b786 记录一致）**
+- `_prep()`：每 clip k 的嵌入依赖 ①本 clip 全部边的 motif 邻居（含目标边自身）②节点活跃集 ③MT-SA 序列 = `active_clips[node][:searchsorted(al, k, side="right")]`——**side="right" 含 k 本身**（即当前 clip 自身参与自己的嵌入）；
+- `_eval_split()`：对 split 的每个 clip k 取 `p = mtsa_at(z_stack, clips, k)` 后直接用刚算出的嵌入打分该 clip 的边 ⇒ **C0 = 目标边参与自身嵌入**（转导可见性，已确认）。
+- ⇒ 两条改动路径：
+  - **C2-approx（前窗为界）**：MT-SA 改 `side="left"`（1 行）+ 邻居列表限于 <k 的 clip（`_prep` 加一个 mask 变体）→ 便宜；
+  - **C1-approx（测试边全掩蔽）**：把 test split 的边从嵌入图剔除。
+
+三、**关键技术发现（需与 587/129c 口径对齐）**：在本快照设计下（等宽窗、测试 = 最后若干完整窗），**"测试边全掩蔽"与"前窗为界"两档会合并为同一件事**（都等价于"test 嵌入只看过去窗"）。若要保留真正的两级阶梯，**C1 必须做逐边精确掩蔽**（每目标边一次重算前向）。成本估算：每 ds 测试边 ≈ 3–5k，逐边前向 ~10–50 ms → 每 run +2–5 min，30 runs ≈ 1–2.5 h GPU——**仍可行**。若不接受合并，建议口径改为："C1 = 逐边精确（mask-self）；C2 = 严格过去（逐边滚动，含当前窗剔除）"，近似档作为兜底并在 JSON 里声明。
+
+四、**实现与归属（请裁定）**
+- 方案 1（最稳）：Baseline 回信实现（原路径）——若今晚有回信即走此路；
+- 方案 2（解阻塞）：**由 Code 在服务器 repro 工作副本来做**（git 分支 + 交付 patch 文件 + `eval_protocol`/近似档字段 + JSON 产物），Baseline 事后 review/merge。需要用户批准"跨工作区写入"（AGENTS.md 边界条款）；
+- 方案 3：Code 只写 **patch 补丁**（不落库），交 Baseline apply——仍绕不开 Baseline 往返，只作兜底。
+- 产出物（任一方案）：`eval_protocol` ∈ {C0,C1,C2} + `approx: true/false` 写进每 run JSON；30 runs（3 ds × 5 seed × 2 档）。
+
+五、**建议**：等今晚 Baseline 回信；若 9-30 24:00 前无回信，请用户批"方案 2"，我们 10-01 上午开工，10-01 晚可出数（10-02 软线内）。CNS 收尾照旧（RB 最后一 seed 收尾中，今晚连同 CNS-FX 交付）。
