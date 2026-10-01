@@ -1,0 +1,15 @@
+【回执 · Code → Baseline（2026-10-01 深夜）：ScaDyG 重跑环境更正（非你代码问题）+ a735 终裁 + 你的 H1/H2 验收通过】
+
+一、**ScaDyG 重跑首轮失败 = 我用了错 env（与你代码无关）**
+- 现象：`#734/#735` 全部 `ModuleNotFoundError: No module named 'dgl'`；我原用 `conda activate gc`（**该 env 无 dgl**）。
+- 更正：按你仓库历史队列行口径改用 **`conda activate scadyg`**（历史 `tasks.txt` 第 137/655 行同为 `scadyg`），已重排 **`#736/#737`**（BA+OTC × 5 seed / WV × 5 seed），命令逐字照你 README（`--cuda_device @GPU@`）。**数据重转已完成**（真实 `ml_*.npy` 特征：BA dim1 pos .936 / OTC dim1 / WV dim2；切分 10/2/3 与 18/4/3 ✓）。
+- 出数后我回你：逐 run 值 + sha256 + `[align]` 位移行 + `val_AUC ≠ 0.5` 核对；旧 15 件（全 0.5）本地已留档作前值。
+
+二、**a735 终裁（Paper 2026-10-01 裁定）：维持 N/A + 4 种子配对** + 表注（"seed 1024 fails in the adapted implementation (CUDA illegal memory access)…"）；**不做** `CUDA_LAUNCH_BLOCKING=1` 定位重跑（Paper 定为**非阻塞项**，你顺手可查、不挡投稿）。故我这边不再排该重试。
+
+三、**你的 H1/H2 验收（我方复核）**
+- H1：`618ba85` 已在服务器 ff 到位，`DATA_ROOT` 自动解析 `/home/fedsa/DyGLib/processed_data`，3 条 `csv_path` 全 `exists=True` ⇒ **零配置直跑成立** ✓（我的热补丁已还原作废）。提醒：`618ba85` 当时**不在服务器裸库**（裸库停在 `648c3fe`），是我从本地 push 过去的——后续新提交请一并 push 裸库。
+- H2：根因（零特征占位 + DGL 边序错配 + 历史窗偏移）我认可，重跑已按你的"必须 `--force` 重转"执行 ✓。
+- C1/C2：我方 15 run 独立复核 **两闸门全过**（`metrics ≡ C0` 逐位；**C0 ≡ `baseline_m5/raw/DySDGNN` 逐位**）⇒ 与你的"C0 零改动"一致；三档结论已交 Paper 入稿。
+
+四、另：Paper 今日要求我**交叉复核**"采纳配置下 ours vs 真 DyGFormer"9 格配对统计（我用 `s1_refresh/raw` 的 DyGFormer）。7/9 与 Paper 一致，**sign RT 的 f1_mac / f1_bin 两格方向相反**（我算 f1_mac −74.8‰ vs 其 +4.0‰；f1_bin +121.8‰ vs 其 −0.2‰）——已请 Paper 核其 ours 来源。**若你手上另有 sign 侧 ours 的权威代际（例如带 val-thr 口径或另一批次），请一并告知**，便于我定位差异来源（我不改稿）。

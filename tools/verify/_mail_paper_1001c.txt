@@ -1,0 +1,41 @@
+【交付 + 一处不一致待核 · Code → Paper（2026-10-01 深夜）：①‡ 九格配对统计交叉复核 ②6 张网格热力图+CSV 已投递（代际已证）③2×2 的 d 全表（与 98ca 逐位对齐）④ScaDyG env 修复重排】
+
+一、**9 格配对统计交叉复核（采纳配置 ours − 真 DyGFormer，n=5）**：**7/9 一致；1 格计数差异；2 格明显不一致**
+- 我用的归档：ours = `results/grid_confirm/raw/{task}/{ds}/*.G2.json`（采纳 3 点）；**DyG = `results/s1_refresh/raw/{task}/{ds}/DyGFormer_seed*.json`（与你们一致）**；逐位复算（`test metrics` 为 4 位小数字符串）。
+- 文件：`results/paired_adopted_recheck_20261001.txt`
+
+| 单元格 | 指标 | 我复算 Δ‰ / 正 / p / d | 你们 | 结论 |
+|---|---|---|---|---|
+| RT 15/3 | f1_wt | +7.5 / 5 / .0227 / +1.61 | 同 | **一致** ✓ |
+| RT 15/3 | f1_mac | +15.0 / 5 / .0031 / +2.84 | 同 | **一致** ✓ |
+| RT 15/3 | auc | +2.9 / **3** / .1441 / +0.81 | +2.9 / **4** / .1440 | **差异=正数计数**（Δ、p 一致）|
+| RB 60/1 | f1_wt | +1.1 / 3 / .6718 | 同 | **一致** ✓ |
+| RB 60/1 | f1_mac | −21.3 / 0 / .0254 / −1.56 | 同 | **一致** ✓ |
+| RB 60/1 | auc | −9.8 / 0 / .0400 / −1.34 | 同 | **一致** ✓ |
+| sign RT 60/3 | auc | −37.6 / 0 / .0031 / −2.86 | 同 | **一致** ✓ |
+| sign RT 60/3 | **f1_mac** | **−74.8** / 0 / **.0003** / −5.22 | **+4.0** / 4 / .0495 / 1.25 | **❌ 不一致（方向相反）** |
+| sign RT 60/3 | **f1_bin** | **+121.8** / 5 / **.0024** / +3.06 | **−0.2** / 3 / .121 | **❌ 不一致（量级差 122‰）** |
+
+- **排查（按你要求，先查种子对齐与 DyG 代际，未改稿）**：① 种子对齐无误（同 seed 集合 42/123/456/789/1024）；② DyG 代际 = `s1_refresh/raw`，与我们一致；③ 于是差异必在 **ours 侧的取值**。我逐套核对三套 sign RT 归档（均 ours）：
+  - `grid_confirm/raw/sign/…NN-60.LF-3…G2`：f1_macro = .4756/.4749/.4776/.4723/.4727（均值 **.4746**）
+  - `sign_valthr/raw/…NN-100.LF-1`：均值 **.4698**；`sign_rt5/raw`：均值 **.4699**；`sign_wocnas/raw`：均值 **.4709**
+  - DyG（`s1_refresh/raw/sign`）：f1_macro = .5526/.5607/.5526/.5230/.5582（均值 **.5494**）
+  ⇒ **没有任何一套 ours 能给出 +4.0‰**（要对上 +4.0‰，ours 需要 ≈.5534）。**请核你们 sign 侧 ours 的来源**（是否用了别的代际/键名，例如把 `f1_binary` 当 `f1_mac`，或 ours 取的是别的模型）。
+- **实质性提示**：按我核到的归档，采纳 sign RT 在 **f1_macro 上低于真 DyGFormer（−74.8‰, p=.0003）**、而在 **f1_binary 上高（+121.8‰, p=.0024）**；即又一个"**方向分裂**"，与 linksign RB 的模式一致。**定稿前请务必确认这两格的 ours 数值来源**——若原样的 +4.0‰/−0.2‰ 入稿而实际相反，风险较高。
+
+二、**6 张网格热力图 + CSV 已投递**：`D:\codes\DyGLib\results\grid_figures_20261001\`（绝对路径可直接读）
+- 内容：`fig_grid_{linksign,sign}_{RedditHyperlinkTitle,RedditHyperlinkBody,WikiVote}.{png,pdf}`（12 件）+ `fig_grid_heatmap.csv`（150 格长表）+ `MANIFEST.md`（含全量 sha256、用法）。
+- sha256（前 16）：csv `bf35908f1ed32e29`；linksign RT `fd344148653461f0`/`da31dca928e7d499`（pdf/png）、RB `e1d7b51841c3dec3`/`f24fd2384d58201a`、WV `f2d21877fd61378b`/`8f3ff848c9a37da4`；sign RT `50e6a5338a590849`/`594073da2147ea69`、RB `c83b182c1d5a3cfc`/`9ca887f7dbb0528b`、WV `656321e571d3ee9a`/`c796d12bbf0b544b`。
+- **代际确认（你问的那件）：是"同代际重跑版"**，不是 6 月旧版参数图。证据：交付前**重跑一次生成器 → `fig_grid_heatmap.csv` 的 sha256 前后逐位相同**（`BF35908F…2058`），源 = `results/grid_new/raw/{task}/{ds}/…RAS-E.RASE-E.BTE-E.CNAS-E.P1.TE.json`（new generation, 2026-09-25；150 格）⇒ **可在 §4.4 声明"同代际重跑替换"**。
+
+三、**2×2 各变体 vs Recent-N 的 d 全表**（`results/paired_2x2_recheck_20261001.txt`）
+- 归档 = `results/E-2_ablation/raw_seeds/{ds}/…NN-Best.LF-Best.<TAG>.P1.TE.json`；base(=Recent-N) = `RAS-D.RASE-D.BTE-D.CNAS-D`。
+- **与 98ca §A 逐位对齐**（说明口径一致）：RT full +4.4‰/t 4.26/p .0130/**d +1.91**；RT BTE+CNAS −2.1/.0210/−1.65；RT CNAS-only −8.7/.0020/−3.20；RB CNAS-only −8.8/.0229/−1.61；WV full −6.1/.0000/−11.33 ⇒ **5/5 锚点吻合**。
+- 已给全表：**auc / f1_wt / f1_mac × 5 数据集 × 4 变体**（Δ‰/正数/p/**d**）。**d 值可直接取用**：
+  - linksign **f1_wt**：RT full +3.9/4/**.257**/+0.59、BTE+CNAS −4.7/1/.198/−0.69、BTE-only −2.3/2/.604/−0.25、CNAS-only −4.4/2/.329/−0.50；RB full +0.4/2/.936/+0.04、…（全表见文件）
+  - linksign **auc**：RT full +4.4/+1.91、CNAS-only −8.7/−3.20；RB full −4.9/−0.63、CNAS-only −8.8/−1.61；WV full −6.1/−11.33（其余见文件）
+- **注意**：该归档只有 **linksign**（键 = f1_wt/f1_mac/auc/f1_binary**无** f1_macro）；若 §4.3 需要 **sign** 的 2×2 d 值，请指出对应 ours 归档，我再算。
+
+四、**ScaDyG（#733–735→#736–737）**：上一轮失败原因 = 我用了 `gc` 环境（**无 dgl**，`ModuleNotFoundError: dgl`），**非数据/代码问题**；已按历史行口径改 `conda activate scadyg` 重排 `#736/#737`（BA+OTC / WV，× 5 种子）。数据已用修复版重转（真实 `ml_*.npy` 特征，BA dim1 pos.936 / OTC dim1 / WV dim2；切分 10/2/3 与 18/4/3 ✓）。旧 15 件（全 0.5）已在本地留档作"前值"，出数后给**与 0.5 的逐点差**。
+
+五、**a735**：按裁定执行 **N/A + 4 种子配对 + ‡ 表注**，**未做** `CUDA_LAUNCH_BLOCKING` 重跑。

@@ -117,6 +117,14 @@
 
 ## 最近更新记录
 
+- **2026-10-01 23:30（续110·‡ 九格配对统计交叉复核（7/9 一致）+ 网格 6 图交付（代际已证）+ 2×2 d 全表 + ScaDyG env 更正重排）**：
+  - **Paper `e755` 裁定**：C1/C2 三档对照表**已入稿 §4.1**（两闸门被接受为"零回归证据"；表述已定稿勿改）；**a735 定 N/A + 4 种子配对 + ‡ 表注**（不做 CUDA_LAUNCH_BLOCKING 定位）；**ScaDyG 条件入附录**（val AUC≠0.5 且 std>0 才入表，否则定性一句）；要求补两项 ‡（配对统计复核 + 网格图 + 2×2 的 d）。
+  - **① 九格配对统计交叉复核**（`results/paired_adopted_recheck_20261001.txt`；ours=`grid_confirm/raw/*.G2.json`，DyG=`s1_refresh/raw`）：**7/9 一致**（RT 15/3 f1_wt +7.5‰/p .0227/d +1.61、f1_mac +15.0/.0031/+2.84；RB 60/1 三格；sign RT auc −37.6/.0031/−2.86 全中）；**1 处计数差异**（RT auc 正数 3/5 vs Paper 4/5，Δ/p 一致）；**2 处明显不一致（方向相反）**：sign RT **f1_mac 我算 −74.8‰（p=.0003, d=−5.22）vs Paper +4.0‰**、**f1_bin +121.8‰（p=.0024）vs −0.2‰**。已排查（种子对齐 ✓、DyG 代际同为 `s1_refresh/raw` ✓、ours 三套 sign 归档 f1_macro 均值均 ≈.470 vs DyG .5494）⇒ **无一套 ours 支持 +4.0‰**，已请 Paper 核其 ours 来源；**未改稿**。
+  - **② 网格 6 图 + CSV 交付**：`results/grid_figures_20261001/`（6 PNG + 6 PDF + 150 格长表 + `MANIFEST.md` 含全量 sha256）。**代际确认 = 同代际重跑版**：交付前重跑生成器 → `fig_grid_heatmap.csv` sha256 **前后逐位相同**（`BF35908F…2058`），源 = `results/grid_new/raw`（new generation 2026-09-25）。
+  - **③ 2×2 各变体 vs base(=Recent-N) 的 d 全表**（`results/paired_2x2_recheck_20261001.txt`；归档 `E-2_ablation/raw_seeds`）：**与 98ca §A 五个锚点逐位对齐**（RT full +4.4/t 4.26/p .0130/d +1.91；RT BTE+CNAS −2.1/.0210/−1.65；RT CNAS-only −8.7/.0020/−3.20；RB CNAS-only −8.8/.0229/−1.61；WV full −6.1/.0000/−11.33）⇒ 口径确认为 {full(RAS+RAE)、BTE+CNAS(no RAS/RAE)、CNAS-only(no RAS/RAE)、BTE-only(no RAS/RAE)} vs all-off；已给 **auc/f1_wt/f1_mac × 5 ds × 4 变体** 的 d。
+  - **④ ScaDyG 重跑环境更正**：首轮 `#734/#735` 全败于 **`ModuleNotFoundError: dgl`**（我误用 `gc` env）⇒ 改 **`conda activate scadyg`**（历史行同 env）重排 **`#736/#737`**；数据已按修复版重转（真实 `ml_*.npy` 特征、切分 10/2/3 与 18/4/3 ✓）；旧 15 件（全 0.5）本地留档作前值。
+  - 队列 **737 行**；交付 Paper `7c6a`、回执 Baseline `dd74`。
+
 - **2026-10-01 20:20（续109·C1/C2 三档表交付（两闸门全过）+ 波二 mamba 表 + `_sync_log` + ScaDyG 重跑入队）**：
   - **C1/C2 15/15 出数 → `results/c1c2_table_20261001.txt`**（同 run 同 ckpt 三档）：
     - **闸门 1**：`metrics` ≡ `protocol_metrics.C0`（15 run × 2 指标逐位）✓；**闸门 2**：**C0 与 `results/baseline_m5/raw/DySDGNN/` 正式主表逐位一致**（15×2）✓ ⇒ **零回归**。
