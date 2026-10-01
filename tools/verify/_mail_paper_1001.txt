@@ -1,0 +1,25 @@
+【交付 + 待裁 · Code → Paper（2026-10-01 15:05）：C1/C2 队列已修复重排（当日晚出数）+ 波二 30/30 齐（mamba 健康 / **ScaDyG 全退化**）+ d677 三项待你裁定】
+
+一、**C1/C2 执行事故与修复（当日晚出数）**
+- **根因（非超时/非 OOM）**：Baseline 的 `648c3fe` 把数据根写死为 **Windows 绝对路径** `D:/codes/DyGLib/processed_data`（`configs/datasets.yaml` ×3 + `data/snapshot.py::DATA_ROOT`）⇒ 服务器上三行 `#723–725` 全部 `FileNotFoundError`（10-01 03:0x 即失败，非今晨）。
+- **处置**：**只改服务器工作副本**（4 处路径 → `/home/fedsa/DyGLib/processed_data`；未提交、已存 diff 备份、可一键还原），**CPU 冒烟通过**：BA/seed42 出 `protocol_metrics.{C0,C1,C2}`，C0 AUC **0.6956** = Baseline 自检同值（2 epoch 仅证机制）。
+- **重排**：`#729–731`（GPU 冒烟 + 两分区 42/123/456 与 789/1024）→ GPU 空闲即刻开跑，**ETA 10-01 当晚**；出数即给 C0/C1/C2 对照表 + 「哪些结论跨档改变」。
+- 口径注意（Baseline 描述）：**C1 保留 active/dt 骨架**（仅逐边剔除 motif 自身、MT-SA 仍含 k），其自述为"评估定位端点所需、非标签泄漏"的近似点 ⇒ 表注建议保留该句。
+
+二、**波二 30/30 已取数**（sha256 入账 `results/_sync_log`）
+| 模型 | 状态 | AUC（3 ds × 5 seed） |
+|---|---|---|
+| **DyG-Mamba** | ✅ 健康 | BA .6882–.7204 / OTC .9188–.9291 / WV .8594–.8644（val 同量级） |
+| **ScaDyG** | ❌ **全 15 件退化** | **AUC ≡ 0.5000、val_AUC ≡ 0.5000**（多数类 F1_bin 常数）；训练 loss 有下降但 val 恒 0.5 ⇒ 打分常数/评估接线问题 |
+
+- **建议：ScaDyG 行暂不入表**（现值即"随机"），已同步 Baseline 请其定位（其 `bug#6` 修复后仍退化）。若你/用户需要，我可先出 **mamba 单模型表**（含 5 种子 mean±std、acc/ap 若可算）。
+- 说明：两模型 JSON schema 仅 `{AUC, F1_bin}`，**无 acc/ap**；`ap` 可从 AUC 侧无法还原 ⇒ 表列需你定（只列 AUC / 或等 Baseline 扩展落盘后补）。
+
+三、**d677 定稿（Baseline `3945`）需你裁定三项**
+1. **切分口径更正**：BA/WV（T=15）实测 **10/2/3**（非我此前转述的 11/2/2）；T=20→14/3/3；T=25→18/4/3。Baseline 已修 3 处注释。
+2. **README「快照数 T」行与实跑不符**：README 写 BA/BO=20，但 `configs/final.yaml`（M5 实跑所用）为 **BA=15 / OTC=25 / WV=15** —— 请裁定改哪边（Baseline 未擅改协议性表述）。
+3. **acc 键不可无损补算**：schema 无 acc、未落盘逐样本 ⇒ 要真 acc/balanced_acc/mcc 须 **(a)** 评测端扩展落盘 `(y,prob,thr)` + 存量 **eval-only 重评**（DySDGNN 单 run ~76 s，成本极低）或 **(b)** 重训。**请批 (a) 是否执行**。
+4. 附：**F1_bin 退化只对 DySDGNN 成立**（逐位 = 多数类常数 2p/(1+p)：BA .9416909620991254 / OTC .9667519181585678 / WV .8558）；**DynamiSE 并非全部退化**（BA seed456/789、WV 5 种子有变化）⇒ 表注须区分两模型。
+5. 未来可见性表述建议：§29 写「无**跨快照**未来泄漏」+ 边级补充句（test 快照内 t′>t 事件与目标边自身结构均参与该快照嵌入；DTTG 原生，CTDG 不可复制）。
+
+四、**semba a735（RT-linksign-seed1024 OOM）**：采 Baseline 方案①（仅加分配器 env，零语义变更），**已入队 `#732`**，参数与其 249 件 dry-run 逐字核对一致（`--epochs 30 --patience 5 --feature-mode history`）；成功即同协议入表，再 OOM 则走方案②（`batch 500`，需你确认"非零影响 + 表注"口径）。

@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-10-01 15:05（续108·C1/C2 首次执行事故→修复重排（C0 闸门通过）+ 波二 30/30（mamba 健康 / ScaDyG 全退化）+ d677 定稿转裁）**：
+  - **C1/C2 事故根因（非 OOM）**：Baseline `648c3fe` 把数据根**硬编码 Windows 绝对路径** `D:/codes/DyGLib/processed_data`（`configs/datasets.yaml` ×3 + `data/snapshot.py::DATA_ROOT`）⇒ `#723–725` 三行 10-01 03:0x 全 `FileNotFoundError`。**只改服务器工作副本**（4 处 → `/home/fedsa/DyGLib/processed_data`，未提交、diff 备份 `/tmp/repro_prepath_*.diff`、可 `git checkout --` 还原）；已请 Baseline 落库可移植化（env/相对路径）。
+  - **C0 复现闸门通过（关键）**：GPU 冒烟 BA/seed42 **100 epoch** → C0 AUC **0.6974458204334365 = 主表逐位一致** ✓；同 run 三档 C0 .6974 / C1 .6702 / **C2 .5442**，F1_bin 三档恒 .941691（退化）。CPU（2ep）对照：C0 .6956 / C1 .6690 / C2 .5436（= Baseline 自检同值）。
+  - **重排 `#729–731`**（GPU 冒烟 + 两分区 seeds 42/123/456 与 789/1024，3 ds × `--eval-protocol ALL`）→ 15 runs 覆盖 45 点；GPU 空闲即刻开跑（15:00:31 起），**ETA 10-01 当晚**。
+  - **波二 30/30 已取数**：**DyG-Mamba 15/15 健康**（BA .6882–.7204 / OTC .9188–.9291 / WV .8594–.8644）；**ScaDyG 15/15 全退化**（`AUC ≡ 0.5000`、`val_AUC ≡ 0.5000`、F1_bin = 多数类常数；train_loss 下降但 val 恒 0.5）⇒ **不可入表**，已同步 Baseline 定位（属其组件，疑评估/打分接线或 split 段）。
+  - **semba a735**：采 Baseline 方案①（仅 `PYTORCH_CUDA_ALLOC_CONF`，零语义变更），参数与其 249 件 dry-run 逐字一致 ⇒ 入队 `#732`。
+  - **d677（Baseline `3945`）定稿要点已转 Paper 待裁**：切分更正（T=15 → **10/2/3**）；README「快照数 T」写 BA/BO=20 与 `final.yaml`（BA15/OTC25/WV15）不符；acc 不可无损补算（建议评测端落盘 `(y,prob,thr)` + eval-only 重评，待批）；**F1_bin 退化仅 DySDGNN 成立**（DynamiSE 非全退化）。
+  - 队列 **732 行**、指针 729；交付 Paper `8f2f`、回执 Baseline `faa0`。
+
 - **2026-09-30 深夜 22:40（续107·CNS-FX 10/10 齐 + Baseline 自实现 C1/C2 到位并插队执行）**：
   - **CNS-FX 补齐 10/10**：linksign RT 与 RB 各 5 件，**全指标 Δ=+0.0‰（5/5 逐位一致）**；表 `results/cns_fx_table_20260930.txt` 已刷新 ⇒ CNS 行结论不受阈值选择驱动。交付 Paper `3f8d`。
   - **C1/C2 归属落定 = 方案 1（Baseline 主写）**：Baseline `4357` 已交付实现 + 自检（commit **`648c3fe`**）。按 `8c91` §二，**Code 转为「执行 + 独立复核」、不落库**；我的设计草案 `tools/repro_patch/C1C2_DESIGN.md` 仅作交叉校验口径。
