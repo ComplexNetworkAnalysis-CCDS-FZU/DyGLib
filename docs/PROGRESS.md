@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-10-02 00:15（续111·9 格复核定案 9/9（归档代际更正）+ §4.5 时间编码报价（口径 B ≈5.7 GPU·h ⇒ 能）+ 网格覆盖答复 + ScaDyG 非退化数）**：
+  - **Paper `b84b` 裁定**：9 格差异根因 = **我取错归档代际**（sign 的 canonical = `s1_refresh/raw_valthr/sign`，我用了 `raw/sign` = 09-17 作废旧档）；**稿内数字不动**。改档重算后 **Δ/p/d 9/9 全部一致**（sign RT f1_mac +4.0‰/4/5/p=.0495/d=+1.25 对上）；唯一残留 = 2 格"正数计数"差异，均发生在**第 4 位小数并列**（RT auc 3/5 vs 4/5；sign RT f1_bin 0/5 vs 3/5），**不影响任何显著性表述**。
+  - **防复发落地**：`results/README.md` 新增 **逐任务 canonical 归档表** + 铁律"**threshold-free 指标跨档相同、阈值依赖指标跨档不可比**"+ 输出必须打印归档路径/代际标记；`tools/verify/paired_stats_adopted_recheck.py` 内置 `CANON` 表并打印溯源。
+  - **§4.5 时间编码报价**（`results/te_cost_quote_20261001.txt`；实测 sign 单 run：BA 342 s / OTC 562 s / WV 463 s）：**口径 B（3 策略×3 ds×5 种子 = 45 runs）≈ 5.70 GPU·h（含 25% 余量 7.1；双卡墙钟 ≈2.9 h）⇒ 能（≪24 h）**。实现现状：cosine ✓、**exponential decay ✓**（`exp(−λ·Δt)` 作用于三元组证据权重，`time_decay_lambda` + 两种 Δt 口径 A staleness/B gap；E-4 的 TD 即此支）、**linear `max(0,1−γΔt)` 未实现（~0.5 天）**；E-4 的 λ 未写入结果 JSON ⇒ 产物缺口待补。**代际判**：E-4(09-12) 与今日主表**不可比**（早停判据 09-18 变化）⇒ **开跑 B 时 cosine 行也须同代重跑**。γ 提案 = 让线性臂在 Δt 中位数处与 exp 等权（`γ=(1−exp(−λΔt_med))/Δt_med`）。已按用户授权（`8bd4`：≤24 h 即跑）报"能"，计划 10-02 实现 linear 臂 + 自检 → 入队 → 10-04 出数。
+  - **网格覆盖三问答复（`656f`）**：① **Bitcoin 网格在同代际（乃至任何代际）都不存在**（`grid_new/raw` 仅 RT/RB/WV 各 25 格 = 150）；② **确认单种子（seed42）**、每格固定 (NN,LF) 单次训练、无 ckpt 挑选；③ 赞同 §4.4 改"**3 datasets**"+ 声明范围；④ 提示单种子下 ±3–5‰ 与种子噪声同量级 ⇒ "N 主导 k / k 稳定"断言不成立，建议改方向性表述。
+  - **ScaDyG 重跑出非退化数**：BA AUC .5160–.5713（val .6568–.7035）、WV .5211–.5526（val .5706–.6181）；OTC 5 件在跑。**关键操作**：`train_sign_scadyg.py` 有幂等守卫，重跑旧件**必须 `--force`**（首轮被静默跳过）。
+  - **Baseline `0d9fae2`**（README 按裁定更新）已推服务器裸库（`618ba85..0d9fae2`）。
+  - 交付 Paper `5961`、回执 Baseline `dd27`；队列 739 行。
+
 - **2026-10-01 23:30（续110·‡ 九格配对统计交叉复核（7/9 一致）+ 网格 6 图交付（代际已证）+ 2×2 d 全表 + ScaDyG env 更正重排）**：
   - **Paper `e755` 裁定**：C1/C2 三档对照表**已入稿 §4.1**（两闸门被接受为"零回归证据"；表述已定稿勿改）；**a735 定 N/A + 4 种子配对 + ‡ 表注**（不做 CUDA_LAUNCH_BLOCKING 定位）；**ScaDyG 条件入附录**（val AUC≠0.5 且 std>0 才入表，否则定性一句）；要求补两项 ‡（配对统计复核 + 网格图 + 2×2 的 d）。
   - **① 九格配对统计交叉复核**（`results/paired_adopted_recheck_20261001.txt`；ours=`grid_confirm/raw/*.G2.json`，DyG=`s1_refresh/raw`）：**7/9 一致**（RT 15/3 f1_wt +7.5‰/p .0227/d +1.61、f1_mac +15.0/.0031/+2.84；RB 60/1 三格；sign RT auc −37.6/.0031/−2.86 全中）；**1 处计数差异**（RT auc 正数 3/5 vs Paper 4/5，Δ/p 一致）；**2 处明显不一致（方向相反）**：sign RT **f1_mac 我算 −74.8‰（p=.0003, d=−5.22）vs Paper +4.0‰**、**f1_bin +121.8‰（p=.0024）vs −0.2‰**。已排查（种子对齐 ✓、DyG 代际同为 `s1_refresh/raw` ✓、ours 三套 sign 归档 f1_macro 均值均 ≈.470 vs DyG .5494）⇒ **无一套 ours 支持 +4.0‰**，已请 Paper 核其 ours 来源；**未改稿**。

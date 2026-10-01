@@ -3,6 +3,17 @@
 > 按实验归类存放**汇总表 + 原始结果**；原始 JSON 在各自 `raw/` 子目录（gitignored，仅本地/服务器）。
 > 汇总表（.md/.csv）为**最终进论文口径**（统一 GPU 基座 + 修复后代码）。供 `Paper` 直接引用。
 
+## ★ 逐任务 canonical 归档表（2026-10-01 追加；防"归档代际取错"复发）
+
+| 任务 | ours（采纳配置） | 真 DyGFormer（**canonical**） | 说明 |
+|---|---|---|---|
+| **linksign** | `grid_confirm/raw/linksign/{ds}/*.G2.json` | **`s1_refresh/raw/linksign/{ds}/DyGFormer_seed*.json`** | 默认阈值档 = 正典 |
+| **sign** | `grid_confirm/raw/sign/{ds}/*.G2.json` | **`s1_refresh/raw_valthr/sign/{ds}/DyGFormer_seed*.json`** | ⚠️ **必须用 `raw_valthr`**（val-thr 协议）；`raw/sign` 是 09-17 已裁定作废的旧档 |
+
+- **口径铁律**：**threshold-free 指标（AUC/AP）跨档相同；阈值依赖指标（f1_macro / f1_binary / acc）跨档不可比** —— 混用即产生"方向相反"的假结论（已发生 3 次：T14b → T22 → 2026-10-01）。
+- **输出规范**：任何复算/交付输出**必须打印所用归档的绝对路径 + 代际标记**（一行即可），便于事后追溯。
+- 参考实现：`tools/verify/paired_stats_adopted_recheck.py`（脚本内 `CANON` 表 + 归档溯源打印）。
+
 ## 目录索引
 
 | 实验 | 状态 | 汇总文件 | 原始结果 |

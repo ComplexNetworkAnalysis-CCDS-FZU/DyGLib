@@ -1,0 +1,20 @@
+§4.5 时间编码 · 口径 B 成本测算（Code · 2026-10-01）
+口径 B = 3 策略 × {BitcoinAlpha, BitcoinOTC, WikiVote} × 5 种子，sign 任务（AUC + F1_bin）= **45 runs**
+数据源：既有 sign 批次结果 JSON 的 `single run time (s)`（≈训练+评估的墙钟；2×RTX2080S）
+
+  BitcoinAlpha   n=5   单 run 均值   342.3s  中位   335.3s  min  326.5s  max   358.8s   源: results\sign_valthr\raw\BitcoinAlpha
+  BitcoinOTC     n=5   单 run 均值   562.1s  中位   545.0s  min  524.1s  max   617.6s   源: results\sign_valthr\raw\BitcoinOTC
+  WikiVote       n=5   单 run 均值   462.8s  中位   457.1s  min  443.7s  max   490.6s   源: results\sign_valthr\raw\WikiVote
+
+推算（45 runs = 3 策略 × 3 数据集 × 5 种子）：
+   BitcoinAlpha   5 种子 × 3 策略 ×   342.3s =  1.43 GPU·h
+   BitcoinOTC     5 种子 × 3 策略 ×   562.1s =  2.34 GPU·h
+   WikiVote       5 种子 × 3 策略 ×   462.8s =  1.93 GPU·h
+  合计 = 20509 s = **5.70 GPU·h**（单卡串行）
+  双卡并行墙钟 ≈ **2.85 h**（+ 线性衰减实现/自检与调度开销）
+  含 25% 余量：**7.12 GPU·h**
+
+判据：与 24 GPU·h 上限比较 ⇒ **能 在 24 GPU·h 内完成**
+
+附：link & sign（linksign）同口径成本 = 以 linksign 批次单 run 耗时同法推算（量级相同，±30%）。
+注：不动主表/不改默认配置；纯对照实验（附录 §4.5）。线性衰减需先实现（估 ~0.5 天含自检）。

@@ -58,13 +58,18 @@ def load_ours(task: str, ds: str, pat: str) -> dict[int, dict[str, float]]:
 
 
 def load_dyg(task: str, ds: str) -> tuple[dict[int, dict[str, float]], str]:
-    for sub in ("raw", "raw_valthr"):
+    """DyGFormer 真基线归档（**canonical 逐任务**，2026-10-01 Paper b84b 裁定）：
+    linksign -> s1_refresh/raw/linksign/{ds}
+    sign     -> s1_refresh/raw_valthr/sign/{ds}   ← val-threshold 档（阈值依赖指标的唯一可比档）
+    """
+    CANON = {"linksign": ["raw/linksign"], "sign": ["raw_valthr/sign", "raw/sign"]}
+    for sub in CANON[task]:
         got = {}
-        for p in glob.glob(str(ROOT / f"results/s1_refresh/{sub}/{task}/{ds}/DyGFormer_seed*.json")):
+        for p in glob.glob(str(ROOT / f"results/s1_refresh/{sub}/{ds}/DyGFormer_seed*.json")):
             seed = int(Path(p).name.split("seed")[1].split(".")[0])
             got[seed] = json.loads(Path(p).read_text(encoding="utf-8"))
         if got:
-            return got, sub
+            return got, f"results/s1_refresh/{sub}/{ds}  [canonical-{task}]"
     return {}, "MISSING"
 
 
@@ -84,7 +89,8 @@ def stats(a: list[float], b: list[float]) -> tuple[float, int, float, float, flo
 L: list[str] = []
 w = L.append
 w("采纳配置 ours vs 真 DyGFormer 配对统计交叉复核（Code · 2026-10-01）")
-w("ours = results/grid_confirm/raw/{task}/{ds}/*.G2.json（采纳 3 点）；DyG = results/s1_refresh/{raw|raw_valthr}/{task}/{ds}/DyGFormer_seed*.json")
+w("ours = results/grid_confirm/raw/{task}/{ds}/*.G2.json（采纳 3 点）；DyG = results/s1_refresh/{raw/linksign | raw_valthr/sign}/{ds}（**canonical 逐任务**）")
+w("⚠️ 代际说明（Paper b84b 裁定）：**threshold-free 指标（auc）跨档相同；阈值依赖指标（f1_*）跨档不可比** —— sign 的 canonical = `raw_valthr/sign`。")
 w("对照 Paper 本地自算 scratch/paired_stats_adopted_20261001.txt（Δ 单位 ‰；同种子配对 n=5）")
 w("")
 allok = True
@@ -92,7 +98,7 @@ for task, ds, pat, label, metrics in CELLS:
     ours = load_ours(task, ds, pat)
     dyg, sub = load_dyg(task, ds)
     w("=" * 104)
-    w(f"### {label}（ours n={len(ours)}，DyG n={len(dyg)}，DyG 归档 = s1_refresh/{sub}）")
+    w(f"### {label}（ours n={len(ours)}，DyG n={len(dyg)}，**DyG 归档 = {sub}**）")
     w("=" * 104)
     w(f"{'指标':<10}{'Δ‰ 复算':>10}{'正/5':>7}{'p 复算':>10}{'d 复算':>9}   |  Paper: Δ‰ / 正 / p / d            | 结论")
     seeds = sorted(set(ours) & set(dyg))
@@ -112,10 +118,12 @@ for task, ds, pat, label, metrics in CELLS:
           + f"   (t={t:+.2f})")
     w("")
 w("=" * 104)
-w(f"总体：{'全部一致' if allok else '存在不一致项（见上）'}")
+w(f"总体：{'全部一致（9/9）' if allok else '存在不一致项（见上）'}")
 w("")
-w("注：ours 的 JSON `test metrics` 值为 4 位小数字符串（同 Paper 自算所依据的归档口径）；")
-w("    Δ/p/d 由该精度逐位复算 —— 与 Paper 数字一致即证明两边用了同一批逐种子值与相同配对算法。")
+w("归档溯源（可追溯）：")
+w("  ours : results/grid_confirm/raw/{linksign|sign}/{ds}/SignDyGFormer_seed*.NN-*.LF-*.G2.json  [gen=grid-confirm 2026-09-29]")
+w("  DyG  : linksign -> results/s1_refresh/raw/linksign/{ds}/…  ; sign -> results/s1_refresh/raw_valthr/sign/{ds}/…  [canonical]")
+w("注：ours 的 JSON `test metrics` 值为 4 位小数字符串；Δ/p/d 由该精度逐位复算 —— 与 Paper 数字一致即证明两边用了同一批逐种子值与相同配对算法。")
 OUT.write_text("\n".join(L) + "\n", encoding="utf-8")
 print("\n".join(L))
 print(f"[ok] {OUT.relative_to(ROOT)}")
