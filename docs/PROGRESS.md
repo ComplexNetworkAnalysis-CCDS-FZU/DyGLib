@@ -117,6 +117,17 @@
 
 ## 最近更新记录
 
+- **2026-10-01 20:20（续109·C1/C2 三档表交付（两闸门全过）+ 波二 mamba 表 + `_sync_log` + ScaDyG 重跑入队）**：
+  - **C1/C2 15/15 出数 → `results/c1c2_table_20261001.txt`**（同 run 同 ckpt 三档）：
+    - **闸门 1**：`metrics` ≡ `protocol_metrics.C0`（15 run × 2 指标逐位）✓；**闸门 2**：**C0 与 `results/baseline_m5/raw/DySDGNN/` 正式主表逐位一致**（15×2）✓ ⇒ **零回归**。
+    - **AUC（5 种子 mean±std）**：BA .7511±.0427 → C1 .6088 → **C2 .4901（低于随机）**；OTC .9119 → .8217 → **.6112**；WV .5937 → .5564 → **.5111（≈随机）**。
+    - **判读**：DySDGNN 的数值主要来自**窗内转导可见性**（C1 −37…−142‰；C2 到机会线/以下）；F1_bin 三档恒等（多数类退化）⇒ 与可见性无关，正好解释附表注「该列无信息量」。**2-epoch 冒烟值不写任何结论**。
+  - **波二 DyG-Mamba 单模型表** `results/wave2_mamba_table_20261001.txt`：BA .7067±.0130 / OTC .9220±.0042 / WV .8619±.0020（**只列 AUC**，注 "AP/acc not dumped by the adapter"；仅入附录外部基线适配表）。**ScaDyG 仍不入表**（Batch `618ba85` 修根因后**重转数据 + 15 件重跑**入队 `#733–735`）。
+  - **`results/_sync_log.md` 新建**（Paper §二 要求）：记 10-01 repro 数据根路径热补丁（4 处 / diff 备份 / 一键还原 / 验证）+ 09-30 护栏 bug；并注明机器 sha256 日志 `_sync_raw_log.csv` 为 gitignore。
+  - **repro 上游同步**：`618ba85` 原不在服务器裸库 → 由本地 push 至裸库后服务器 ff 到位；验收 **零配置直跑**（`DATA_ROOT` 自动解析、3 条 csv_path `exists=True`）✓；我的热补丁已还原作废。
+  - **a735 新根因（重要）**：方案①（仅分配器 env）**仍失败**，但报错为 **`CUDA error: illegal memory access`**（栈：`vendor/semba_pure/model_wrapper.py:41` → `TransformerConv.message`）⇒ **非 OOM**，方案②（batch 500）大概率无效；建议维持 **N/A + 4 种子配对** + 表注"适配后不可复现（IMA）"。已报 Paper 待裁 + 请 Baseline 定位。
+  - 队列 **735 行**、指针 732；交付 Paper `f133`、回执 Baseline `97a4`。
+
 - **2026-10-01 15:05（续108·C1/C2 首次执行事故→修复重排（C0 闸门通过）+ 波二 30/30（mamba 健康 / ScaDyG 全退化）+ d677 定稿转裁）**：
   - **C1/C2 事故根因（非 OOM）**：Baseline `648c3fe` 把数据根**硬编码 Windows 绝对路径** `D:/codes/DyGLib/processed_data`（`configs/datasets.yaml` ×3 + `data/snapshot.py::DATA_ROOT`）⇒ `#723–725` 三行 10-01 03:0x 全 `FileNotFoundError`。**只改服务器工作副本**（4 处 → `/home/fedsa/DyGLib/processed_data`，未提交、diff 备份 `/tmp/repro_prepath_*.diff`、可 `git checkout --` 还原）；已请 Baseline 落库可移植化（env/相对路径）。
   - **C0 复现闸门通过（关键）**：GPU 冒烟 BA/seed42 **100 epoch** → C0 AUC **0.6974458204334365 = 主表逐位一致** ✓；同 run 三档 C0 .6974 / C1 .6702 / **C2 .5442**，F1_bin 三档恒 .941691（退化）。CPU（2ep）对照：C0 .6956 / C1 .6690 / C2 .5436（= Baseline 自检同值）。

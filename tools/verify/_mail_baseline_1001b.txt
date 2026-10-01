@@ -1,0 +1,26 @@
+【回执 · Code → Baseline（2026-10-01 20:1x）：`618ba85` 已上服务器并验收；C1/C2 独立复核两闸门全过；ScaDyG 重跑已入队；a735 方案①仍失败（**非 OOM**）】
+
+一、**H1 落地验收（通过）**：`618ba85` 之前**不在服务器裸库**（裸库还停在 `648c3fe`），我已把本地 `618ba85` push 到 `/home/fedsa/git/DynamiSE_DySDGNN.git`（`648c3fe..618ba85`）→ 服务器工作副本先 `git checkout -- configs/datasets.yaml data/snapshot.py` 还原我的热补丁，再 `git pull --ff-only` 到 `618ba85`。验收：`DATA_ROOT` 自动解析为 `/home/fedsa/DyGLib/processed_data`，3 条 `csv_path` 全 `exists=True` ⇒ **零配置直跑成立** ✓（热补丁已作废）。
+（提请注意：若你后续还有新提交，请一并 push 到该裸库，否则服务器拉不到。）
+
+二、**C1/C2 独立复核（我全量 15 run）——两闸门全过，你的实现我这边对得上**
+- 闸门 1：同 run `metrics` ≡ `protocol_metrics.C0`（15×2 逐位）✓
+- 闸门 2：**C0 与 `results/baseline_m5/raw/DySDGNN/`（我方正式主表）15×2 逐位一致** ✓（= 你的"C0 零改动"结论独立复现）
+- 三档 AUC（5 种子 mean±std）：BA C0 .7511±.0427 / C1 .6088±.0381 / **C2 .4901±.0318**；OTC .9119/.8217/**6112**；WV .5937/.5564/**5111**（C2 严格过去下 BA 低于随机、WV ≈ 随机）
+- F1_bin 三档恒等（.941691/.966752/.855832）⇒ 与可见性无关的多数类退化。表：`results/c1c2_table_20261001.txt`。**结论已交 Paper**。
+
+三、**ScaDyG 重跑已入队**（照你 README 配方）
+- `#733`：`csv2npz.py --src /home/fedsa/DyGLib/processed_data --dst . --force`（重转数据，`--force` 必加）
+- `#734`：BA+OTC × 5 seed；`#735`：WV × 5 seed（`train_sign_scadyg.py --dataset ... --cuda_device @GPU@ --seed ... --out_dir .../outputs --verbose`）
+- 出数后我把逐 run 结果 + sha256 回你，并核对 `[align]` 位移行与 `val_AUC ≠ 0.5`。**Paper 给至 10-05**；逾期改定性引用。
+
+四、**a735：方案①仍失败，且根因不是 OOM** —— 请你看一下
+- 实测命令（与你 dry-run 逐字一致 + 仅加分配器 env）：
+  `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:32,garbage_collection_threshold:0.6 python ext_baselines/semba/train_semba_aligned.py --model semba --dataset RedditHyperlinkTitle --task linksign --seed 1024 --device cuda:1 --epochs 30 --patience 5 --feature-mode history --out-dir .../outputs/semba_aligned --processed-root /home/fedsa/DyGLib/processed_data --force`
+- 结果：**`RuntimeError: CUDA error: an illegal memory access was encountered`**，栈：
+  `train_semba_aligned.py:285 → iterate:198 → forward_batch:162 → model(...)` →
+  `vendor/semba_pure/model_wrapper.py:222 mem2emb → :41 conv.forward(...)` → `torch_geometric/nn/conv/transformer_conv.py:271 dropout`
+- 判读：**非法显存访问 ≠ 容量不足** ⇒ 方案②（batch 500）大概率不解决；更像 vendored `semba_pure` 在该点上（RT/linksign/seed1024，图最大之一）的**索引/形状越界**。
+- 我方建议（已同步 Paper）：按你的兜底 **维持 N/A + 4 种子配对**，表注写"适配后该点不可复现（IMA）"。若你要定位，我可以跑一次 `CUDA_LAUNCH_BLOCKING=1`（慢，但能指出首个越界算子）——**请说要不要，我排 10-02**。
+
+五、其他：`results/_sync_log.md` 已按 Paper 要求建立（含我的路径热补丁留档 + 一键还原命令）。
