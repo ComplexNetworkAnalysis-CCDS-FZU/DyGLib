@@ -1,0 +1,22 @@
+§4.5 三策略探针 · 前置留档（启动前快照，Code 2026-10-02）
+说明：主口径 sign 归档 = `results/sign_valthr/raw/{ds}/SignDyGFormer_seed*.NN-40.LF-15...TE.json`
+     TE 臂重跑会用**同名文件**（同 seed/同配置）；TD/TD-LIN 臂加标签（`.TD` / `.TD-LIN`）⇒ 不冲突。
+
+-- BitcoinAlpha
+   seed42    sha256=4ceb6c67c3492593  auc=0.7815 f1_macro=0.6259 f1_binary=0.9278 acc=0.8721
+   seed123   sha256=2d64548a94e3c1fe  auc=0.7942 f1_macro=0.6229 f1_binary=0.9282 acc=0.8726
+   seed456   sha256=cdbeb60d86b114ca  auc=0.7959 f1_macro=0.6495 f1_binary=0.9268 acc=0.8713
+   seed789   sha256=6e2c08246efbc9af  auc=0.7733 f1_macro=0.6351 f1_binary=0.9275 acc=0.8721
+   seed1024  sha256=e2ef356c06cb71eb  auc=0.7911 f1_macro=0.6415 f1_binary=0.9276 acc=0.8726
+-- BitcoinOTC
+   seed42    sha256=0d42effed1d462f7  auc=0.8835 f1_macro=0.7411 f1_binary=0.9497 acc=0.9125
+   seed123   sha256=4c477035692424e7  auc=0.8769 f1_macro=0.7572 f1_binary=0.9509 acc=0.9149
+   seed456   sha256=701f3a6ad7f402ff  auc=0.8768 f1_macro=0.7464 f1_binary=0.9507 acc=0.9142
+   seed789   sha256=f7a0162b3895505a  auc=0.8681 f1_macro=0.7534 f1_binary=0.9487 acc=0.9115
+   seed1024  sha256=f6bef4b497d3618a  auc=0.8820 f1_macro=0.7619 f1_binary=0.9469 acc=0.9089
+-- WikiVote
+   seed42    sha256=dceec0ed23005425  auc=0.7937 f1_macro=0.6479 f1_binary=0.8853 acc=0.8205
+   seed123   sha256=2a0a01da3a75ea62  auc=0.7929 f1_macro=0.6473 f1_binary=0.8758 acc=0.8101
+   seed456   sha256=4a6000cb3c1711ff  auc=0.7957 f1_macro=0.6617 f1_binary=0.8795 acc=0.8165
+   seed789   sha256=88cf690b0ad04065  auc=0.7981 f1_macro=0.6552 f1_binary=0.8842 acc=0.8226
+   seed1024  sha256=c67c6b1a3c568ee1  auc=0.7975 f1_macro=0.6516 f1_binary=0.8814 acc=0.8164

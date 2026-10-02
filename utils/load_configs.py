@@ -7,7 +7,7 @@ from pydantic.v1 import BaseModel, Field
 from models.DyGFormer import DyGFormer
 from models.SignDyGFormer import SignDyGFormer
 from models.DirectSignDyGFormer import DirectSignDyGFormer
-from models.NeighborInteractEncoder import TimeDecayGapMode
+from models.NeighborInteractEncoder import TimeDecayGapMode, TimeDecayForm
 from utils.noise import NoiseScope
 from utils import accel
 
@@ -213,6 +213,14 @@ class SignPredictArgs(BaseModel):
         TimeDecayGapMode.STALENESS,
         description="Δt 定义: staleness=证据陈旧度(A), gap=事件间隔(B)",
     )
+    # ---- §4.5 三策略对照（2026-10-02；默认 exp = 零行为变更）----
+    time_decay_form: TimeDecayForm = Field(
+        TimeDecayForm.EXP,
+        description="衰减函数形式: exp=exp(-λ·Δt)（默认）; linear=max(0,1-γ·Δt)（第三臂）",
+    )
+    time_decay_gamma: Optional[float] = Field(
+        None, description="线性衰减斜率 γ；None = 按 Δt 中位数与 exp 等权自动定标"
+    )
 
     module_status_theory_encoder: bool = Field(
         True, description="状态理论编码模块 (DirectSignDyGFormer)"
@@ -277,7 +285,15 @@ class SignPredictArgs(BaseModel):
         bool2str = lambda x: "E" if x else "D"
 
         # E-4: 时间编码(TE) / 时间衰减(TD) 标记，避免两者结果覆盖
-        td_tag = "TD" if self.time_decay_lambda is not None else "TE"
+        # §4.5（2026-10-02）：linear 臂加 `.TD-LIN` 后缀（显示式非默认）；显式 γ 再加 `.g<γ>`；
+        # exp 臂（默认）命名与历史完全一致 ⇒ 零行为变更。
+        if self.time_decay_lambda is None:
+            td_tag = "TE"
+        elif getattr(self.time_decay_form, "value", str(self.time_decay_form)) == "linear":
+            _g = f".g{self.time_decay_gamma:g}" if self.time_decay_gamma is not None else ""
+            td_tag = f"TD-LIN{_g}"
+        else:
+            td_tag = "TD"
 
         # E-7: 噪声标记（比例+范围），避免与干净结果覆盖
         noise_tag = ""

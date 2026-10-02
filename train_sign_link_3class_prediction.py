@@ -246,6 +246,8 @@ if __name__ == "__main__":
                 module_bte_b5_continuous_gate=args.module_bte_b5_continuous_gate,
                 time_decay_lambda=args.time_decay_lambda,
                 time_decay_gap_mode=args.time_decay_gap_mode,
+                time_decay_form=args.time_decay_form,
+                time_decay_gamma=args.time_decay_gamma,
                 time_scaling_factor=args.time_scaling_factor,
             )
         else:

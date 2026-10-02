@@ -23,6 +23,18 @@ class TimeDecayGapMode(str, Enum):
     GAP = "gap"
 
 
+class TimeDecayForm(str, Enum):
+    """时间衰减函数形式（§4.5 三策略对照；2026-10-02 Code 实现，默认 EXP = 零行为变更）。
+
+    EXP    = exp(-λ·Δt)        —— E-4 原口径（默认）
+    LINEAR = max(0, 1 - γ·Δt)  —— 线性衰减第三臂；γ 缺省时按“与 EXP 在 Δt 中位数处等权”自动定标：
+                                   1 - γ·m = exp(-λ·m) ⇒ γ = (1 - exp(-λ·m)) / m
+    """
+
+    EXP = "exp"
+    LINEAR = "linear"
+
+
 class NeighborCooccurrenceEncoder(nn.Module):
 
     def __init__(
@@ -40,6 +52,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
         module_bte_b5_continuous_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
+        time_decay_form: TimeDecayForm = TimeDecayForm.EXP,
+        time_decay_gamma: Optional[float] = None,
         time_scaling_factor: float = 1e-6,
     ):
         """
@@ -50,6 +64,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
             False = 通道特征置零（探针，切信息不切结构）；默认 True = 零行为变更
         :param time_decay_lambda: Optional[float], 时间衰减系数 λ；None 表示不启用时间衰减 (E-4)
         :param time_decay_gap_mode: TimeDecayGapMode, Δt 定义: STALENESS=A(证据陈旧度), GAP=B(事件间隔)
+        :param time_decay_form: TimeDecayForm, 衰减函数形式: EXP=exp(-λ·Δt)(默认), LINEAR=max(0,1-γ·Δt)
+        :param time_decay_gamma: Optional[float], 线性衰减斜率 γ；None = 按 Δt 中位数与 EXP 等权自动定标
         :param time_scaling_factor: float, 时间归一化因子（与采样器一致）
         """
         super(NeighborCooccurrenceEncoder, self).__init__()
@@ -84,6 +100,12 @@ class NeighborCooccurrenceEncoder(nn.Module):
             f"time_decay_gap_mode 必须是 TimeDecayGapMode 枚举项，收到: {time_decay_gap_mode!r}"
         )
         self.time_decay_gap_mode = time_decay_gap_mode
+        # §4.5 三策略：衰减形式（默认 EXP = 零行为变更；LINEAR 为第三臂）
+        assert isinstance(time_decay_form, TimeDecayForm), (
+            f"time_decay_form 必须是 TimeDecayForm 枚举项，收到: {time_decay_form!r}"
+        )
+        self.time_decay_form = time_decay_form
+        self.time_decay_gamma = time_decay_gamma
         self.time_scaling_factor = time_scaling_factor
 
         self.neighbor_co_occurrence_encode_layer = nn.Sequential(
@@ -241,7 +263,15 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 dt = np.maximum(dt, 0.0)
             dt = dt[mask]
             dt_scaled = dt * self.time_scaling_factor
-            triad_weights = np.exp(-self.time_decay_lambda * dt_scaled)
+            if self.time_decay_form == TimeDecayForm.LINEAR:
+                # LINEAR = max(0, 1 - γ·Δt)；γ 缺省时按“与 EXP 在本批 Δt 中位数处等权”自动定标
+                gamma = self.time_decay_gamma
+                if gamma is None:
+                    m = float(np.median(dt_scaled)) if dt_scaled.size else 0.0
+                    gamma = ((1.0 - np.exp(-self.time_decay_lambda * m)) / m) if m > 0 else 0.0
+                triad_weights = np.maximum(0.0, 1.0 - gamma * dt_scaled)
+            else:
+                triad_weights = np.exp(-self.time_decay_lambda * dt_scaled)
 
         #
         pos_effect = src_common_neighbor_ids[src_idx_flat[mask][pos_suggest_mask]]
@@ -313,6 +343,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 query_times=node_interact_times,
                 time_decay_lambda=self.time_decay_lambda,
                 time_decay_gap_mode=self.time_decay_gap_mode.value,
+                time_decay_form=self.time_decay_form.value,
+                time_decay_gamma=self.time_decay_gamma,
                 time_scaling_factor=self.time_scaling_factor,
                 module_repeat_aware_sign_encoder=self.module_repeat_aware_sign_encoder,
                 zero_padding=True,

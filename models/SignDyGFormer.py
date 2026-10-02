@@ -10,6 +10,7 @@ from models.NeighborInteractEncoder import (
     NeighborCooccurrenceEncoder,
     EncodeType,
     TimeDecayGapMode,
+    TimeDecayForm,
 )
 from models.modules import AutoClassName, TimeEncoder
 from utils.direct_neighbor_sampler import DirectedNeighborSampler as NeighborSampler
@@ -45,6 +46,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
         module_bte_b5_continuous_gate: bool = False,
         time_decay_lambda: Optional[float] = None,
         time_decay_gap_mode: TimeDecayGapMode = TimeDecayGapMode.STALENESS,
+        time_decay_form: TimeDecayForm = TimeDecayForm.EXP,
+        time_decay_gamma: Optional[float] = None,
         time_scaling_factor: float = 1e-6,
     ):
         """
@@ -86,6 +89,12 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             f"time_decay_gap_mode 必须是 TimeDecayGapMode 枚举项，收到: {time_decay_gap_mode!r}"
         )
         self.time_decay_gap_mode = time_decay_gap_mode
+        # §4.5 三策略：衰减形式（默认 EXP = 零行为变更；LINEAR 为第三臂）
+        assert isinstance(time_decay_form, TimeDecayForm), (
+            f"time_decay_form 必须是 TimeDecayForm 枚举项，收到: {time_decay_form!r}"
+        )
+        self.time_decay_form = time_decay_form
+        self.time_decay_gamma = time_decay_gamma
         self.time_scaling_factor = time_scaling_factor
 
         self.node_raw_features = torch.from_numpy(
@@ -123,6 +132,8 @@ class SignDyGFormer(nn.Module, metaclass=AutoClassName):
             module_bte_b5_continuous_gate=module_bte_b5_continuous_gate,
             time_decay_lambda=time_decay_lambda,
             time_decay_gap_mode=time_decay_gap_mode,
+            time_decay_form=time_decay_form,
+            time_decay_gamma=time_decay_gamma,
             time_scaling_factor=time_scaling_factor,
         )
 
