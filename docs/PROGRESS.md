@@ -117,6 +117,15 @@
 
 ## 最近更新记录
 
+- **2026-10-02 17:30（续113·ScaDyG 修复后 15/15 交付 + **linear 衰减第三臂实现并自检 PASS** + 三策略 45 runs 入队）**：
+  - **ScaDyG（Baseline `618ba85` 修复后重跑，`scadyg` env + `--force`）**：**15/15 非退化** ⇒ `results/wave2_scadyg_table_20261002.txt`：**BA .5558±.0229 / OTC .7517±.0123 / WV .5378±.0125**（ddof=1）；**与 0.5 逐点差 +16‰ ~ +263‰ 且随数据集/种子变化 ⇒ 非固定偏移**；val_AUC 均值 .6874/.6503/.5900（旧档恒 0.5000）✓。F1_bin：BA 仍常数 .9417、OTC/WV 随种子变化 ⇒ 建议只列 AUC。已按 Paper `e755 §三` 条件（val≠0.5 且 std>0）**满足可入附录适配表**。交付 `598d`。
+  - **§4.5 第三臂（linear）实现 + 自检（`tools/verify/te_form_selfcheck.py` → RESULT: PASS）**：
+    - 新增 `TimeDecayForm{EXP,LINEAR}` + `time_decay_gamma`（`models/NeighborInteractEncoder.py`），**默认 EXP ⇒ 零行为变更**（exp 分支公式与历史逐位相同；命名标签 λ=None→`TE`、λ→`TD` 与历史一致）；LINEAR = `max(0,1−γ·Δt)`，**γ 缺省按"与 EXP 在 Δt 中位数处等权"自动定标** `γ=(1−e^{−λm})/m`（可显式覆盖）；linear 命名 `TD-LIN`（显式 γ 加 `.g<γ>`）。
+    - 贯通：`models/SignDyGFormer.py`、`train_link_sign_prediction.py`、`train_sign_link_3class_prediction.py`、`utils/load_configs.py`（字段 + 命名）。
+    - 自检项：5 文件编译 ✓、枚举/默认 ✓、命名零变更 + TD-LIN 可区分 ✓、γ 在中位数处等权 ✓、权重 ∈[0,1] 且单调不增 ✓。
+  - **三策略对照 45 runs 入队（`#740/#741`）**：口径 B = 3 策略 × {BA,OTC,WV} × 5 种子（sign；配置 = 各数据集采纳点 NN-40/LF-15，WV 另加 `--tail-num 20000`；λ=0.1、Δt 口径 staleness）。`#740`=BA+OTC、`#741`=WV（双卡）。**启动前已留档主口径同名文件的 sha256 + 逐种子值**（`results/te_probe_precheck_20261002.txt`）以防 TE 臂覆盖。ETA ≈3–4 h。
+  - 队列 **741 行**；提交 `2c7033b` 双推 + 服务器同步 ✓；另推 Baseline `8875bb9`/`0d9fae2` 入裸库。
+
 - **2026-10-02 01:15（续112·网格单面板重渲染交付（48 件）+ Bitcoin 覆盖确认（不存在）+ 时间编码计划）**：
   - **Paper `8b2f`（用户指示）**：网格热力图重渲染 —— 去红框、改"原论文版式"单面板紧凑件（`0.32\textwidth`、一行 3 + 一行 2）、按目标尺寸设计字号、去掉面板内重复标题/图例；**10-02 晚前交付**。
   - **交付 `84ae`**：`results/grid_figures_single_20261002/`（**12 组** = 3 ds × 2 task × 2 metric × **2 档尺寸** × {pdf,png} = **48 件** + `MANIFEST.md` 全量 sha256）。
