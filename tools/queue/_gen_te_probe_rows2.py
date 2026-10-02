@@ -24,6 +24,9 @@ BASE = ("python train_link_sign_prediction.py --dataset-name {ds} --model SignDy
         "--batch-size 200 --num-neighbors 40 --common-neighbors-look-forward 15{extra}{decay}")
 
 
+LINEAR_ARG = " --time-decay-form LINEAR"
+
+
 def run(ds: str, extra: str, decay: str) -> str:
     return BASE.format(ds=ds, extra=extra, decay=decay)
 
@@ -32,13 +35,13 @@ def block(ds: str, extra: str, tag: str) -> str:
     return (f"for s in 42 123 456 789 1024; do "
             f"{run(ds, extra, '')} || echo \"TE_FAIL {ds} $s\"; "
             f"{run(ds, extra, ' --time-decay-lambda 0.1')} || echo \"TD_FAIL {ds} $s\"; "
-            f"{run(ds, extra, ' --time-decay-lambda 0.1 --time-decay-form linear')} || echo \"LIN_FAIL {ds} $s\"; "
+            f"{run(ds, extra, ' --time-decay-lambda 0.1' + LINEAR_ARG)} || echo \"LIN_FAIL {ds} $s\"; "
             f"done; echo {tag}")
 
 
 smoke = ("@" + PREFIX
-         + f"{run('BitcoinAlpha', '', ' --time-decay-lambda 0.1')} || echo TD_SMOKE_FAIL; "
-         + f"{run('BitcoinAlpha', '', ' --time-decay-lambda 0.1 --time-decay-form linear')} || echo LIN_SMOKE_FAIL; "
+         + f"{run('BitcoinAlpha', '', ' --time-decay-lambda 0.1').replace('--seeds $s', '--seeds 42')} || echo TD_SMOKE_FAIL; "
+         + f"{run('BitcoinAlpha', '', ' --time-decay-lambda 0.1' + LINEAR_ARG).replace('--seeds $s', '--seeds 42')} || echo LIN_SMOKE_FAIL; "
          + "echo TE_SMOKE_DONE")
 
 rows = [
