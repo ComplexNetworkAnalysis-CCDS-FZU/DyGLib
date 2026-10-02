@@ -117,6 +117,13 @@
 
 ## 最近更新记录
 
+- **2026-10-02 18:20（续114·三策略首轮**全败**（加速内核签名）→ 修复 + 重排（带 smoke 闸门））**：
+  - **事故**：`#740/#741`（45 runs）在 17:28 起跑后**全部失败**，报 `TypeError: bte_sign_effect() got an unexpected keyword argument 'time_decay_form'` —— 根因 = 我把新增的 `time_decay_form/gamma` 也塞进了 **M4 加速内核**的 kwargs，而内核（Rust/PyO3）签名**只支持 exp 衰减**。
+  - **修复（`0344f47`）**：① 内核调用**移除**两个新关键字（恢复兼容）；② `count_neighbor_sign_effect` 的加速分支改为 `if _accel.on and self.time_decay_form == TimeDecayForm.EXP` ⇒ **LINEAR 臂自动回落纯 Python 路径**（内核仅实现 exp；两路径按 K2 门禁已验逐位一致）。自检重跑 **PASS**。
+  - **教训（已记）**：新增参数只应进"纯 Python 计算路径"；凡被 `_accel.kernel.*` 消费的 kwargs 必须先核内核签名。另：队列行用 `|| echo FAIL` 会**吞掉失败**（daemon 视作成功）⇒ 本轮起批次行**加 smoke 产物守卫**（`[ -f A ] && [ -f B ] || exit 1`）。
+  - **重排（`#742–744`）**：`#742` = smoke（BA seed42 跑 **TD** 与 **TD-LIN** 各一次，两名与主归档不冲突）→ 验证两条路径都可跑；`#743` = BA+OTC × 3 策略 × 5 种子（30 runs）；`#744` = WV × 15 runs。**后两行带 guard**：smoke 产物不存在则直接退出（不白跑）。
+  - 队列 **744 行**；提交 `0344f47` 双推 + 服务器同步 ✓。
+
 - **2026-10-02 17:30（续113·ScaDyG 修复后 15/15 交付 + **linear 衰减第三臂实现并自检 PASS** + 三策略 45 runs 入队）**：
   - **ScaDyG（Baseline `618ba85` 修复后重跑，`scadyg` env + `--force`）**：**15/15 非退化** ⇒ `results/wave2_scadyg_table_20261002.txt`：**BA .5558±.0229 / OTC .7517±.0123 / WV .5378±.0125**（ddof=1）；**与 0.5 逐点差 +16‰ ~ +263‰ 且随数据集/种子变化 ⇒ 非固定偏移**；val_AUC 均值 .6874/.6503/.5900（旧档恒 0.5000）✓。F1_bin：BA 仍常数 .9417、OTC/WV 随种子变化 ⇒ 建议只列 AUC。已按 Paper `e755 §三` 条件（val≠0.5 且 std>0）**满足可入附录适配表**。交付 `598d`。
   - **§4.5 第三臂（linear）实现 + 自检（`tools/verify/te_form_selfcheck.py` → RESULT: PASS）**：
