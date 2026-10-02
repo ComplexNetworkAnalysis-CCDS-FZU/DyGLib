@@ -330,7 +330,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
     ):
         # ---- M4 加速接缝（默认启用；--no-accel / SIGNDYG_ACCEL=0 关闭）----
         # 与下方原路径逐位一致（K2 bit-exact 门禁验证）；内核返回 f32[B,L,2] numpy。
-        if _accel.on:
+        # 说明：内核仅实现 exp 衰减 ⇒ TimeDecayForm.LINEAR 自动回落到纯 Python 路径（零行为变更）。
+        if _accel.on and self.time_decay_form == TimeDecayForm.EXP:
             src_effect, dst_effect = _accel.kernel.bte_sign_effect(
                 src_nodes=src_nodes,
                 dst_nodes=dst_nodes,
@@ -343,8 +344,8 @@ class NeighborCooccurrenceEncoder(nn.Module):
                 query_times=node_interact_times,
                 time_decay_lambda=self.time_decay_lambda,
                 time_decay_gap_mode=self.time_decay_gap_mode.value,
-                time_decay_form=self.time_decay_form.value,
-                time_decay_gamma=self.time_decay_gamma,
+                # 注：内核仅支持 exp 衰减；linear 臂（TimeDecayForm.LINEAR）必须用 --no-accel
+                # 走下方纯 Python 路径（两路径按 K2 门禁已验逐位一致）。
                 time_scaling_factor=self.time_scaling_factor,
                 module_repeat_aware_sign_encoder=self.module_repeat_aware_sign_encoder,
                 zero_padding=True,
