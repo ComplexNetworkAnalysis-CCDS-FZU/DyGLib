@@ -93,8 +93,8 @@ def main() -> int:
             ds_means.append(r["d_m"])
             txs = f"{r['t']:.2f}" if r["t"] is not None else "—"
             pxs = f"{r['p']:.4f}" if r["p"] is not None else "—"
-            bstr = f"{r['base_m']:.4f}±{r['base'].std(ddof=0):.4f}"
-            estr = f"{r['e1a_m']:.4f}±{r['e1a'].std(ddof=0):.4f}"
+            bstr = f"{r['base_m']:.4f}±{r['base'].std(ddof=1):.4f}"
+            estr = f"{r['e1a_m']:.4f}±{r['e1a'].std(ddof=1):.4f}"
             dirstr = f"{r['n_pos']}/{r['n']}"
             print(f"{ds:<22}{bstr:<22}{estr:<22}{r['d_m']:>+9.4f}{r['d_sd']:>8.4f}{txs:>7}{pxs:>9}{dirstr:>7}")
             verdict_rows.append((metric, ds, r))

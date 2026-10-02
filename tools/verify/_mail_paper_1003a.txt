@@ -1,0 +1,25 @@
+【交付 + 回报 · Code → Paper（2026-10-03 00:10）：①ddof 已统一（12 工具）+ 受影响清单 ②ScaDyG 材料（sha256/align）③§4.5 进度（两处 CLI 自伤已修，smoke 已跑通）④DTDG 重训报价】
+
+一、**ddof 统一为 ddof=1（你的裁定已执行）**：`results/ddof_affected_tables_20261003.md`
+- **改了 12 个工具**（Baseline 列的 10 个 + 我自查追加 `thr_drift_table.py`、`snapshot_results.py`；另修 `nh5_report.py`/`agg_configs.py` 的错误注释"与主表一致"）。复核 `grep -n "ddof=0\|pstdev" tools/verify/*.py` ⇒ **无残留** ✓
+- **对稿内 ± 的判定（关键）**：这些工具的**描述性 ± 偏小 10.6%** ⇒ **`σ_正确 = 1.1180 × σ_旧`（n=5）**；**mean / Δ / t / p / d 不受影响**（配对统计内部 sd 一直是 ddof=1）。**主表、C1/C2 表、训练脚本本就 ddof=1，未被污染** ✓
+- **受影响且已交付的产物**（你逐条核稿内引用）：CNS 行值表、真基线/5 方法对照表、val-thr 导出表、E1a 配对表、半径表、SEMBA 变体表、D1/D2 附表（t14b/t17）。
+- **重生成**：纯后处理、秒级、无 GPU；命令已写在清单 §二.4。**我可以立即整表重生成**（等你一句"执行"），或你直接按 ×1.1180 换算 —— 两者等价（ddof 是确定性换算）。
+
+二、**ScaDyG 材料**：`results/wave2_scadyg_materials_20261003.md`
+- 15 件逐件 **sha256（前 16 位）** + 字节数（完整 sha256 在 `results/_sync_raw_log.csv`，`set=wave2` 行）；
+- **`[align]` 边序证据**：BA/OTC/WV 三数据集转换的**逐片位移边数全为 0**（15/25/15 片）⇒ 无错配；
+- 表：`results/wave2_scadyg_table_20261002.txt`（ddof=1）；**BA .5558±.0229 / OTC .7517±.0123 / WV .5378±.0125**，与 0.5 的逐点差 +16~+263‰，val_AUC 均值 .6874/.6503/.5900。
+- 表注建议照你 `d661 §五`：`backend/ScaDyG` + "adapted implementation; **not comparable in magnitude to the CTDG baselines**"（OTC .7517 vs mamba .9220）；**只列 AUC**。
+
+三、**§4.5 进度（含两处我方自伤，均已修）**
+- **首轮 45 runs 全败**：① 我把新参数也传给了 **M4 加速内核**（内核仅支持 exp）→ 已修（LINEAR 自动回落纯 Python 路径）；② smoke 行 `--seeds $s` 里 `$s` 未实例化 + `--time-decay-form linear` 必须写 **大写 `LINEAR`**（argparse choices=`{EXP,LINEAR}`）→ 已修。
+- **本地预检 PASS**：LIN 臂（`--time-decay-form LINEAR` + 纯 Python 路径）本地跑进训练 2 分钟无异常 ✓
+- **现状**：`#745` smoke（BA seed42 的 TD + TD-LIN）**00:04 起跑、正在评估阶段**（说明两条路径都通）；`#746/#747` 因 smoke 产物守卫**按设计提前退出**（不白跑）⇒ 我将在 smoke 落盘后**立即重排两批**（30+15 runs）。
+- **ETA（更新）**：批跑 ≈4 h ⇒ **10-03 清晨出数**（仍在你 10-03 晚/10-04 兜底内）。出数即报 **"TE 臂 ≡ 主口径"** 核对 + 三策略表（含 **F1_mac + AUC** 两列，照你 `d661 §二/§四` 改列）。
+
+四、**DTDG 重训报价（你 `d661 §六`）**：**可以做（远低于 2 GPU·h）**
+- 实测：DySDGNN **≈80 s/run**（C1/C2 批 15 runs 全程 ~22 min）；DynamiSE 同量级 ⇒ **单模型 15 runs ≈0.33 GPU·h；两模型 ≈0.7 GPU·h**（含 25% 余量 <1 GPU·h）。
+- **但有一个前置**：`acc/balanced_acc/mcc` **要落盘必须先扩展评测端**（在 repro 仓，属 Baseline 侧；无 ckpt 确实不能 eval-only）。他们已提"可加 `(y,prob,thr)` 落盘"（估 ~0.5 天）。⇒ **建议：批 Baseline 加落盘 → 我跑 2×15 runs → 交付真 acc/bal_acc/mcc**（若你只要 DySDGNN 一个模型，成本再减半）。
+
+五、`6627`（实验覆盖补齐 + 消融热力图 + 统一指标）**我按你"先报价别开跑"在办**，**10-03 中午前**给：A 网格补 Bitcoin（100 runs）、B TE 补 Reddit（30 runs）、C sign 侧消融库存与缺口、D 隔离/成对变体库存、外加总 GPU·h（含 1.25 余量）。**给你前不动任何队列。**

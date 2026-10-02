@@ -6,7 +6,7 @@
     python tools/verify/ras_radius_table.py "results/ras_radius/raw5/*"
     python tools/verify/ras_radius_table.py --keys auc ap f1_wt f1_mac <globs...>
 
-输出：每个数据集一张表（k_r 升序；多种子自动聚合 mean±pstd(ddof=0)，n=种子数）；
+输出：每个数据集一张表（k_r 升序；多种子自动聚合 mean±std(ddof=1)，n=种子数）；
 `*=k_c` 标该数据集对角点（k_r == k_c，即原公式）；`best` 标 auc 均值最大行；
 表尾给出「best vs 对角」同种子配对统计（Δ/sd/t/df/p/Cohen's d；单种子时退化为点差）。
 文件名约定：`...seed{S}.NN-{n}.LF-{k_c}.RLF-{k_r}.RAS-...`（k_r 显式给出时才会带 .RLF-）。

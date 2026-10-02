@@ -50,7 +50,7 @@ def mean_line(tag, got, keys=("auc", "ap", "sign_f1")):
         vs = [fnum(m, k) for _, m in got]
         vs = [v for v in vs if v == v]
         if vs:
-            print(f"  > {tag} {k}: mean={st.mean(vs):.4f} pstd={st.pstdev(vs):.4f} (n={len(vs)})")
+            print(f"  > {tag} {k}: mean={st.mean(vs):.4f} std={st.stdev(vs):.4f} (n={len(vs)})")  # ddof=1
 
 
 def main() -> int:

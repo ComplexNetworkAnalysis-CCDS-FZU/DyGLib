@@ -48,8 +48,8 @@ def main() -> int:
             if b is None or e is None or len(b) == 0 or len(e) == 0:
                 print(f"{ds:<22}{'（缺）':<20}")
                 continue
-            print(f"{ds:<22}{b.mean():.4f}±{b.std(ddof=0):.4f}      "
-                  f"{e.mean():.4f}±{e.std(ddof=0):.4f}      {e.mean() - b.mean():>+9.4f}")
+print(f"{ds:<22}{b.mean():.4f}±{b.std(ddof=1):.4f}      "
+          f"{e.mean():.4f}±{e.std(ddof=1):.4f}      {e.mean() - b.mean():>+9.4f}")
 
     print("\n" + "=" * 96)
     print("阈值漂移对照 —— sign：thr（E1a vs full；seed42 单点）")

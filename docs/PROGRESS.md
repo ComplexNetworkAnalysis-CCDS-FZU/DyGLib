@@ -117,6 +117,16 @@
 
 ## 最近更新记录
 
+- **2026-10-03 00:15（续115·§4.5 三策略两轮自伤修复（smoke 跑通）+ ddof 统一（12 工具）+ ScaDyG 材料）**：
+  - **Paper `d661` 裁定**：9/9 闭环；§4.5 口径与 γ 标定**批准**（要求报"TE 臂 ≡ 主口径" + 表注"同代际/同配置/5 种子/同 run 同 ckpt；E-4 旧代际不复用"）；热力图**验收通过无需再改**；**ddof 统一 ddof=1**；**ScaDyG 批准入附录**（只列 AUC + `backend/ScaDyG` + 不可比量级注）；DTDG acc **重训报价制**（≤2 h 就做）。
+  - **§4.5 第二轮自伤（均已修）**：① smoke 行 `--seeds $s` 中 `$s` **未实例化** → argparse 报错；② `--time-decay-form linear` 必须**大写 `LINEAR`**（pydantic_argparse choices=`{EXP,LINEAR}`）。**本地预检 PASS**（LIN 臂 + `SIGNDYG_ACCEL=0` 跑进训练 2 min 无异常）。
+  - **smoke `#745` 跑通**（00:04 起跑，已到评估阶段）⇒ 两条臂（TD exp / TD-LIN 纯 Python）均可用。
+  - **守卫设计修正**：`#746/#747` 的**立即式守卫**在 smoke 未落盘时按设计退出、把行消耗掉 ⇒ 改为**等待式守卫**（最多等 90 min，每 60 s 查一次）重排 **`#748`（BA+OTC 30 runs）/`#749`（WV 15 runs）**。队列 **749 行**。
+  - **ddof 统一（Paper `d661 §四`）**：改 **12 个工具**（Baseline 列 10 个 + 我方追加 `thr_drift_table.py`/`snapshot_results.py`，另修 2 处错误注释）；`grep ddof=0|pstdev` **无残留**。清单 `results/ddof_affected_tables_20261003.md`：**σ_正确 = 1.1180 × σ_旧**（n=5），**mean/Δ/t/p/d 不受影响**；列出受影响的已交付产物 + 重生成命令（纯后处理、秒级）。
+  - **ScaDyG 材料** `results/wave2_scadyg_materials_20261003.md`：15 件 sha256（前 16 位）+ 字节数 + **`[align]` 逐片位移全 0**（无错配）+ 表/val/逐点差。
+  - **DTDG acc 报价（答 `d661 §六`）**：DySDGNN ≈80 s/run ⇒ **单模型 15 runs ≈0.33 GPU·h，两模型 ≈0.7 GPU·h（<1 含余量）⇒ ≤2 h 可做**；**前置** = repro 评测端先加 `(y,prob,thr)` 落盘（Baseline 侧 ~0.5 天）。
+  - 交付 Paper `ebf3`；`6627`（覆盖补齐 + 消融热力图 + 指标统一）**按"先报价"在办**（10-03 中午前给 A/B/C/D + 总 GPU·h）。
+
 - **2026-10-02 18:20（续114·三策略首轮**全败**（加速内核签名）→ 修复 + 重排（带 smoke 闸门））**：
   - **事故**：`#740/#741`（45 runs）在 17:28 起跑后**全部失败**，报 `TypeError: bte_sign_effect() got an unexpected keyword argument 'time_decay_form'` —— 根因 = 我把新增的 `time_decay_form/gamma` 也塞进了 **M4 加速内核**的 kwargs，而内核（Rust/PyO3）签名**只支持 exp 衰减**。
   - **修复（`0344f47`）**：① 内核调用**移除**两个新关键字（恢复兼容）；② `count_neighbor_sign_effect` 的加速分支改为 `if _accel.on and self.time_decay_form == TimeDecayForm.EXP` ⇒ **LINEAR 臂自动回落纯 Python 路径**（内核仅实现 exp；两路径按 K2 门禁已验逐位一致）。自检重跑 **PASS**。

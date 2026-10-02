@@ -1,6 +1,6 @@
 """export_valthr_tables.py — 生成 docs/TABLES_valthr_20260917.md（Paper 补单③ 所需全指标表）。
 
-内容（每数据集：mean±pstd(ddof=0) + 5 种子原值）：
+内容（每数据集：mean±std(**ddof=1**) + 5 种子原值）：
 A. 真 DyGFormer（#121–133，val-thr）：sign（RT/RB 为刷新版）+ linksign；
 B. ours sign（full 口径，#129–133，val-thr）；
 C. ours linksign full（#75–82 批次；供 Paper 校准 f1_mac 口径）。
@@ -75,7 +75,7 @@ def main():
         "ours sign #129–133（**full 口径**，val-thr）；ours linksign full（#75–82 批次）。"
     )
     L.append(
-        "口径：`mean±pstd`（pstd=总体标准差 ddof=0）；JSON 原值为字符串；"
+        "口径：`mean±std`（样本标准差 ddof=1，与主表一致）；JSON 原值为字符串；"
         "**auc/ap 对阈值不变**（val-thr 与旧 0.5-thr 逐位相同），f1_* / acc 为验证集选阈值结果。\n"
     )
     L.append("---\n")

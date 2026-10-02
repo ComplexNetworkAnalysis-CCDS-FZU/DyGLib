@@ -9,7 +9,7 @@
 
 说明：
 - 文件名解析：seed{N}；配置旗标 RAS-[ED].RASE-[ED].BTE-[ED].CNAS-[ED]；指标取 JSON 的 "test metrics"。
-- std 口径：pstd（ddof=0），与全仓库一致；配对 t 用样本 sd（df=n−1）。
+- std 口径：样本标准差 **ddof=1**（与主表/训练脚本一致；Paper 2026-10-02 裁定）；配对 t 用样本 sd（df=n−1）。
 - 默认模式 *.P1.TE.json 天然排除 .CNE-D 探针文件（避免与常开结果混算）；聚合探针请用 --pat。
 """
 from __future__ import annotations

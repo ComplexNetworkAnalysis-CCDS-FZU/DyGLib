@@ -50,7 +50,7 @@ def stat(vals):
     a = np.array([v for v in vals if v is not None], dtype=float)
     if a.size == 0:
         return None, None, 0
-    return float(a.mean()), float(a.std(ddof=0)), int(a.size)
+    return float(a.mean()), float(a.std(ddof=1)), int(a.size)
 
 
 L = []

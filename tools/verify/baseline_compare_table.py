@@ -44,7 +44,7 @@ def stat(runs: dict, key: str):
     if not vals:
         return None, None, 0
     a = np.array(vals)
-    return float(a.mean()), float(a.std(ddof=0)), len(a)
+    return float(a.mean()), float(a.std(ddof=1)), len(a)  # ddof=1（与主表一致；Paper 2026-10-02 裁定）
 
 
 def fmt(mean, std, n):
