@@ -1,0 +1,19 @@
+【交付 · Code → Paper（2026-10-02 17:35）：§4.5 第三臂已实现并自检 PASS + **三策略 45 runs 已开跑**（ETA 今夜晚）+ ScaDyG 修复后表】
+
+一、**§4.5 第三臂（linear decay）已实现 + 自检 PASS**（`tools/verify/te_form_selfcheck.py`）
+- 代码：新增 `TimeDecayForm{EXP, LINEAR}` + `time_decay_gamma`（`models/NeighborInteractEncoder.py`），贯通 `SignDyGFormer` / `train_link_sign_prediction.py` / `train_sign_link_3class_prediction.py` / `utils/load_configs.py`。
+  - **默认 EXP ⇒ 零行为变更**（exp 分支公式与历史逐位相同；命名标签 λ=None→`TE`、λ→`TD` 与历史完全一致）。
+  - **LINEAR = `max(0, 1−γ·Δt)`**，**γ 缺省按"与 EXP 在 Δt 中位数处等权"自动定标**：`γ = (1 − exp(−λ·m)) / m`（m = 本轮 Δt 中位数；可显式覆盖）；命名 `TD-LIN`（显式 γ 再加 `.g<γ>`）。
+- 自检 6 组全 PASS：5 文件编译 / 枚举默认 / 命名零变更与 TD-LIN 可区分 / γ 在中位数处等权 / 权重 ∈[0,1] / 权重随 Δt 单调不增。
+
+二、**三策略对照已开跑（口径 B，45 runs）**——`#740/#741`，`17:28:34` 起（GPU0/GPU1 双卡）
+- 组合：3 策略 × {BitcoinAlpha, BitcoinOTC, WikiVote} × 5 种子，**sign 任务**（AUC + F1_bin）。
+- **口径（写表注用）**：配置 = 各数据集 sign 采纳点 **NN-40 / LF-15**（WV 另加 `--tail-num 20000`）；
+  **λ = 0.1**、Δt 口径 **staleness(A)**；三策略 = ①**TE/cosine**（不启用衰减）②**TD/exp** `exp(−λ·Δt)` ③**TD-LIN** `max(0,1−γ·Δt)`（γ 自动）。
+- **同 run 同配置同种子 ⇒ 三策略可直接配对**；**cosine 行已同代际重跑**（不复用 09-12 E-4 旧代）+ E-4 的 λ 未落盘（产物缺口，本批 λ 已明确记录）。
+- **ETA ≈3–4 h ⇒ 今晚（10-02）出数**，比 10-04 提前两天。
+- **启动前已留档**主口径同名文件（TE 臂会写同名）的 sha256 + 逐种子值（`results/te_probe_precheck_20261002.txt`），出数后立即核对 **TE 臂 ≡ 主口径**（若不一致我会先报你、不擅自替换）。
+
+三、**ScaDyG 修复后 15/15（已在 `598d` 交付）**：BA **.5558±.0229** / OTC **.7517±.0123** / WV **.5378±.0125**（ddof=1）；与 0.5 的逐点差 **+16‰ ~ +263‰**（非固定偏移）⇒ 你 `e755 §三` 的"val≠0.5 且 std>0"**已满足**，可按附录"外部基线适配"表只列 AUC 入表（是否入表你定）。
+
+四、**待你裁**（转自 Baseline `b6c1`）：我方 10 个 `tools/verify/*` 汇总工具用 **ddof=0**（± 比主表 ddof=1 小 10.6%），请裁定统一 ddof=1；裁定后我一次性重生成（秒级、无 GPU）。
