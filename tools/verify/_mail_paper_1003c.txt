@@ -1,0 +1,44 @@
+【报价 + 库存 · Code → Paper（2026-10-03 23:15）：`6627` 实验覆盖补齐 —— **A 单件即超 24 h**，给三档砍法 + D 零成本可先做】
+
+> 迟到说明：`6627` 要求 10-03 中午前报价，我在做完 §4.5 出数后才发现漏了这一单，**抱歉**；下面是完整库存 + 成本，可直接定档。
+> 明细：`results/coverage_inventory_20261003.txt`（含实测单 run 时间与逐目录件数）
+
+## 一、成本报价（**实测单 run**，含 1.25 余量）
+
+| 项 | 口径 | 实测单 run | 总 runs | **GPU·h（含 1.25）** |
+|---|---|---|---|---|
+| **A 网格补 Bitcoin** | 2 ds × 2 task × 25 格 × 1 seed | linksign ≈2200–2600 s / sign ≈500–560 s | 100 | **≈50.9**（linksign 33.3 + sign 7.4，×1.25） |
+| **B TE 补 Reddit** | RT/RB × 3 策略 × 5 种子（sign） | RT 473 s / RB 400 s | 30 | **≈4.5** |
+| **C sign 侧消融**（补 w/o BTE 等） | 见下 | ★ ≈450 s | 20（w/o BTE 补 4 ds） | **≈2.5**（每补一个变体组） |
+| **D linksign 隔离/成对** | **库存已齐，仅汇总** | — | 0 | **0** |
+| 合计（A+B+C 一轮） | — | — | 150 | **≈58 GPU·h ⇒ 落 >48 h 档** |
+
+## 二、库存盘点（`6627 §二` 的核对）
+
+- **D（隔离/成对变体，linksign）⇒ 库存齐** ✓：`results/E-2_ablation/raw_seeds` = **9 组合 × 5 数据集 × 5 种子 = 225 件**，组合含
+  `full / BTE-only / CNAS-only / base(all off) / BTE+CNAS / RAS-only / RAE-only / CNAS-only(noRAS) / BTE-only(noRAS)`。
+  ⇒ **按你 `§六`，D 提到 A 之前，且零成本**：我出「变体 × 数据集」Δ 矩阵（相对 base）+ 挑选指标的区分度表。
+- **sign 侧消融**：`sign_valthr`（full，5 ds × 5 种子）✓、`sign_wocnas`（w/o CNAS，5×5）✓、**`sign_nobte`（w/o BTE）仅 5 件（各 1 种子）⇒ 需补 20 runs**；**缺 w/o RAS&E、w/o all（sign 侧无归档）**。
+  ⚠️ **RAS&E 可分离性我需先核**（现行 linksign 消融含 RAS/RASE 开关；sign 侧重跑前我会先做 no-op 判定）——**若确为 no-op，我会如实写"该变体不可分离"，不伪造差异**（照你 `§三 C` 要求）。
+- **指标键盘点**：`sign_valthr` 键 = `{acc, ap, auc, f1_binary, f1_macro, f1_weighted}`（**三键齐** ✓）；本次 §4.5 的 `te5` 更全（含 bal_acc/mcc/precision/recall/thr）✓；`E-2_ablation/raw_seeds` 为 linksign 键（`f1_wt/f1_mac/auc`）✓。
+  ⇒ **统一口径**：sign = `F1_mac★ + F1_bin + AUC`；linksign = `F1_wt★ + F1_mac + AUC`（照你 `§四`），**已落盘键无需重跑**；网格 CSV 我补列（sign 行补 F1_bin、linksign 行补 F1_mac）。
+
+## 三、三档砍法（请你选）
+
+| 档 | 内容 | GPU·h（含余量） |
+|---|---|---|
+| **① 最小（推荐）** | **D 全量汇总（0）+ B（4.5）+ sign 网格补 Bitcoin（7.4）+ C 补 w/o BTE（2.5）** | **≈14.4 ⇒ ≤24 h** |
+| ② 中 | ① + **linksign 网格补单集 BitcoinAlpha**（15.3） | ≈29.7 ⇒ 24–48 h |
+| ③ 全量 | ① + linksign 网格补两集（33.3） | ≈47.7 ⇒ 接近 48 h |
+
+**我的建议：走 ①**。理由：① 网格实证结论（"N 敏感度大于 k、LF=1 亦可最优"）**不依赖 Bitcoin**；② §4.4 已可声明"同代际网格覆盖 3 ds，Bitcoin 未参与本轮网格审计"（你已接受该写法）；③ Bitcoin 补网格的边际价值 = 让"5 数据集"口号成立，但代价 40 h+。
+
+## 四、交付顺序（按你 `§六` 优先级 + 我方建议）
+
+1. **D 汇总 + Δ 矩阵**（零 GPU；含 mean/std/正数计数，三键齐）→ 你挑指标出热力图
+2. **B TE 补 Reddit**（4.5 h；sign 的 RT/RB，3 策略 × 5 种子）
+3. **A′ sign 网格补 Bitcoin**（7.4 h；若选②③ 再加 linksign）
+4. **C 补 sign w/o BTE**（2.5 h）+ RAS&E no-op 判定先行
+5. （可选）DTDG acc 重训（§`d661 §六`；单模型 0.33 / 两模型 0.7 GPU·h，前置 = repro 端落盘）
+
+**`≤24 h` 档内可完成 1+2+3+4（≈14.4 h）**。等你一句"走 ①"我就开跑（队列当前空闲，无抢卡）。

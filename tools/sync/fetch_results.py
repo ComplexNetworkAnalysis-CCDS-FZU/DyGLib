@@ -781,6 +781,18 @@ SETS = {
             5,
         ),
     ],
+    # ---- §4.5 三策略（TE / TD / TD-LIN；sign，NN-40.LF-15；2026-10-03）----
+    "te5": [
+        (
+            "saved_results/LinkSign/SignDyGFormer/" + ds + "/SignDyGFormer_seed*.NN-40.LF-15."
+            "RAS-E.RASE-E.BTE-E.CNAS-E.P1." + tag + ".json",
+            "results/te5/raw/" + ds,
+            None,
+            5,
+        )
+        for tag in ("TE", "TD", "TD-LIN")
+        for ds in ("BitcoinAlpha", "BitcoinOTC", "WikiVote")
+    ],
     # ---- C0/C1/C2 可见性对照（Baseline 648c3fe；repro outputs；一次出三档）----
     "c1c2": [
         (

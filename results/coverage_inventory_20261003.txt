@@ -1,0 +1,48 @@
+`6627` 实验覆盖盘点 + 成本估算（Code 2026-10-03）
+====================================================================================================
+[A] 网格补 Bitcoin —— 成本推算（口径：2 ds × 2 task × 25 格 × 1 种子 = 100 runs）
+----------------------------------------------------------------------------------------------------
+  grid_new linksign RedditHyperlinkTitle   n=25  单 run 均值  2249.3s  中位  2104.2s
+  grid_new linksign RedditHyperlinkBody    n=25  单 run 均值  1715.3s  中位  1613.9s
+  grid_new linksign WikiVote               n=25  单 run 均值  2371.3s  中位  2164.1s
+  grid_new sign     RedditHyperlinkTitle   n=25  单 run 均值   550.4s  中位   512.1s
+  grid_new sign     RedditHyperlinkBody    n=25  单 run 均值   453.7s  中位   435.2s
+  grid_new sign     WikiVote               n=25  单 run 均值   593.1s  中位   629.0s
+  参考：Bitcoin 两集规模（BA 24,186 边 / OTC 35,592 边）与 RT/RB/WV 同量级；
+       按 RT/RB 实测均值 × 100 runs 估（下方合计）。
+
+[B] TE 补 Reddit —— 成本推算（口径：RT/RB × 3 策略 × 5 种子 = 30 runs，sign）
+----------------------------------------------------------------------------------------------------
+  sign_valthr RedditHyperlinkTitle   n=5   单 run 均值   473.2s
+  sign_valthr RedditHyperlinkBody    n=5   单 run 均值   400.0s
+
+[C] sign 侧消融库存（按 tag 组合统计；口径 = 同配置下存在的逐 run JSON 数）
+----------------------------------------------------------------------------------------------------
+  sign_valthr（full, 部署点）             总   25 件   BitcoinAlpha=5  BitcoinOTC=5  WikiVote=5  RedditHyperlin=5  RedditHyperlin=5
+  sign_wocnas（w/o CNAS）              总   25 件   BitcoinAlpha=5  BitcoinOTC=5  WikiVote=5  RedditHyperlin=5  RedditHyperlin=5
+  sign_nobte（w/o BTE?）               总    5 件   BitcoinAlpha=1  BitcoinOTC=1  WikiVote=1  RedditHyperlin=1  RedditHyperlin=1
+  sign_rt5（tail-fill 5 种子）           总   25 件   BitcoinAlpha=5  BitcoinOTC=5  WikiVote=5  RedditHyperlin=5  RedditHyperlin=5
+  sign_tailfill5                     总   25 件   BitcoinAlpha=5  BitcoinOTC=5  WikiVote=5  RedditHyperlin=5  RedditHyperlin=5
+  sign_neighborhood                  总   43 件   BitcoinAlpha=5  BitcoinOTC=9  WikiVote=9  RedditHyperlin=11  RedditHyperlin=9
+  sign_param（参数批）                    总  210 件   BitcoinAlpha=42  BitcoinOTC=42  WikiVote=42  RedditHyperlin=42  RedditHyperlin=42
+  E-2_ablation/raw_seeds（2×2+变体）     总  225 件   BitcoinAlpha=45  BitcoinOTC=45  WikiVote=45  RedditHyperlin=45  RedditHyperlin=45
+
+[D] linksign 侧隔离/成对变体库存（E-2_ablation/raw_seeds，按组合）
+----------------------------------------------------------------------------------------------------
+  组合                                BitcoinAlpha    BitcoinOTC  RedditHyperl  RedditHyperl      WikiVote
+  RAS-E.RASE-E.BTE-E.CNAS-E                    5             5             5             5             5
+  RAS-E.RASE-E.BTE-D.CNAS-E                    5             5             5             5             5
+  RAS-E.RASE-E.BTE-E.CNAS-D                    5             5             5             5             5
+  RAS-D.RASE-D.BTE-D.CNAS-D                    5             5             5             5             5
+  RAS-D.RASE-D.BTE-E.CNAS-E                    5             5             5             5             5
+  RAS-D.RASE-E.BTE-E.CNAS-E                    5             5             5             5             5
+  RAS-E.RASE-D.BTE-E.CNAS-E                    5             5             5             5             5
+  RAS-D.RASE-D.BTE-D.CNAS-E                    5             5             5             5             5
+  RAS-D.RASE-D.BTE-E.CNAS-D                    5             5             5             5             5
+
+[E] 指标键盘点（三键齐备性；sign 任务需 f1_macro/f1_binary/auc）
+----------------------------------------------------------------------------------------------------
+  sign_valthr              键 = ['acc', 'ap', 'auc', 'f1_binary', 'f1_macro', 'f1_weighted']
+  te5/TE                   键 = ['acc', 'ap', 'auc', 'balanced_acc', 'f1_binary', 'f1_macro', 'f1_weighted', 'mcc', 'precision', 'recall', 'thr']
+  grid_new/sign            键 = []
+  E-2_ablation/raw_seeds   键 = ['acc', 'ap', 'auc', 'exist_f1', 'exist_precision', 'exist_recall', 'f1_mac', 'f1_mic', 'f1_wt', 'sign_f1']
